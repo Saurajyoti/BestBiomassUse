@@ -54,31 +54,32 @@ aeo_case_dict = {'Reference case':'AEO.2021.REF2021.',
 
 #%%
 
-pre_str = {'EIA_ref' : 'AEO.2021.REF2021.GEN'}
+pre_str = {'AEO.2021.REF2021.GEN' : 'EIA_ref'}
 
-sector = {'Electric Power Sector' : 'ELEP', 
-          'End-Use Sectors' : 'ENUS'}
+sector = {'ELEP' : 'Electric Power Sector', 
+          'ENUS' : 'End-Use Sectors'}
 
-feedstock = {'Coal' : 'CL_NA',
-'Petroleum' : 'PET_NA',
-'Natural Gas' : 'NG_NA',
-'Nuclear' : 'NUC_NA',
-'Pumped Storage and Other' : 'PPS_NA',
-'Conventional Hydroelectric Power' : 'HYD_CNV',
-'Geothermal' : 'GEOTHM_NA',
-'Biogenic Municipal Waste' : 'BGM_NA',
-'Municipal Waste' : 'MUNWST_NA',
-'Wood and Other Biomass' : 'WBM_NA',
-'Solar Thermal' : 'SLR_THERM',
-'Solar Photovoltaic' : 'SLR_PHTVL',
-'Wind' : 'WND_NA',
-'Offshore Wind' : 'OFW_NA',
-'Distributed Generation' : 'DISTGEN_NA',
-'Other' : 'OTH_NA'}
+feedstock = {'CL_NA' : 'Coal',
+'PET_NA' : 'Petroleum',
+'NG_NA' : 'Natural Gas',
+'NUC_NA' : 'Nuclear',
+'PPS_NA' : 'Pumped Storage and Other',
+'HYD_CNV' : 'Conventional Hydroelectric Power',
+'GEOTHM_NA' : 'Geothermal',
+'BGM_NA' : 'Biogenic Municipal Waste',
+'MUNWST_NA' : 'Municipal Waste',
+'WBM_NA' : 'Wood and Other Biomass',
+'SLR_THERM' : 'Solar Thermal',
+'SLR_PHTVL' : 'Solar Photovoltaic',
+'WND_NA' : 'Wind',
+'OFW_NA' : 'Offshore Wind',
+'DISTGEN_NA' : 'Distributed Generation',
+'OTH_NA' : 'Other'}
 
-post_str = {'ACRO' : 'BLINKWH.A'}
+post_str = {'BLINKWH.A' : 'ACRO'}
+string_join = '_NA_'
     
-def comb_keys (dic1, dic2, join_str):
+"""def comb_keys (dic1, dic2, join_str):
     if isinstance(dic1, dict) & isinstance(dic2, dict):
         t = list( itertools.product(list(dic1.values()), list(dic2.values())) )
     elif isinstance(dic1, list) & isinstance(dic2, dict):
@@ -88,10 +89,14 @@ def comb_keys (dic1, dic2, join_str):
     else:
         t = list( itertools.product(dic1, dic2))
     return [join_str.join(x) for x in t]
+comb_keys(comb_keys(comb_keys(pre_str, sector, '_NA_'), feedstock, '_NA_'), post_str, '_NA_')"""
 
-#comb_keys(comb_keys(comb_keys(pre_str, sector, '_NA_'), feedstock, '_NA_'), post_str, '_NA_')
+t = list(itertools.product(list(pre_str.keys()), list(sector.keys()), list(feedstock.keys()), post_str.keys()))
 
-t = list(itertools.product(list(pre_str.values()), list(sector.values()), list(feedstock.values()), post_str.values()))
+key_df = pd.DataFrame({'sector' : [sector.get(x[1]) for x in t],
+                      'feedstock' : [feedstock.get(x[2]) for x in t],
+                      'keys' : [string_join.join(x) for x in t]})
+
 
 # Create a function to store sector-wide energy consumption and CO2 emissions
 
