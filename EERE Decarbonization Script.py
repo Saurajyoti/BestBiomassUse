@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Project:EERE Decarbonization
-Author: George G. Zaimes
+Authors: George G. Zaimes and Saurajtoti Kar
 Affiliation: Argonne National Laboratory
 Date: 07/14/2021
 Version: V1
@@ -25,6 +25,8 @@ import numpy as np
 import seaborn as sns
 from datetime import date
 import matplotlib.ticker as ticker
+import getpass
+import itertools
 
 #%%
 # Set the EIA API Key (used to pull EIA data). EIA API Keys can be obtained via https://www.eia.gov/opendata/
@@ -32,7 +34,11 @@ import matplotlib.ticker as ticker
 # U.S. Energy System. 'Looping' over the AEO dictionary, provides an easy way to extract EIA data across AEO cases.
 
 # Obtain API Key from EIA, see URL: https://www.eia.gov/opendata/
-api_key = ''
+
+curr_user = getpass.getuser()
+path = 'C:\\Users\skar\\Box\\saura_self\\Proj - Best use of biomass'
+f_key = 'EIA_datakey.csv'
+api_key = pd.read_csv(path + '\\' + f_key, index_col=0, squeeze=True).to_dict()[curr_user]
 
 # Create a dictionary of AEO cases, and their corresponding API ID
 aeo_case_dict = {'Reference case':'AEO.2021.REF2021.',
@@ -47,6 +53,46 @@ aeo_case_dict = {'Reference case':'AEO.2021.REF2021.',
                  }
 
 #%%
+
+pre_str = {'EIA_ref' : 'AEO.2021.REF2021.GEN'}
+
+sector = {'Electric Power Sector' : 'ELEP', 
+          'End-Use Sectors' : 'ENUS'}
+
+feedstock = {'Coal' : 'CL_NA',
+'Petroleum' : 'PET_NA',
+'Natural Gas' : 'NG_NA',
+'Nuclear' : 'NUC_NA',
+'Pumped Storage and Other' : 'PPS_NA',
+'Conventional Hydroelectric Power' : 'HYD_CNV',
+'Geothermal' : 'GEOTHM_NA',
+'Biogenic Municipal Waste' : 'BGM_NA',
+'Municipal Waste' : 'MUNWST_NA',
+'Wood and Other Biomass' : 'WBM_NA',
+'Solar Thermal' : 'SLR_THERM',
+'Solar Photovoltaic' : 'SLR_PHTVL',
+'Wind' : 'WND_NA',
+'Offshore Wind' : 'OFW_NA',
+'Distributed Generation' : 'DISTGEN_NA',
+'Other' : 'OTH_NA'}
+
+post_str = {'ACRO' : 'BLINKWH.A'}
+    
+def comb_keys (dic1, dic2, join_str):
+    if isinstance(dic1, dict) & isinstance(dic2, dict):
+        t = list( itertools.product(list(dic1.values()), list(dic2.values())) )
+    elif isinstance(dic1, list) & isinstance(dic2, dict):
+        t = list( itertools.product(dic1, list(dic2.values())) )
+    elif isinstance(dic1, dict) & isinstance(dic2, list):
+        t = list( itertools.product(list(dic1.values()), dic2))
+    else:
+        t = list( itertools.product(dic1, dic2))
+    return [join_str.join(x) for x in t]
+
+#comb_keys(comb_keys(comb_keys(pre_str, sector, '_NA_'), feedstock, '_NA_'), post_str, '_NA_')
+
+t = list(itertools.product(list(pre_str.values()), list(sector.values()), list(feedstock.values()), post_str.values()))
+
 # Create a function to store sector-wide energy consumption and CO2 emissions
 
 def eia_sector_import (sector, aeo_case): 
