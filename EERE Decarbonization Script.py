@@ -137,7 +137,8 @@ def eia_sector_import (sector, aeo_case):
     temp_list = [] 
     
     # Load in EIA's AEO Series IDs / AEO Keys
-    df_aeo_key = pd.read_excel('C:\\Users\\gzaimes\\Desktop\\EERE Decarbonization\\EIA AEO Data_v1.xlsx', sheet_name = sector)
+    #df_aeo_key = pd.read_excel('C:\\Users\\gzaimes\\Desktop\\EERE Decarbonization\\EIA AEO Data_v1.xlsx', sheet_name = sector)
+    df_aeo_key = key_df
     
     # Each sector has multiple data series that document the end-use applications, materials, and energy consumption. 
     # Based on the user-selected sector, loop through each data series, pulling EIA data based on the series ID / API Key
