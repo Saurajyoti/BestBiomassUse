@@ -20,13 +20,14 @@ EPA GHGI: https://cfpub.epa.gov/ghgdata/inventoryexplorer/chartindex.html
 # Python Packages
 import pandas as pd
 import requests
-import matplotlib.pyplot as plt
-import numpy as np
-import seaborn as sns
-from datetime import date
-import matplotlib.ticker as ticker
+#import matplotlib.pyplot as plt
+#import numpy as np
+#import seaborn as sns
+#from datetime import date
+#import matplotlib.ticker as ticker
 import getpass
-import itertools
+#import itertools
+from datetime import datetime
 
 #%%
 # Set the EIA API Key (used to pull EIA data). EIA API Keys can be obtained via https://www.eia.gov/opendata/
@@ -35,10 +36,16 @@ import itertools
 
 # Obtain API Key from EIA, see URL: https://www.eia.gov/opendata/
 
+init_time = datetime.now()
+
+# data and file paths
+path_data = 'C:\\Users\skar\\Box\\saura_self\\Proj - Best use of biomass'
+file_key = 'EIA_datakey.csv'
+file_series = 'EIA AEO Data_v1.xlsx'
+file_out = 'EIA Dataset.csv'
+
 curr_user = getpass.getuser()
-path = 'C:\\Users\skar\\Box\\saura_self\\Proj - Best use of biomass'
-f_key = 'EIA_datakey.csv'
-api_key = pd.read_csv(path + '\\' + f_key, index_col=0, squeeze=True).to_dict()[curr_user]
+api_key = pd.read_csv(path_data + '\\' + file_key, index_col=0, squeeze=True).to_dict()[curr_user]
 
 # Create a dictionary of AEO cases, and their corresponding API ID
 aeo_case_dict = {'Reference case':'AEO.2021.REF2021.',
@@ -53,51 +60,6 @@ aeo_case_dict = {'Reference case':'AEO.2021.REF2021.',
                  }
 
 #%%
-
-pre_str = {'AEO.2021.REF2021.GEN' : 'EIA_ref'}
-
-sector = {'ELEP' : 'Electric Power Sector', 
-          'ENUS' : 'End-Use Sectors'}
-
-feedstock = {'CL_NA' : 'Coal',
-'PET_NA' : 'Petroleum',
-'NG_NA' : 'Natural Gas',
-'NUC_NA' : 'Nuclear',
-'PPS_NA' : 'Pumped Storage and Other',
-'HYD_CNV' : 'Conventional Hydroelectric Power',
-'GEOTHM_NA' : 'Geothermal',
-'BGM_NA' : 'Biogenic Municipal Waste',
-'MUNWST_NA' : 'Municipal Waste',
-'WBM_NA' : 'Wood and Other Biomass',
-'SLR_THERM' : 'Solar Thermal',
-'SLR_PHTVL' : 'Solar Photovoltaic',
-'WND_NA' : 'Wind',
-'OFW_NA' : 'Offshore Wind',
-'DISTGEN_NA' : 'Distributed Generation',
-'OTH_NA' : 'Other'}
-
-post_str = {'BLINKWH.A' : 'ACRO'}
-string_join = '_NA_'
-    
-"""def comb_keys (dic1, dic2, join_str):
-    if isinstance(dic1, dict) & isinstance(dic2, dict):
-        t = list( itertools.product(list(dic1.values()), list(dic2.values())) )
-    elif isinstance(dic1, list) & isinstance(dic2, dict):
-        t = list( itertools.product(dic1, list(dic2.values())) )
-    elif isinstance(dic1, dict) & isinstance(dic2, list):
-        t = list( itertools.product(list(dic1.values()), dic2))
-    else:
-        t = list( itertools.product(dic1, dic2))
-    return [join_str.join(x) for x in t]
-comb_keys(comb_keys(comb_keys(pre_str, sector, '_NA_'), feedstock, '_NA_'), post_str, '_NA_')"""
-
-t = list(itertools.product(list(pre_str.keys()), list(sector.keys()), list(feedstock.keys()), post_str.keys()))
-
-key_df = pd.DataFrame({'sector' : [sector.get(x[1]) for x in t],
-                      'feedstock' : [feedstock.get(x[2]) for x in t],
-                      'keys' : [string_join.join(x) for x in t]})
-
-
 # Create a function to store sector-wide energy consumption and CO2 emissions
 
 def eia_sector_import (sector, aeo_case): 
@@ -137,8 +99,7 @@ def eia_sector_import (sector, aeo_case):
     temp_list = [] 
     
     # Load in EIA's AEO Series IDs / AEO Keys
-    #df_aeo_key = pd.read_excel('C:\\Users\\gzaimes\\Desktop\\EERE Decarbonization\\EIA AEO Data_v1.xlsx', sheet_name = sector)
-    df_aeo_key = key_df
+    df_aeo_key = pd.read_excel(path_data + '\\' + file_series, sheet_name = sector)
     
     # Each sector has multiple data series that document the end-use applications, materials, and energy consumption. 
     # Based on the user-selected sector, loop through each data series, pulling EIA data based on the series ID / API Key
@@ -232,4 +193,6 @@ eia_multi_sector_df = eia_multi_sector_import(sectors = ['Residential',
                                                            ]
                                               )
 
-eia_multi_sector_df.to_csv('C:\\Users\\gzaimes\\Desktop\\EERE Decarbonization\\EIA Dataset.csv')
+eia_multi_sector_df.to_csv(path_data + '\\' + file_out)
+
+print( 'Elapsed time: ' + str(datetime.now() - init_time))
