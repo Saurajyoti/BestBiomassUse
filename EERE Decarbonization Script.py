@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Project:EERE Decarbonization
-Authors: George G. Zaimes and Saurajtoti Kar
+Authors: George G. Zaimes and Saurajyoti Kar
 Affiliation: Argonne National Laboratory
 Date: 07/14/2021
 Version: V1
@@ -111,6 +111,7 @@ def eia_sector_import (sector, aeo_case):
         url = 'http://api.eia.gov/series/?api_key=' + api_key +'&series_id=' + series_id
         r = requests.get(url)
         json_data = r.json()
+        print(url)
         df_temp = pd.DataFrame(json_data.get('series')[0].get('data'),
                                columns = ['Date', 'Value'])
         df_temp['Data Source'] = row[1]
@@ -189,7 +190,15 @@ eia_multi_sector_df = eia_multi_sector_import(sectors = ['Residential',
                                                          'Electric Power'
                                                          ],
                                               
-                                              aeo_cases = ['Reference case'
+                                              aeo_cases = ['Reference case',
+                                                           'High economic growth',
+                                                           'Low economic growth',
+                                                           'High oil price',
+                                                           'Low oil price',
+                                                           'High oil and gas supply',
+                                                           'Low oil and gas supply',
+                                                           'High renewable cost',
+                                                           'Low renewable cost'
                                                            ]
                                               )
 
