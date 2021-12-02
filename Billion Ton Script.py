@@ -13,10 +13,12 @@ import pandas as pd
 #%%
 
 # Set filepath to location of Billion Ton Study Data:
-filepath = 'C:\\Users\\gzaimes\\Desktop\\Billion Ton\\BT Data'
+#filepath = 'C:\\Users\\gzaimes\\Desktop\\Billion Ton\\BT Data'
+filepath = 'C:\\Users\\skar\\data\\Resource Availability\\Billion Ton Study\\Full Dataset [County-Level]'
  
 # Set filepath to output result files
-results_filepath = 'C:\\Users\\gzaimes\\Desktop\\Billion Ton\\BT Results'
+#results_filepath = 'C:\\Users\\gzaimes\\Desktop\\Billion Ton\\BT Results'
+results_filepath = 'C:\\Users\\skar\\Box\\saura_self\\Proj - Best use of biomass\\data'
 
 #%%
 
@@ -196,7 +198,7 @@ bt_case = bt_scenario(ag_case = 'basecase',
                       forestry_case = 'basecase', 
                       waste_case = 'basecase',
                       start_year = 2020,
-                      end_year = 2040,
+                      end_year = 2050,
                       feedstock = None ,
                       biomass_price = None,
                       price_logic = 'less than or equal to',
