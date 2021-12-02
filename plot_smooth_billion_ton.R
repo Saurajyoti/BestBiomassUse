@@ -29,7 +29,7 @@ ggsave(paste0(ppath, '\\', 'Billion_Ton_feedstocks_smooth.jpg'), p, width = 16, 
 d_misc <- d %>%
   filter(Feedstock %in% c("Miscanthus"))
 
-ggplot(d_misc) +
+p <- ggplot(d_misc) +
   geom_smooth(aes(Year, Yield, color = `Biomass Price`), se = FALSE) +
   labs(x = "", y = "Yield, bu/acre", 
        title = "Billion-Ton projected Miscanthus availability",
