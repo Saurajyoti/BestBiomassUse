@@ -147,7 +147,8 @@ def eia_multi_sector_import (sectors, aeo_cases):
             'Transportation'
             'Commercial'
             'Industrial'
-            'Electric Power'
+            'Electric Power',
+            'All Sectors Average'
             
     aeo_cases : List
         Input is a list of AEO cases, choose one or more of the following cases:
@@ -187,7 +188,8 @@ eia_multi_sector_df = eia_multi_sector_import(sectors = ['Residential',
                                                          'Transportation',
                                                          'Commercial',
                                                          'Industrial',
-                                                         'Electric Power'
+                                                         'Electric Power',
+                                                         'All Sectors Average'
                                                          ],
                                               
                                               aeo_cases = ['Reference case',
