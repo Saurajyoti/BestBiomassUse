@@ -11,14 +11,15 @@ d <- read_csv(paste0(fpath, '\\', fname)) %>%
   filter(Scenario %in% c("Basecase, all energy crops")) %>%
   select(c(Year, Scenario, `Biomass Price`, Feedstock, `Yield Unit`, Yield)) %>%
   filter(!is.na(Yield)) %>%
-  mutate(`Biomass Price` = as.factor(`Biomass Price`))
+  mutate(`Biomass Price` = as.factor(`Biomass Price`),
+         Feedstock_unit = paste0(Feedstock, ' (', `Yield Unit`, ')'))
 
 p <- ggplot(d) +
   geom_smooth(aes(Year, Yield, color = `Biomass Price`), se = FALSE) +
-  facet_wrap(~Feedstock, scales = "free") +
-  labs(x = "", y = "Yield, bu/acre", 
+  facet_wrap(~Feedstock_unit, scales = "free") +
+  labs(x = "", y = "Yield", 
        title = "Billion-Ton projected energy feedstocks-biomass availability",
-       color = "Price, USD/bu") + 
+       color = "USD per unit prod.") + 
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5),
         text = element_text(size = 16))
@@ -31,9 +32,9 @@ d_misc <- d %>%
 
 p <- ggplot(d_misc) +
   geom_smooth(aes(Year, Yield, color = `Biomass Price`), se = FALSE) +
-  labs(x = "", y = "Yield, bu/acre", 
+  labs(x = "", y = "Yield, dt/acre", 
        title = "Billion-Ton projected Miscanthus availability",
-       color = "Price, USD/bu") + 
+       color = "USD per dt") + 
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5),
         text = element_text(size = 16))
