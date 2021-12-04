@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Author: George G. Zaimes
+Author: George G. Zaimes, Saurajyoti Kar
 Affiliation: Argonne National Laboratory
 Description: Pre-processing and analysis of resource availability from the Billion Ton Study
 Data Source: https://bioenergykdf.net/sites/default/files/BillionTonDownloads/billionton_county_all.zip
@@ -21,6 +21,34 @@ filepath = 'C:\\Users\\skar\\data\\Resource Availability\\Billion Ton Study\\Ful
 results_filepath = 'C:\\Users\\skar\\Box\\saura_self\\Proj - Best use of biomass\\data'
 
 #%%
+
+# dictionary for unit conversions
+unit1_per_unit2 = {
+ """
+ sources:
+ https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/nrcs142p2_022760.pdf
+ """
+ 
+ 'Barley_lb_per_bu' : 48,
+ 'Corn_lb_per_bu' : 56,
+ 'Oats_lb_per_bu' : 32,
+ 'Sorghum_lb_per_bu' : 56,
+ 'Soybeans_lb_per_bu' : 60,
+ 'Wheat_lb_per_bu' : 60,
+ 'Barley_dry_per_wet' : 0.3, # fraction of dry matter
+ 'Corn_dry_per_wet' : 0.3,
+ 'Oats_dry_per_wet' : 0.3,
+ 'Sorghum_dry_per_wet' : 0.3,
+ 'Soybeans_dry_per_wet' : 0.3,
+ 'Wheat_dry_per_wet' : 0.3,
+ 'U.S.ton_per_lb' : 0.0005
+ }
+
+def unit_conv (conv):
+    if conv in unit1_per_unit2:
+        return unit1_per_unit2[conv]
+    else:
+        return 1
 
 # Create a function ('bt_sceario') to process, subset, and aggregate data from the Billion Ton Study              
 def bt_scenario(ag_case,
@@ -173,12 +201,14 @@ def bt_scenario(ag_case,
             bt_df = bt_df[bt_df['Biomass Price'] >= biomass_price]
         elif price_logic == 'equal to':
             bt_df = bt_df[bt_df['Biomass Price'] == biomass_price]
+    
+    # aggregrating to higher spatial level
     if spatial_res == 'National':
         var_list = bt_df.columns.tolist()
         remove_list = ['County', 'State', 'fips', 'Yield', 'Yield Unit', 'Production', 'Harvested Acres', 'Land Area','Diameter Class', 'Operation Type',
        'Owner', 'supply Class', 'Supply Target']
         agg_list = [i for i in var_list if i not in remove_list]
-        bt_df = bt_df.groupby(agg_list, dropna = False, as_index = False)['Production','Harvested Acres','Land Area'].sum()
+        bt_df = bt_df.groupby(agg_list, dropna = False, as_index = False)[['Production','Harvested Acres','Land Area']].sum()
         bt_df['Yield Unit'] = bt_df['Production Unit'] + '/ac'
         bt_df['Yield'] = bt_df['Production'] / bt_df['Harvested Acres']
     elif spatial_res == 'State':
@@ -186,9 +216,22 @@ def bt_scenario(ag_case,
         remove_list = ['County', 'Yield', 'Yield Unit', 'Production', 'Harvested Acres', 'Land Area','Diameter Class', 'Operation Type',
        'Owner', 'supply Class', 'Supply Target', 'fips']
         agg_list = [i for i in var_list if i not in remove_list]
-        bt_df = bt_df.groupby(agg_list, dropna = False, as_index = False)['Production','Harvested Acres','Land Area'].sum()
+        bt_df = bt_df.groupby(agg_list, dropna = False, as_index = False)[['Production','Harvested Acres','Land Area']].sum()
         bt_df['Yield Unit'] = bt_df['Production Unit'] + '/ac'
         bt_df['Yield'] = bt_df['Production'] / bt_df['Harvested Acres']
+    
+    # unit conversions
+    bt_df['Production'] = bt_df['Production'] * unit_conv('Barley_lb_per_bu') * unit_conv('U.S.ton_per_lb') * unit_conv('Barley_dry_per_wet')
+    bt_df['Production Unit'] = 'dt'
+    
+    # calculating yield per acre
+    if spatial_res == 'National':        
+        bt_df['Yield Unit'] = bt_df['Production Unit'] + '/ac'
+        bt_df['Yield'] = bt_df['Production'] / bt_df['Harvested Acres']
+    elif spatial_res == 'State':
+        bt_df['Yield Unit'] = bt_df['Production Unit'] + '/ac'
+        bt_df['Yield'] = bt_df['Production'] / bt_df['Harvested Acres']
+        
     return bt_df
  
 #%%    
