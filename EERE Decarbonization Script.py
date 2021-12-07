@@ -39,7 +39,7 @@ from datetime import datetime
 init_time = datetime.now()
 
 # data and file paths
-path_data = 'C:\\Users\skar\\Box\\saura_self\\Proj - Best use of biomass'
+path_data = 'C:\\Users\skar\\Box\\saura_self\\Proj - Best use of biomass\\data'
 file_key = 'EIA_datakey.csv'
 file_series = 'EIA AEO Data_v1.xlsx'
 file_out = 'EIA Dataset.csv'
@@ -147,8 +147,9 @@ def eia_multi_sector_import (sectors, aeo_cases):
             'Transportation'
             'Commercial'
             'Industrial'
-            'Electric Power',
+            'Electric Power'
             'All Sectors Average'
+            'Production prices'
             
     aeo_cases : List
         Input is a list of AEO cases, choose one or more of the following cases:
@@ -189,7 +190,8 @@ eia_multi_sector_df = eia_multi_sector_import(sectors = ['Residential',
                                                          'Commercial',
                                                          'Industrial',
                                                          'Electric Power',
-                                                         'All Sectors Average'
+                                                         'All Sectors Average',
+                                                         'Production prices'
                                                          ],
                                               
                                               aeo_cases = ['Reference case',
