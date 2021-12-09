@@ -2,21 +2,22 @@
 """
 Created on Tue Dec  7 17:59:41 2021
 
-@author: skar
+@author: Saurajyoti Kar
+@affiliation: Argonne National Laboratory
+@description: Make EIA price data plot in a grid
 """
 
 import os
 import pandas as pd
-import plotly.express as px
-import plotly.io as pio
+import seaborn as sns
 
 code_path = 'C:\\Users\\skar\\repos\\BestBiomassUse'
 os.chdir(code_path)
 
 import unit_conversions as ut
 
-pio.renderers.default='browser'
-#pio.renderers.default='png'
+#pio.renderers.default='browser'
+#pio.kaleido.scope.default_format = "jpg"
 
 filepath = 'C:\\Users\\skar\\Box\\saura_self\\Proj - Best use of biomass\\data'
 figpath = 'C:\\Users\\skar\\Box\\saura_self\\Proj - Best use of biomass\\figs'
@@ -57,15 +58,19 @@ d['Value'] = d['Value'] * [ut.unit_conv(x) for x in d['feedstock_perunit']]
 d['Unit'] = d['numerator'] + '/' + to_unit
 d.drop(columns = ['numerator', "denominator", 'feedstock_perunit'], inplace = True)
 
+# filter out Coal
+d = d.loc[d['Subcategory 1'] != "Coal", ]
+
 # plotting
 
-#fig = px.line(d.loc[d['AEO Case'] == 'Low economic growth', ], x="Date", y="Value", color='Subcategory 1')
-#fig.show()
+custom_params = {"axes.spines.right": False, "axes.spines.top": False}
+sns.set_theme(style="ticks", rc=custom_params)
 
-fig = px.line(d.loc[d['Subcategory 1'] != 'Coal', ] , 
-              x="Date", y="Value", color='Subcategory 1',
-              facet_col='AEO Case', facet_col_wrap=3,
-              labels={"Value":"$ 2020/MMBtu", "Date":"Year", "Subcategory 1" : "Fuels"})
-fig.show()
-
-pio.write_image(fig, "C:\\Users\\skar" + '\\' + "name.jpg")
+g = sns.FacetGrid(d, col = "AEO Case", hue = "Subcategory 1",
+                  col_wrap = 3, height = 3)
+g.map(sns.lineplot, "Date", "Value")
+g.set_titles("{col_name}")
+g.set_axis_labels("Year", "2020 $/MMBtu")
+g.set(xticks=range(min(d['Date']), max(d['Date'])+10, 10))
+g.add_legend(title = "Fuel types")
+g.figure.savefig(figpath+'\\'+'plot_line_EIA_price.jpg', dpi=400)
