@@ -9,6 +9,13 @@ Data Source: https://bioenergykdf.net/sites/default/files/BillionTonDownloads/bi
 
 # Import Python Packages
 import pandas as pd
+import os
+
+# Import user defined modules
+code_path = 'C:\\Users\\skar\\repos\\BestBiomassUse'
+os.chdir(code_path)
+
+import unit_conversions as ut
 
 #%%
 
@@ -22,33 +29,6 @@ results_filepath = 'C:\\Users\\skar\\Box\\saura_self\\Proj - Best use of biomass
 
 #%%
 
-# dictionary for unit conversions
-unit1_per_unit2 = {
- """
- sources:
- https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/nrcs142p2_022760.pdf
- """
- 
- 'Barley_lb_per_bu' : 48,
- 'Corn_lb_per_bu' : 56,
- 'Oats_lb_per_bu' : 32,
- 'Sorghum_lb_per_bu' : 56,
- 'Soybeans_lb_per_bu' : 60,
- 'Wheat_lb_per_bu' : 60,
- 'Barley_dry_per_wet' : 0.3, # fraction of dry matter
- 'Corn_dry_per_wet' : 0.3,
- 'Oats_dry_per_wet' : 0.3,
- 'Sorghum_dry_per_wet' : 0.3,
- 'Soybeans_dry_per_wet' : 0.3,
- 'Wheat_dry_per_wet' : 0.3,
- 'U.S.ton_per_lb' : 0.0005
- }
-
-def unit_conv (conv):
-    if conv in unit1_per_unit2:
-        return unit1_per_unit2[conv]
-    else:
-        return 1
 
 # Create a function ('bt_sceario') to process, subset, and aggregate data from the Billion Ton Study              
 def bt_scenario(ag_case,
@@ -221,7 +201,7 @@ def bt_scenario(ag_case,
         bt_df['Yield'] = bt_df['Production'] / bt_df['Harvested Acres']
     
     # unit conversions
-    bt_df['Production'] = bt_df['Production'] * unit_conv('Barley_lb_per_bu') * unit_conv('U.S.ton_per_lb') * unit_conv('Barley_dry_per_wet')
+    bt_df['Production'] = bt_df['Production'] * ut.unit_conv('Barley_lb_per_bu') * ut.unit_conv('U.S.ton_per_lb') * ut.unit_conv('Barley_dry_per_wet')
     bt_df['Production Unit'] = 'dt'
     
     # calculating yield per acre
