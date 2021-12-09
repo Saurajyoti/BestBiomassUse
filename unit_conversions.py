@@ -28,7 +28,14 @@ unit1_per_unit2 = {
  'Sorghum_dry_per_wet' : 0.3,
  'Soybeans_dry_per_wet' : 0.3,
  'Wheat_dry_per_wet' : 0.3,
- 'crudeoil_MMBtu_per_barrel' : 5.691,
+ 
+ 'Crude Oil_barrel_per_MMBtu' : (1/ 5.691), 
+ 'Coal_st_per_MMBtu' : ( 1/ (20.6736101163927 * 0.907185) ), # GREET1_2021, Fuel_Specs, Coal Mix for Electricity Generation
+ 'Diesel_gal_per_MMBtu' : (1/ 0.138490), # GREET1_2021, Fuel_Specs, Low-sulfur diesel
+ 'Motor Gasoline_gal_per_MMBtu' : (1/ 0.12043862), # GREET1_2021, Fuel_Specs, Gasoline
+ 'Jet Fuel_gal_per_MMBtu' : (1/ 0.132948694386834), # GREET1_2021, Fuel_Specs, Conventional Jet Fuel
+ 'Residential distillate Fuel Oil/Heating Oil_gal_per_MMBtu' : (1/ 0.150110), # GREET1_2021, Fuel_Specs, Residual Oil HHV
+
  
  # physical only units
  
