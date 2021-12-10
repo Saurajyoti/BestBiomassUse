@@ -9,6 +9,7 @@ Data Source: https://bioenergykdf.net/sites/default/files/BillionTonDownloads/bi
 
 # Import Python Packages
 import pandas as pd
+import numpy as np
 import os
 
 # Import user defined modules
@@ -201,9 +202,41 @@ def bt_scenario(ag_case,
         bt_df['Yield'] = bt_df['Production'] / bt_df['Harvested Acres']
     
     # unit conversions
-    bt_df['Production'] = bt_df['Production'] * ut.unit_conv('Barley_lb_per_bu') * ut.unit_conv('U.S.ton_per_lb') * ut.unit_conv('Barley_dry_per_wet')
-    bt_df['Production Unit'] = 'dt'
+    to_unit = 'lb'
+    bt_df['unit_conv'] = bt_df['Feedstock'] + '_' + to_unit + '_per_' + bt_df['Production Unit']
+    bt_df['Production'] = np.where(
+        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
+        bt_df['Production'] * bt_df['unit_conv'].map(ut.unit1_per_unit2),
+        bt_df['Production'])
+    bt_df['Production Unit'] = np.where(
+        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
+        to_unit,
+        bt_df['Production Unit'])
     
+    to_unit = 'U.S.ton'
+    bt_df['unit_conv'] = to_unit + '_per_' + bt_df['Production Unit']
+    bt_df['Production'] = np.where(
+        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
+        bt_df['Production'] * bt_df['unit_conv'].map(ut.unit1_per_unit2),
+        bt_df['Production'])
+    bt_df['Production Unit'] = np.where(
+        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
+        to_unit,
+        bt_df['Production Unit'])
+    
+    to_unit = 'dry'
+    bt_df['unit_conv'] = bt_df['Feedstock'] + '_' + to_unit + '_per_' + 'wet'
+    bt_df['Production'] = np.where(
+        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
+        bt_df['Production'] * bt_df['unit_conv'].map(ut.unit1_per_unit2),
+        bt_df['Production'])
+    bt_df['Production Unit'] = np.where(
+        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
+        'dt',
+        bt_df['Production Unit'])
+        
+    #bt_df['Production'] * ut.unit_conv('Barley_lb_per_bu') * ut.unit_conv('U.S.ton_per_lb') * ut.unit_conv('Barley_dry_per_wet')
+        
     # calculating yield per acre
     if spatial_res == 'National':        
         bt_df['Yield Unit'] = bt_df['Production Unit'] + '/ac'
@@ -222,7 +255,7 @@ bt_case = bt_scenario(ag_case = 'basecase',
                       waste_case = 'basecase',
                       start_year = 2020,
                       end_year = 2050,
-                      feedstock = None ,
+                      feedstock = None,
                       biomass_price = None,
                       price_logic = 'less than or equal to',
                       spatial_res = 'National')
