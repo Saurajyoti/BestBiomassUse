@@ -8,12 +8,13 @@ Created on Wed Dec  8 11:40:22 2021
 """ A dictionary for unit conversions and a caller \
 function to return 1 in case the unit conversation is not available """
     
+"""
+sources:
+https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/nrcs142p2_022760.pdf
+https://www.eia.gov/energyexplained/units-and-calculators/
+"""
+
 unit1_per_unit2 = {
- """
- sources:
- https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/nrcs142p2_022760.pdf
- https://www.eia.gov/energyexplained/units-and-calculators/
- """
  # feedstock or fuel based physical units:
 
  'Barley_lb_per_bu' : 48,
