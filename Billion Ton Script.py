@@ -235,7 +235,7 @@ def bt_scenario(ag_case,
         'dt',
         bt_df['Production Unit'])
         
-    #bt_df['Production'] * ut.unit_conv('Barley_lb_per_bu') * ut.unit_conv('U.S.ton_per_lb') * ut.unit_conv('Barley_dry_per_wet')
+    bt_df.drop(columns = ['unit_conv', ], axis=1, inplace=True)
         
     # calculating yield per acre
     if spatial_res == 'National':        
