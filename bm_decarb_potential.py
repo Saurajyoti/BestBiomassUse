@@ -19,6 +19,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 path_data = 'C:\\Users\\skar\\Box\\saura_self\\Proj - Best use of biomass\\data'
+path_figs = 'C:\\Users\\skar\\Box\\saura_self\\Proj - Best use of biomass\\figs'
 fname_bt = 'Billion Ton Results_Best_Use.csv'
 
 d = pd.read_csv(path_data + '\\' + fname_bt)
@@ -40,7 +41,7 @@ mc_frac_bio_ghg_reduce = np.random.triangular(0.5, 0.7, 0.9, nsims) # Expected p
 mc_samples = mc_frac_available * mc_avg_conv_yield * mc_avg_fossil_CI * mc_frac_bio_ghg_reduce
 
 # biomass prices to consider
-biomass_price = [40, 60, 100] # the biomass price ranges to filter
+biomass_price = [30,  40,  50,  60,  70,  80,  90, 100] # the biomass price to filter
 
 # energy feedstocks to consider
 feedstocks = [
@@ -95,7 +96,8 @@ feedstocks = [
 
 d.query('`Biomass Price` in @biomass_price & Feedstock in @feedstocks', inplace = True)
 
-d1 = d.groupby(['Year', 'Biomass Price'])['Production'].sum().reset_index().drop(columns = ['Biomass Price'], axis=1)
+#d1 = d.groupby(['Year', 'Biomass Price'])['Production'].sum().reset_index().drop(columns = ['Biomass Price'], axis=1)
+d1 = d.groupby(['Year', 'Biomass Price'])['Production'].sum().reset_index()
 
 mc_samples = np.repeat(mc_samples, d1.shape[0])
 
@@ -105,14 +107,15 @@ d1['sim_gCO2e'] = d1['Production'] * mc_samples * 907.1847 * 1e-12 # MMT CO2e
 
 # plotting
 
-#d1['Year'] = d1['Year'].astype('category')
+d1['Biomass Price'] = d1['Biomass Price'].astype('category')
 
 sns.set_theme(style = 'darkgrid')
 
 plt.figure(figsize = (10,10), )
 
 g = sns.lineplot(x = 'Year', y = 'sim_gCO2e',
+                 hue = 'Biomass Price',
              data = d1)
 g.set(xlabel = 'Year', ylabel = 'MMT CO2e emission reduction')
 g.set(xticks = range(d1['Year'].min(), d1['Year'].max()+2, 2))
-g.figure.savefig('Expected decarbonization by biomass.jpg', dpi = 400)
+g.figure.savefig(path_figs + '\\' + 'Expected decarbonization by biomass.jpg', dpi = 400)
