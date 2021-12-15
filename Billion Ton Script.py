@@ -168,6 +168,12 @@ def bt_scenario(ag_case,
     else:
         waste = pd.read_csv(filepath +'\\billionton_county_wastes.csv')
     bt_df = bt_df.append([agri, forestry, waste])
+    
+    # free up some memory
+    del agri
+    del forestry
+    del waste
+    
     bt_df = bt_df[bt_df['Year'].isin(range(start_year, end_year + 1))]
     if feedstock is not None:
         bt_df = bt_df[bt_df['Feedstock'].isin(feedstock)]
@@ -182,6 +188,58 @@ def bt_scenario(ag_case,
             bt_df = bt_df[bt_df['Biomass Price'] >= biomass_price]
         elif price_logic == 'equal to':
             bt_df = bt_df[bt_df['Biomass Price'] == biomass_price]
+    
+    # calculating incremental production, incremental cost, total cost, cummulative cost and average price at county level
+    
+    # create columns to compute
+    bt_df[['min_biomass_price', 'inc_prod', 'inc_cost', 'total_cost', 'cuml_cost', 'avg_price']] = -1
+    
+    # group by: 'Year', 'State', 'County', 'fips', 'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 'Feedstock'
+    bt_df['min_biomass_price'] = bt_df.groupby(['Year', 'State', 'County', 'fips', 
+                                                 'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 
+                                                 'Feedstock'])['Biomass Price'].transform('min')
+    
+    
+    # making sure data is sorted by group by variables and reset row indices
+    bt_df = bt_df.sort_values(['Year', 'State', 'County', 'fips', 
+                               'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 
+                               'Feedstock', 'Biomass Price']).reset_index()
+    
+    prod_shift = bt_df['Production'].shift(1).fillna(0)
+    biomass_price_shift = bt_df['Biomass Price'].shift(1).fillna(0)
+    
+    conditions = [
+        bt_df['Biomass Price'].values == bt_df['min_biomass_price'].values,
+        True
+        ]
+    choices = [
+        bt_df['Production'],
+        bt_df['Production'] - prod_shift
+        ]
+    bt_df['inc_prod'] = np.select(conditions, choices, default = 'NA').astype('float')
+    
+    conditions = [
+        bt_df['Biomass Price'].values == bt_df['min_biomass_price'].values,
+        True
+        ]
+    choices = [
+        bt_df['Biomass Price'],
+        (bt_df['Biomass Price'] + biomass_price_shift) / 2
+        ]
+    bt_df['inc_cost'] = np.select(conditions, choices, default = 'NA').astype('float')
+    
+    bt_df['total_cost'] = bt_df['inc_prod'].multiply(bt_df['inc_cost'], fill_value=0)
+    
+    bt_df['cuml_cost'] = bt_df.groupby(['Year', 'State', 'County', 'fips', 
+                                                 'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 
+                                                 'Feedstock'])['total_cost'].transform('cumsum')
+    
+    bt_df['avg_price'] = bt_df['cuml_cost'] / bt_df['Production']
+    
+    #tmp = bt_df.groupby(['Year', 'State', 'County', 'fips', 'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 'Feedstock'])    
+           
+    #tmp3 = bt_df.query("State == 'Alabama' & fips == 1001 & Year == 2020 & `Crop Form` == 'Herbaceous' & \
+    #            `Crop Category` == 'Agriculture' & `Crop Type` == 'Energy' & Feedstock == 'Miscanthus' ")
     
     # aggregrating to higher spatial level
     if spatial_res == 'National':

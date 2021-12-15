@@ -31,7 +31,7 @@ d.columns
 # Monte Carlo sims for variables
 # defining left, mod, right for triangular distribution
 
-nsims = 1000 # number of samples to be collected
+nsims = 10000 # number of samples to be collected
 
 mc_frac_available = np.random.triangular(0.50, 0.75, 0.90, nsims)
 mc_avg_conv_yield = np.random.triangular(2.58, 10.15, 25.00, nsims) # From Misclaneous cals.py -> calculate quantiles of biomass conversion efficiencies
@@ -41,7 +41,7 @@ mc_frac_bio_ghg_reduce = np.random.triangular(0.5, 0.7, 0.9, nsims) # Expected p
 mc_samples = mc_frac_available * mc_avg_conv_yield * mc_avg_fossil_CI * mc_frac_bio_ghg_reduce
 
 # biomass prices to consider
-biomass_price = [30,  40,  50,  60,  70,  80,  90, 100] # the biomass price to filter
+biomass_price = [30,  40,  50,  60,  70,  80,  90, 100] # the biomass prices to consider
 
 # energy feedstocks to consider
 feedstocks = [
@@ -96,7 +96,6 @@ feedstocks = [
 
 d.query('`Biomass Price` in @biomass_price & Feedstock in @feedstocks', inplace = True)
 
-#d1 = d.groupby(['Year', 'Biomass Price'])['Production'].sum().reset_index().drop(columns = ['Biomass Price'], axis=1)
 d1 = d.groupby(['Year', 'Biomass Price'])['Production'].sum().reset_index()
 
 mc_samples = np.repeat(mc_samples, d1.shape[0])
