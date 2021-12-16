@@ -177,7 +177,7 @@ def bt_scenario(ag_case,
     bt_df = bt_df[bt_df['Year'].isin(range(start_year, end_year + 1))]
     if feedstock is not None:
         bt_df = bt_df[bt_df['Feedstock'].isin(feedstock)]
-    if biomass_price is not None:
+    elif biomass_price is not None:
         if price_logic == 'less than':
             bt_df = bt_df[bt_df['Biomass Price'] < biomass_price]
         elif price_logic == 'less than or equal to':
@@ -188,22 +188,40 @@ def bt_scenario(ag_case,
             bt_df = bt_df[bt_df['Biomass Price'] >= biomass_price]
         elif price_logic == 'equal to':
             bt_df = bt_df[bt_df['Biomass Price'] == biomass_price]
+       
+    # aggregrating to the required spatial level
+   
+    if spatial_res == 'County' or spatial_res == None:        
+        grp_cols = ['Year', 'County', 'fips', 'State', 'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 
+                    'Feedstock', 'Biomass Price', 'Production', 'Production Unit',
+                    'Harvested Acres', 'Land Area']
+    elif spatial_res == 'State':
+        grp_cols = ['Year', 'State', 'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 
+                    'Feedstock', 'Biomass Price', 'Production', 'Production Unit',
+                    'Harvested Acres', 'Land Area']
+    elif spatial_res == 'National':
+        grp_cols = ['Year', 'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 
+                    'Feedstock', 'Biomass Price', 'Production', 'Production Unit',
+                    'Harvested Acres', 'Land Area']
+    
+    # aggregrate only if a spatial level is mentioned
+    if spatial_res != None:
+        bt_df = bt_df.groupby(grp_cols, dropna = False, as_index = False)[['Production','Harvested Acres','Land Area']].sum().reset_index()
+    else:
+        bt_df = bt_df[grp_cols]
+         
+    # making sure data is sorted by group by variables and reset row indices
+    bt_df = bt_df.sort_values(grp_cols).reset_index()
+     
     
     # calculating incremental production, incremental cost, total cost, cummulative cost and average price at county level
     
     # create columns to compute
     bt_df[['min_biomass_price', 'inc_prod', 'inc_cost', 'total_cost', 'cuml_cost', 'avg_price']] = -1
-    
-    # group by: 'Year', 'State', 'County', 'fips', 'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 'Feedstock'
-    bt_df['min_biomass_price'] = bt_df.groupby(['Year', 'State', 'County', 'fips', 
-                                                 'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 
-                                                 'Feedstock'])['Biomass Price'].transform('min')
-    
-    
-    # making sure data is sorted by group by variables and reset row indices
-    bt_df = bt_df.sort_values(['Year', 'State', 'County', 'fips', 
-                               'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 
-                               'Feedstock', 'Biomass Price']).reset_index()
+       
+    bt_df['min_biomass_price'] = bt_df.groupby(
+        [i for i in grp_cols if i not in ['Production', 'Production Unit', 'Harvested Acres','Land Area', 'Biomass Price']])\
+        ['Biomass Price'].transform('min')
     
     prod_shift = bt_df['Production'].shift(1).fillna(0)
     biomass_price_shift = bt_df['Biomass Price'].shift(1).fillna(0)
@@ -230,36 +248,20 @@ def bt_scenario(ag_case,
     
     bt_df['total_cost'] = bt_df['inc_prod'].multiply(bt_df['inc_cost'], fill_value=0)
     
-    bt_df['cuml_cost'] = bt_df.groupby(['Year', 'State', 'County', 'fips', 
-                                                 'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 
-                                                 'Feedstock'])['total_cost'].transform('cumsum')
+    bt_df['cuml_cost'] = bt_df.groupby(
+        [i for i in grp_cols if i not in ['Production', 'Production Unit', 'Harvested Acres','Land Area', 'Biomass Price']])\
+        ['total_cost'].transform('cumsum')
     
     bt_df['avg_price'] = bt_df['cuml_cost'] / bt_df['Production']
     
-    #tmp = bt_df.groupby(['Year', 'State', 'County', 'fips', 'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 'Feedstock'])    
-           
+    # calculating yield
+    bt_df['Yield Unit'] = bt_df['Production Unit'] + '/ac'    
+    bt_df['Yield'] = bt_df['Production'] / bt_df['Harvested Acres']
+                  
     # Testing
-    tmp3 = bt_df.query("State == 'Alabama' & fips == 1011 & Year == 2025 & `Crop Form` == 'Herbaceous' & \
-                `Crop Category` == 'Agriculture' & `Crop Type` == 'Energy' & Feedstock == 'Miscanthus' ")
-    
-    # aggregrating to higher spatial level
-    if spatial_res == 'National':
-        var_list = bt_df.columns.tolist()
-        remove_list = ['County', 'State', 'fips', 'Yield', 'Yield Unit', 'Production', 'Harvested Acres', 'Land Area','Diameter Class', 'Operation Type',
-       'Owner', 'supply Class', 'Supply Target']
-        agg_list = [i for i in var_list if i not in remove_list]
-        bt_df = bt_df.groupby(agg_list, dropna = False, as_index = False)[['Production','Harvested Acres','Land Area']].sum()
-        bt_df['Yield Unit'] = bt_df['Production Unit'] + '/ac'
-        bt_df['Yield'] = bt_df['Production'] / bt_df['Harvested Acres']
-    elif spatial_res == 'State':
-        var_list = bt_df.columns.tolist()
-        remove_list = ['County', 'Yield', 'Yield Unit', 'Production', 'Harvested Acres', 'Land Area','Diameter Class', 'Operation Type',
-       'Owner', 'supply Class', 'Supply Target', 'fips']
-        agg_list = [i for i in var_list if i not in remove_list]
-        bt_df = bt_df.groupby(agg_list, dropna = False, as_index = False)[['Production','Harvested Acres','Land Area']].sum()
-        bt_df['Yield Unit'] = bt_df['Production Unit'] + '/ac'
-        bt_df['Yield'] = bt_df['Production'] / bt_df['Harvested Acres']
-    
+    #tmp3 = bt_df.query("State == 'Alabama' & fips == 1011 & Year == 2025 & `Crop Form` == 'Herbaceous' & \
+    #            `Crop Category` == 'Agriculture' & `Crop Type` == 'Energy' & Feedstock == 'Miscanthus' ")
+        
     # unit conversions
     to_unit = 'lb'
     bt_df['unit_conv'] = bt_df['Feedstock'] + '_' + to_unit + '_per_' + bt_df['Production Unit']
@@ -309,6 +311,12 @@ def bt_scenario(ag_case,
 #%%    
  
 # Run the function (bt_scenario) based on user-defined setting, save the results as a variable 'bt_case'
+
+spatial_res = None
+#spatial_res = 'County'
+#spatial_res = 'State'
+#spatial_res = 'National'
+
 bt_case = bt_scenario(ag_case = 'basecase', 
                       forestry_case = 'basecase', 
                       waste_case = 'basecase',
@@ -317,10 +325,12 @@ bt_case = bt_scenario(ag_case = 'basecase',
                       feedstock = None,
                       biomass_price = None,
                       price_logic = 'less than or equal to',
-                      spatial_res = 'National')
+                      spatial_res = spatial_res)
 
 # Save the results as a CSV file 
 bt_case = bt_case.sort_values(by=['Feedstock','Biomass Price'], ascending = True)
-bt_case.to_csv(results_filepath + '\Billion Ton Results_Best_Use.csv')
+if spatial_res == None:
+    spatial_res = 'None'
+bt_case.to_csv(results_filepath + '\\' + 'Billion Ton Results_Best_Use' + spatial_res + '.csv')
 
 
