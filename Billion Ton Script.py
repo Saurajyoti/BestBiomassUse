@@ -189,7 +189,42 @@ def bt_scenario(ag_case,
             bt_df = bt_df[bt_df['Biomass Price'] >= biomass_price]
         elif price_logic == 'equal to':
             bt_df = bt_df[bt_df['Biomass Price'] == biomass_price]
-       
+    
+    # unit conversions
+    to_unit = 'lb'
+    bt_df['unit_conv'] = bt_df['Feedstock'] + '_' + to_unit + '_per_' + bt_df['Production Unit']
+    bt_df['Production'] = np.where(
+        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
+        bt_df['Production'] * bt_df['unit_conv'].map(ut.unit1_per_unit2),
+        bt_df['Production'])
+    bt_df['Production Unit'] = np.where(
+        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
+        to_unit,
+        bt_df['Production Unit'])
+    
+    to_unit = 'U.S.ton'
+    bt_df['unit_conv'] = to_unit + '_per_' + bt_df['Production Unit']
+    bt_df['Production'] = np.where(
+        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
+        bt_df['Production'] * bt_df['unit_conv'].map(ut.unit1_per_unit2),
+        bt_df['Production'])
+    bt_df['Production Unit'] = np.where(
+        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
+        to_unit,
+        bt_df['Production Unit'])
+    
+    to_unit = 'dry'
+    bt_df['unit_conv'] = bt_df['Feedstock'] + '_' + to_unit + '_per_' + 'wet'
+    bt_df['Production'] = np.where(
+        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
+        bt_df['Production'] * bt_df['unit_conv'].map(ut.unit1_per_unit2),
+        bt_df['Production'])
+    bt_df['Production Unit'] = np.where(
+        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
+        'dt',
+        bt_df['Production Unit'])
+    bt_df.drop(columns = ['unit_conv', ], axis=1, inplace=True)
+
     # aggregrating to the required spatial level
    
     if spatial_res == 'County' or spatial_res == None:        
@@ -204,6 +239,14 @@ def bt_scenario(ag_case,
         grp_cols = ['Year', 'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 
                     'Feedstock', 'Biomass Price', 'Production', 'Production Unit',
                     'Harvested Acres', 'Land Area']
+    elif spatial_res == 'aggregrate_biomass':
+        grp_cols = ['Year', 'Biomass Price', 'Production', 'Production Unit',
+                    'Harvested Acres', 'Land Area']
+    
+    # filling in grouping variables when blank   
+    bt_df.loc[bt_df['Land Source'].isnull(), 'Land Source'] = 'Other'
+    bt_df.loc[bt_df['Crop Form'].isnull(), 'Crop Form'] = 'Other'
+
     
     # aggregrate only if a spatial level is mentioned
     if spatial_res != None:
@@ -261,51 +304,7 @@ def bt_scenario(ag_case,
     # Testing
     #tmp3 = bt_df.query("State == 'Alabama' & fips == 1011 & Year == 2025 & `Crop Form` == 'Herbaceous' & \
     #            `Crop Category` == 'Agriculture' & `Crop Type` == 'Energy' & Feedstock == 'Miscanthus' ")
-        
-    # unit conversions
-    to_unit = 'lb'
-    bt_df['unit_conv'] = bt_df['Feedstock'] + '_' + to_unit + '_per_' + bt_df['Production Unit']
-    bt_df['Production'] = np.where(
-        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
-        bt_df['Production'] * bt_df['unit_conv'].map(ut.unit1_per_unit2),
-        bt_df['Production'])
-    bt_df['Production Unit'] = np.where(
-        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
-        to_unit,
-        bt_df['Production Unit'])
     
-    to_unit = 'U.S.ton'
-    bt_df['unit_conv'] = to_unit + '_per_' + bt_df['Production Unit']
-    bt_df['Production'] = np.where(
-        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
-        bt_df['Production'] * bt_df['unit_conv'].map(ut.unit1_per_unit2),
-        bt_df['Production'])
-    bt_df['Production Unit'] = np.where(
-        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
-        to_unit,
-        bt_df['Production Unit'])
-    
-    to_unit = 'dry'
-    bt_df['unit_conv'] = bt_df['Feedstock'] + '_' + to_unit + '_per_' + 'wet'
-    bt_df['Production'] = np.where(
-        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
-        bt_df['Production'] * bt_df['unit_conv'].map(ut.unit1_per_unit2),
-        bt_df['Production'])
-    bt_df['Production Unit'] = np.where(
-        [x in ut.unit1_per_unit2 for x in bt_df['unit_conv'] ],
-        'dt',
-        bt_df['Production Unit'])
-        
-    bt_df.drop(columns = ['unit_conv', ], axis=1, inplace=True)
-        
-    # calculating yield per acre
-    if spatial_res == 'National':        
-        bt_df['Yield Unit'] = bt_df['Production Unit'] + '/ac'
-        bt_df['Yield'] = bt_df['Production'] / bt_df['Harvested Acres']
-    elif spatial_res == 'State':
-        bt_df['Yield Unit'] = bt_df['Production Unit'] + '/ac'
-        bt_df['Yield'] = bt_df['Production'] / bt_df['Harvested Acres']
-        
     return bt_df
  
 #%%    
@@ -316,16 +315,68 @@ def bt_scenario(ag_case,
 #spatial_res = ['County']
 #spatial_res = ['State']
 #spatial_res = ['National']
-spatial_res = [None, 'County', 'State', 'National']
+spatial_res = [None, 'County', 'State', 'National', 'aggregrate_biomass']
+
+# feedstock = None
+feedstock = [
+'Barley straw',
+'Biomass sorghum',
+'CD waste',
+'Citrus residues',
+'Corn stover',
+'Cotton gin trash',
+'Cotton residue',
+'Energy cane',
+'Eucalyptus',
+'Food waste',
+'Hardwood, lowland, residue',
+'Hardwood, lowland, tree',
+'Hardwood, upland, residue',
+'Hardwood, upland, tree',
+'Hogs, 1000+ head',
+'MSW wood',
+'Milk cows, 500+ head',
+'Miscanthus',
+'Mixedwood, residue',
+'Mixedwood, tree',
+'Noncitrus residues',
+'Oats straw',
+'Other',
+'Other forest residue',
+'Other forest thinnings',
+'Paper and paperboard',
+'Pine',
+'Plastics',
+'Poplar',
+'Primary mill residue',
+'Rice hulls',
+'Rice straw',
+'Rubber and leather',
+'Secondary mill residue',
+'Softwood, natural, residue',
+'Softwood, natural, tree',
+'Softwood, planted, residue',
+'Softwood, planted, tree',
+'Sorghum stubble',
+'Sugarcane bagasse',
+'Sugarcane trash',
+'Switchgrass',
+'Textiles',
+'Tree nut residues',
+'Wheat straw',
+'Willow',
+'Yard trimmings'
+]
 
 def call_func (spatial_res):
     
+    print('Working on spatial resolution: ' + spatial_res)
     bt_case = bt_scenario(ag_case = 'basecase', 
                           forestry_case = 'basecase', 
                           waste_case = 'basecase',
                           start_year = 2020,
                           end_year = 2050,
-                          feedstock = None,
+                          feedstock = feedstock,
                           biomass_price = None,
                           price_logic = 'less than or equal to',
                           spatial_res = spatial_res)
@@ -335,7 +386,7 @@ def call_func (spatial_res):
     if spatial_res == None:
         spatial_res = 'All'
         
-    bt_case.to_csv(results_filepath + '\\' + 'Billion Ton Results_Best_Use' + spatial_res + '.csv')
+    bt_case.to_csv(results_filepath + '\\' + 'Billion Ton Results_Best_Use_' + spatial_res + '.csv')
     
 
 startT = time.time()
