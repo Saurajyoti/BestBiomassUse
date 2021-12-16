@@ -11,6 +11,8 @@ Data Source: https://bioenergykdf.net/sites/default/files/BillionTonDownloads/bi
 import pandas as pd
 import numpy as np
 import os
+import pickle
+import time
 
 # Import user defined modules
 code_path = 'C:\\Users\\skar\\repos\\BestBiomassUse'
@@ -312,25 +314,35 @@ def bt_scenario(ag_case,
  
 # Run the function (bt_scenario) based on user-defined setting, save the results as a variable 'bt_case'
 
-spatial_res = None
-#spatial_res = 'County'
-#spatial_res = 'State'
-#spatial_res = 'National'
+#spatial_res = [None]
+#spatial_res = ['County']
+#spatial_res = ['State']
+#spatial_res = ['National']
+spatial_res = [None, 'County', 'State', 'National']
 
-bt_case = bt_scenario(ag_case = 'basecase', 
-                      forestry_case = 'basecase', 
-                      waste_case = 'basecase',
-                      start_year = 2020,
-                      end_year = 2050,
-                      feedstock = None,
-                      biomass_price = None,
-                      price_logic = 'less than or equal to',
-                      spatial_res = spatial_res)
+def call_func (spatial_res):
+    
+    bt_case = bt_scenario(ag_case = 'basecase', 
+                          forestry_case = 'basecase', 
+                          waste_case = 'basecase',
+                          start_year = 2020,
+                          end_year = 2050,
+                          feedstock = None,
+                          biomass_price = None,
+                          price_logic = 'less than or equal to',
+                          spatial_res = spatial_res)
 
-# Save the results as a CSV file 
-bt_case = bt_case.sort_values(by=['Feedstock','Biomass Price'], ascending = True)
-if spatial_res == None:
-    spatial_res = 'None'
-bt_case.to_csv(results_filepath + '\\' + 'Billion Ton Results_Best_Use' + spatial_res + '.csv')
+    # Save the results as a CSV file or a python object
+    
+    if spatial_res == None:
+        spatial_res = 'None'
+        
+    if spatial_res in [None, 'County', 'State']:
+        pickle.dump(bt_case, results_filepath + '\\' + 'Billion Ton Results_Best_Use' + spatial_res)
+    else:
+        bt_case.to_csv(results_filepath + '\\' + 'Billion Ton Results_Best_Use' + spatial_res + '.csv')
+    
 
-
+startT = time.time()
+[call_func(x) for x in spatial_res]
+print ('Execution duration in minutes: ' + str((time.time() - startT))/60)
