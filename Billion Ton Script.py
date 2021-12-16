@@ -175,6 +175,9 @@ def bt_scenario(ag_case,
     del forestry
     del waste
     
+    # Subset the data to exclude conventional crops as well as 'Idle' and 'Pasture available' categories
+    bt_df = bt_df[~(bt_df['Crop Type'] == 'Conventional') & ~(bt_df['Feedstock'] == 'Idle') & ~(bt_df['Feedstock'] == 'Pasture available')]
+    
     bt_df = bt_df[bt_df['Year'].isin(range(start_year, end_year + 1))]
     if feedstock is not None:
         bt_df = bt_df[bt_df['Feedstock'].isin(feedstock)]
@@ -317,60 +320,16 @@ def bt_scenario(ag_case,
 #spatial_res = ['National']
 spatial_res = [None, 'County', 'State', 'National', 'aggregrate_biomass']
 
-# feedstock = None
-feedstock = [
-'Barley straw',
-'Biomass sorghum',
-'CD waste',
-'Citrus residues',
-'Corn stover',
-'Cotton gin trash',
-'Cotton residue',
-'Energy cane',
-'Eucalyptus',
-'Food waste',
-'Hardwood, lowland, residue',
-'Hardwood, lowland, tree',
-'Hardwood, upland, residue',
-'Hardwood, upland, tree',
-'Hogs, 1000+ head',
-'MSW wood',
-'Milk cows, 500+ head',
-'Miscanthus',
-'Mixedwood, residue',
-'Mixedwood, tree',
-'Noncitrus residues',
-'Oats straw',
-'Other',
-'Other forest residue',
-'Other forest thinnings',
-'Paper and paperboard',
-'Pine',
-'Plastics',
-'Poplar',
-'Primary mill residue',
-'Rice hulls',
-'Rice straw',
-'Rubber and leather',
-'Secondary mill residue',
-'Softwood, natural, residue',
-'Softwood, natural, tree',
-'Softwood, planted, residue',
-'Softwood, planted, tree',
-'Sorghum stubble',
-'Sugarcane bagasse',
-'Sugarcane trash',
-'Switchgrass',
-'Textiles',
-'Tree nut residues',
-'Wheat straw',
-'Willow',
-'Yard trimmings'
-]
+feedstock = None
 
 def call_func (spatial_res):
     
-    print('Working on spatial resolution: ' + spatial_res)
+    if spatial_res == None:
+        spatial_res_str = 'All'
+    else:
+        spatial_res_str = spatial_res
+    
+    print('Working on spatial resolution: ' + spatial_res_str)
     bt_case = bt_scenario(ag_case = 'basecase', 
                           forestry_case = 'basecase', 
                           waste_case = 'basecase',
@@ -382,11 +341,7 @@ def call_func (spatial_res):
                           spatial_res = spatial_res)
 
     # Save the results as a CSV file or a python object
-    
-    if spatial_res == None:
-        spatial_res = 'All'
-        
-    bt_case.to_csv(results_filepath + '\\' + 'Billion Ton Results_Best_Use_' + spatial_res + '.csv')
+    bt_case.to_csv(results_filepath + '\\' + 'Billion Ton Results_Best_Use_' + spatial_res_str + '.csv')
     
 
 startT = time.time()
