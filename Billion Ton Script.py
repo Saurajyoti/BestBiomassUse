@@ -11,7 +11,6 @@ Data Source: https://bioenergykdf.net/sites/default/files/BillionTonDownloads/bi
 import pandas as pd
 import numpy as np
 import os
-import pickle
 import time
 
 # Import user defined modules
@@ -208,12 +207,11 @@ def bt_scenario(ag_case,
     
     # aggregrate only if a spatial level is mentioned
     if spatial_res != None:
-        bt_df = bt_df.groupby(grp_cols, dropna = False, as_index = False)[['Production','Harvested Acres','Land Area']].sum().reset_index()
+        bt_df = bt_df.groupby([i for i in grp_cols if i not in ['Production','Harvested Acres','Land Area']], dropna = False, as_index = False)\
+                               [['Production','Harvested Acres','Land Area']].sum().reset_index(drop=True)
     else:
         bt_df = bt_df[grp_cols]
-         
-    # making sure data is sorted by group by variables and reset row indices
-    bt_df = bt_df.sort_values(grp_cols).reset_index()
+        bt_df = bt_df.sort_values(grp_cols).reset_index(drop=True)
      
     
     # calculating incremental production, incremental cost, total cost, cummulative cost and average price at county level
@@ -335,14 +333,11 @@ def call_func (spatial_res):
     # Save the results as a CSV file or a python object
     
     if spatial_res == None:
-        spatial_res = 'None'
+        spatial_res = 'All'
         
-    if spatial_res in ['None', 'County', 'State']:
-        pickle.dump(bt_case, results_filepath + '\\' + 'Billion Ton Results_Best_Use' + spatial_res)
-    else:
-        bt_case.to_csv(results_filepath + '\\' + 'Billion Ton Results_Best_Use' + spatial_res + '.csv')
+    bt_case.to_csv(results_filepath + '\\' + 'Billion Ton Results_Best_Use' + spatial_res + '.csv')
     
 
 startT = time.time()
 [call_func(x) for x in spatial_res]
-print ('Execution duration in minutes: ' + str((time.time() - startT))/60)
+print ('Execution duration in minutes: ' + str((time.time() - startT)/60))
