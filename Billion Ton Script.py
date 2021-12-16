@@ -337,7 +337,7 @@ def call_func (spatial_res):
     if spatial_res == None:
         spatial_res = 'None'
         
-    if spatial_res in [None, 'County', 'State']:
+    if spatial_res in ['None', 'County', 'State']:
         pickle.dump(bt_case, results_filepath + '\\' + 'Billion Ton Results_Best_Use' + spatial_res)
     else:
         bt_case.to_csv(results_filepath + '\\' + 'Billion Ton Results_Best_Use' + spatial_res + '.csv')
