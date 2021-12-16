@@ -232,13 +232,14 @@ def bt_scenario(ag_case,
     
     bt_df['cuml_cost'] = bt_df.groupby(['Year', 'State', 'County', 'fips', 
                                                  'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 
-                                                 'Feedstock', 'Biomass Price'])['total_cost'].transform('cumsum')
+                                                 'Feedstock'])['total_cost'].transform('cumsum')
     
     bt_df['avg_price'] = bt_df['cuml_cost'] / bt_df['Production']
     
     #tmp = bt_df.groupby(['Year', 'State', 'County', 'fips', 'Land Source', 'Crop Form', 'Crop Category', 'Crop Type', 'Feedstock'])    
            
-    tmp3 = bt_df.query("State == 'Alabama' & fips == 1001 & Year == 2020 & `Crop Form` == 'Herbaceous' & \
+    # Testing
+    tmp3 = bt_df.query("State == 'Alabama' & fips == 1011 & Year == 2025 & `Crop Form` == 'Herbaceous' & \
                 `Crop Category` == 'Agriculture' & `Crop Type` == 'Energy' & Feedstock == 'Miscanthus' ")
     
     # aggregrating to higher spatial level
