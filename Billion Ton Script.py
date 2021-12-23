@@ -318,32 +318,39 @@ def bt_scenario(ag_case,
 #spatial_res = ['County']
 #spatial_res = ['State']
 #spatial_res = ['National']
-spatial_res = [None, 'County', 'State', 'National', 'aggregrate_biomass']
+spatial_res = ['All', 'County', 'State', 'National', 'aggregrate_biomass']
 
-feedstock = None
+ag_case = ['basecase', '2pct', '3pct', '4pct']
 
-def call_func (spatial_res):
+forestry_case = ['basecase', 'highhousinghighenergy', 'highhousingmediumenergy', 'highhousinglowenergy', 'mediumhousinghighenergy', 'mediumhousingmediumenergy']
+
+feedstock = None # no filtering, all feedstocks pulled
+
+def call_func (spatial_res, ag_case, forestry_case):
     
-    if spatial_res == None:
-        spatial_res_str = 'All'
+    if spatial_res == 'All':
+        spatial_res_param = None
     else:
-        spatial_res_str = spatial_res
+        spatial_res_param = spatial_res
     
-    print('Working on spatial resolution: ' + spatial_res_str)
-    bt_case = bt_scenario(ag_case = 'basecase', 
-                          forestry_case = 'basecase', 
+    print('\n**Working on spatial resolution: ' + spatial_res +
+          '\n  Agriculture case: ' + ag_case + '\n  Forestry case: ' + forestry_case + '\n')
+    bt_case = bt_scenario(ag_case = ag_case, 
+                          forestry_case = forestry_case, 
                           waste_case = 'basecase',
                           start_year = 2020,
-                          end_year = 2050,
+                          end_year = 2040,
                           feedstock = feedstock,
                           biomass_price = None,
                           price_logic = 'less than or equal to',
-                          spatial_res = spatial_res)
+                          spatial_res = spatial_res_param)
 
     # Save the results as a CSV file or a python object
-    bt_case.to_csv(results_filepath + '\\' + 'Billion Ton Results_Best_Use_' + spatial_res_str + '.csv')
+    bt_case.to_csv(results_filepath + '\\' + 'BT16_agcase_' + ag_case +  '_forestcase_' + forestry_case + '_spatialres_' + spatial_res + '.csv')
     
 
 startT = time.time()
-[call_func(x) for x in spatial_res]
+
+[[[call_func(res, ag, fr) for res in spatial_res] for ag in ag_case] for fr in forestry_case]
+
 print ('Execution duration in minutes: ' + str((time.time() - startT)/60))
