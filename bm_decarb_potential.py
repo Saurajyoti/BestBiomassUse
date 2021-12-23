@@ -43,58 +43,6 @@ mc_samples = mc_frac_available * mc_avg_conv_yield * mc_avg_fossil_CI * mc_frac_
 # biomass prices to consider
 biomass_price = [30,  40,  50,  60,  70,  80,  90, 100] # the biomass prices to consider
 
-"""
-# energy feedstocks to consider
-feedstocks = [
-'Barley straw',
-'Biomass sorghum',
-'CD waste',
-'Citrus residues',
-'Corn stover',
-'Cotton gin trash',
-'Cotton residue',
-'Energy cane',
-'Eucalyptus',
-'Food waste',
-'Hardwood, lowland, residue',
-'Hardwood, lowland, tree',
-'Hardwood, upland, residue',
-'Hardwood, upland, tree',
-'Hogs, 1000+ head',
-'MSW wood',
-'Milk cows, 500+ head',
-'Miscanthus',
-'Mixedwood, residue',
-'Mixedwood, tree',
-'Noncitrus residues',
-'Oats straw',
-'Other',
-'Other forest residue',
-'Other forest thinnings',
-'Paper and paperboard',
-'Pine',
-'Plastics',
-'Poplar',
-'Primary mill residue',
-'Rice hulls',
-'Rice straw',
-'Rubber and leather',
-'Secondary mill residue',
-'Softwood, natural, residue',
-'Softwood, natural, tree',
-'Softwood, planted, residue',
-'Softwood, planted, tree',
-'Sorghum stubble',
-'Sugarcane bagasse',
-'Sugarcane trash',
-'Switchgrass',
-'Textiles',
-'Tree nut residues',
-'Wheat straw',
-'Willow',
-'Yard trimmings'
-]
-"""
 
 # Current data is already subsetted so no additional filtering occurs
 # Subset the data to exclude conventional crops as well as 'Idle' and 'Pasture available' categories
@@ -125,3 +73,23 @@ g = sns.lineplot(x = 'Year', y = 'sim_gCO2e',
 g.set(xlabel = 'Year', ylabel = 'MMT CO2e emission reduction')
 g.set(xticks = range(d1['Year'].min(), d1['Year'].max()+2, 2))
 g.figure.savefig(path_figs + '\\' + 'Expected decarbonization by biomass.jpg', dpi = 400)
+
+# calculating quantiles from the data set and saving as a CSV file
+class Quantile:
+    # Writing class and setting up as functional calls ref: https://skeptric.com/pandas-aggregate-quantile/
+    def __init__(self, q):
+        self.q = q
+        
+    def __call__(self, x):
+        return np.round(np.quantile(x.dropna(), self.q), 2)
+    
+year_filter = [2020, 2025, 2030, 2035, 2040]
+d2 = d1.groupby(['Year', 'Biomass Price'])\
+         .agg(sim_gCO2e_p10 = ('sim_gCO2e', Quantile(0.10)),
+              sim_gCO2e_p90 = ('sim_gCO2e', Quantile(0.90)),
+              sim_gCO2e_avg = ('sim_gCO2e', np.mean))
+         
+d2.query('Year in @year_filter', inplace = True)
+
+d2.to_csv(path_data + '\\' + 'Expected decarbonization by biomass_quantiles.csv')    
+#temp = d1[(d1['Year'] == 2021) & (d1['Biomass Price'].isin([30]))]['sim_gCO2e']
