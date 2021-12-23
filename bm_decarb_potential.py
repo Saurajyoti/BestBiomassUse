@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 
 path_data = 'C:\\Users\\skar\\Box\\saura_self\\Proj - Best use of biomass\\data'
 path_figs = 'C:\\Users\\skar\\Box\\saura_self\\Proj - Best use of biomass\\figs'
-fname_bt = 'Billion Ton Results_Best_Use.csv'
+fname_bt = 'BT16_agcase_basecase_forestcase_basecase_spatialres_All.csv'
 
 d = pd.read_csv(path_data + '\\' + fname_bt)
 d.drop(columns = ['Unnamed: 0', ], axis=1, inplace=True)
@@ -43,6 +43,7 @@ mc_samples = mc_frac_available * mc_avg_conv_yield * mc_avg_fossil_CI * mc_frac_
 # biomass prices to consider
 biomass_price = [30,  40,  50,  60,  70,  80,  90, 100] # the biomass prices to consider
 
+"""
 # energy feedstocks to consider
 feedstocks = [
 'Barley straw',
@@ -93,8 +94,14 @@ feedstocks = [
 'Willow',
 'Yard trimmings'
 ]
+"""
 
-d.query('`Biomass Price` in @biomass_price & Feedstock in @feedstocks', inplace = True)
+# Current data is already subsetted so no additional filtering occurs
+# Subset the data to exclude conventional crops as well as 'Idle' and 'Pasture available' categories
+d = d[~(d['Crop Type'] == 'Conventional') & ~(d['Feedstock'] == 'Idle') & ~(d['Feedstock'] == 'Pasture available')]
+
+# subset Biomass price to consider
+d.query('`Biomass Price` in @biomass_price', inplace = True)
 
 d1 = d.groupby(['Year', 'Biomass Price'])['Production'].sum().reset_index()
 
@@ -108,7 +115,7 @@ d1['sim_gCO2e'] = d1['Production'] * mc_samples * 907.1847 * 1e-12 # MMT CO2e
 
 d1['Biomass Price'] = d1['Biomass Price'].astype('category')
 
-sns.set_theme(style = 'darkgrid')
+sns.set_theme(style = 'white')
 
 plt.figure(figsize = (10,10), )
 
