@@ -40,7 +40,10 @@ unit1_per_unit2 = {
  
  # physical only units
  
- 'U.S.ton_per_lb' : 0.0005
+ 'U.S.ton_per_lb' : 0.0005,
+ 'MMBtu_per_kWh' : 0.003412,
+ 'MMBtu_per_BkWh' : 3412
+ 
  } 
 
 def unit_conv (conv):
