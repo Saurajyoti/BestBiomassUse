@@ -132,6 +132,7 @@ class model_units:
     # The caller function to convert unit for a data frame. The column names should be 'Unit' and 'Value'
     def unit_convert_df (self, df, 
                          Unit = 'Unit', Value = 'Value', 
+                         if_unit_numerator = 'True', # True if unit to be changed is in numerator, False if unit to be changed is in denominator
                          if_given_unit = False, given_unit = '',  # convert to lower case
                          if_given_category = False, unit_category = 'None'):
         
@@ -153,10 +154,16 @@ class model_units:
             print(missing_keys)
             raise KeyError ('Please update the unit_conversions table before model execution .. ')
         
-        df[Value] = np.where(
-             [x in self.dict_units for x in df['unit_conv'] ],
-             df[Value] * df['unit_conv'].map(self.dict_units),
-             df[Value] )
+        if if_unit_numerator:        # if numerator, directly multiply numerator, otherwise divide
+            df[Value] = np.where(
+                 [x in self.dict_units for x in df['unit_conv'] ],
+                 df[Value] * df['unit_conv'].map(self.dict_units),
+                 df[Value] )
+        else:
+            df[Value] = np.where(
+                 [x in self.dict_units for x in df['unit_conv'] ],
+                 df[Value] / df['unit_conv'].map(self.dict_units),
+                 df[Value] )
         
         df.drop(['unit_conv', Unit], axis = 1, inplace = True)
         df.rename(columns = {'unit_to' : Unit}, inplace = True)
@@ -171,9 +178,12 @@ class model_units:
         # Gasoline Gallon Equivalent (GGE) is the amount of the fuel that is equivalent to gasoline by energy content
         
         # conventional Gasoline LHV and unit       
-        gas_lhv = self.hv_EIA.loc[self.hv_EIA['Energy carrier'] == 'Gasoline', ['LHV', 'Unit']]
+        gas_lhv = self.hv_EIA.loc[(self.hv_EIA['Energy carrier'] == 'Gasoline') & 
+                                  (self.hv_EIA['Energy carrier type'] == 'Petroleum Gasoline'), ['LHV', 'Unit']]
         self.hv_EIA = pd.merge(self.hv_EIA, gas_lhv, how='left', on='Unit').reset_index(drop=True)
         self.hv_EIA['GGE'] = 1 / self.hv_EIA['LHV_x'] * self.hv_EIA['LHV_y']
+        self.hv_EIA.rename(columns={'LHV_x' : 'LHV'}, inplace=True)
+        self.hv_EIA.drop(columns=['LHV_y'], inplace=True)
         
         
     
