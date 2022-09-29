@@ -236,14 +236,14 @@ MAC_df.rename(columns={'Unit Cost_replaced fuel (Numerator)' : 'Unit (Numerator)
 
 MAC_df.drop(['Energy carrier', 'Unit'], axis=1, inplace=True)
 
+# Drop off data for which GREET pathways are not mapped until now
+print("Warning: The following pathways are currently dropped as their mappings to GREET CIs are not available as input ..")
+MAC_df.loc[MAC_df['GREET Pathway for replaced fuel'].isna(), ['Case/Scenario', 'Biofuel Flow Name', 'Feedstock', 'Replaced Fuel']].drop_duplicates()
+MAC_df = MAC_df.loc[~ MAC_df['GREET Pathway for replaced fuel'].isna(), :].copy()
+
+
 #%%
 # Step: Unit check and conversions
-
-# Map Replaced fuel to Energy carrier, Energy carrier type for GGE conversion
-MAC_df = pd.merge(MAC_df, corr_GGE_EIA, how='left', left_on=['Replaced Fuel'], right_on=['B2B fuel name']).reset_index(drop=True)
-
-# Convert fuel cost USD per gallon to $ per GGE
-# This conversion is done especially if certain calculations in future require in units of GGE
 
 # barrel to gallon
 MAC_df[['Unit (Denominator)_Cost replaced fuel', 'Cost_replaced fuel']] = \
@@ -254,6 +254,12 @@ MAC_df[['Unit (Denominator)_Cost replaced fuel', 'Cost_replaced fuel']] = \
         if_unit_numerator = False,
         if_given_unit = True, 
         given_unit = 'gal').copy()
+    
+# Convert fuel cost USD per gallon to $ per GGE
+# This conversion is done especially if certain calculations in future require in units of GGE
+
+# Map Replaced fuel to Energy carrier, Energy carrier type for GGE conversion
+MAC_df = pd.merge(MAC_df, corr_GGE_EIA, how='left', left_on=['Replaced Fuel'], right_on=['B2B fuel name']).reset_index(drop=True)
 
 MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['Energy carrier', 'Energy carrier type', 'GGE']], 
                   how='left', 
