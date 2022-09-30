@@ -30,6 +30,7 @@ sheet_TEA = 'Biofuel'
 
 f_out_itemized_mfsp = 'mfsp_itemized.csv'
 f_out_agg_mfsp = 'mfsp_agg.csv'
+f_out_MAC = 'mac.csv'
 
 f_EIA_price = 'EIA Dataset-energy_price-.csv'
 
@@ -228,7 +229,7 @@ MAC_df = pd.merge(MAC_df,
                   right_on=['Year', 'Energy carrier']).reset_index(drop=True)
 MAC_df.rename(columns={'Value' : 'Cost_replaced fuel',
                        'Cost basis' : 'Cost basis_replaced fuel'}, inplace=True)
-MAC_df[['Year', 'Unit Cost_replaced fuel (Numerator)']] = MAC_df['Unit'].str.split(' ', 1, expand = True)
+MAC_df[['Year_Cost_replaced fuel', 'Unit Cost_replaced fuel (Numerator)']] = MAC_df['Unit'].str.split(' ', 1, expand = True)
 MAC_df[['Unit Cost_replaced fuel (Numerator)', 
         'Unit Cost_replaced fuel (Denominator)']] = \
       MAC_df['Unit Cost_replaced fuel (Numerator)'].str.split('/', 1, expand = True)
@@ -304,6 +305,7 @@ MAC_df = pd.merge(MAC_df, tempdf, how='left',
 MAC_df['Cost_replaced fuel'] = MAC_df['Cost_replaced fuel']/MAC_df['LHV'] # unit: $/MMBTU
 MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
 
+
 # Unit check for Replacing Fuel
 
 # $/gal to $/GGE
@@ -315,24 +317,50 @@ MAC_df = pd.merge(MAC_df, corr_GGE_GREET_fuel_replacing, how='left',
 MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['GREET_Fuel', 'GREET_Fuel type', 'GGE']], 
                   how='left', 
                   on=['GREET_Fuel', 'GREET_Fuel type']).reset_index(drop=True)
-MAC_df.loc[MAC_df['MFSP_remaining fuel_Units (denominator)'] == 'gal', 'MFSP_replacing fuel'] = \
-    MAC_df.loc[MAC_df['MFSP_remaining fuel_Units (denominator)'] == 'gal', 'MSFP_replacing fuel'] / \
-    MAC_df.loc[MAC_df['MFSP_remaining fuel_Units (denominator)'] == 'gal', 'GGE']
-MAC_df.loc[MAC_df['MFSP_remaining fuel_Units (denominator)'] == 'gal', 'Unit (Denominator)_Cost replacing fuel'] = 'GGE'
+MAC_df.loc[MAC_df['MFSP_replacing fuel_Units (denominator)'] == 'gal', 'MFSP_replacing fuel'] = \
+    MAC_df.loc[MAC_df['MFSP_replacing fuel_Units (denominator)'] == 'gal', 'MFSP_replacing fuel'] / \
+    MAC_df.loc[MAC_df['MFSP_replacing fuel_Units (denominator)'] == 'gal', 'GGE']
+MAC_df.loc[MAC_df['MFSP_replacing fuel_Units (denominator)'] == 'gal', 'Unit (Denominator)_Cost replacing fuel'] = 'GGE'
 MAC_df.drop(columns=['GREET_Fuel', 'GREET_Fuel type', 'B2B fuel name', 'GGE'], inplace=True)
 
->>>>> Not all GGE values are available yet, need to check on this!!
-
-# GGE to MMBtu, assuming replacing fuel has same LHV as replaced fuel
+# Convert fuel cost from $ per GGE to $ per MMBtu
+# extract CI of gasoline
+tempdf = ob_units.hv_EIA.loc[(ob_units.hv_EIA['Energy carrier'] == 'Gasoline') &
+                             (ob_units.hv_EIA['Energy carrier type'] == 'Petroleum Gasoline'), ['LHV', 'Unit']]
+# convert unit
+tempdf[['unit_numerator', 'unit_denominator']] = tempdf['Unit'].str.split('/', 1, expand=True)
+tempdf.drop(columns=['Unit'], inplace=True)
+tempdf[['unit_numerator', 'LHV']] = \
+    ob_units.unit_convert_df (
+        tempdf[['unit_numerator', 'LHV']],
+        Unit='unit_numerator',
+        Value='LHV',
+        if_unit_numerator=True,
+        if_given_unit=True,
+        given_unit='mmbtu').copy()
+tempdf['unit_denominator'] = 'GGE'
+# merge with MAC df for unit conversion
+MAC_df = pd.merge(MAC_df, tempdf, how='left', 
+                  left_on='MFSP_replacing fuel_Units (denominator)', 
+                  right_on='unit_denominator').reset_index(drop=True)
+MAC_df['MFSP_replacing fuel'] = MAC_df['MFSP_replacing fuel']/MAC_df['LHV'] # unit: $/MMBTU
+MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
 
 
 #%%
 # Step: Calculate MAC by Cost Items
 
 # MAC = (MFSP_biofuel - MFSP_ref) / (CI_ref - CI_biofuel)
-# Unit: ($/gge - $/gge) / (g/MMBtu - g/MMBtu)
+# Unit: ($/MMBtu - $/MMBtu) / (g/MMBtu - g/MMBtu) = $/g
 MAC_df['MAC_calculated'] = (MAC_df['MFSP_replacing fuel'] - MAC_df['Cost_replaced fuel']) / \
                            (MAC_df['CI_replaced fuel'] - MAC_df['CI_replacing fuel'])
+
+# Save interim data tables
+if save_interim_files == True:
+    MAC_df.to_csv(output_path_prefix + '/' + f_out_MAC)
+    
+    
+
 
 
 numeric_cols = ['Flow', 'Unit Cost', 'Feedstock Flow', 'Operating Time', 'Biofuel Flow']
@@ -348,9 +376,6 @@ cost_items['MAC Value'] = cost_items['Flow'] * cost_items['Unit Cost'] / \
 # Aggregrate MAC for each feedstock-biofuel conversion pathways
 cost_items_agg = cost_items.groupby(['Case/Scenario', 'Feedstock', 'Biofuel Flow Name']).agg({'MAC Value' : 'sum'}).reset_index()
 
-# Save interim data tables
-if save_interim_files == True:
-    cost_items.to_csv(output_path_prefix + '/' + f_out_itemized_mfsp)
-    cost_items_agg.to_csv(output_path_prefix + '/' + f_out_mfsp)
+
     
 #%%
