@@ -39,7 +39,8 @@ f_GREET_efs = 'GREET_EF_EERE.csv'
 f_corr_ref_fuel_biofuel = 'corr_ref_fuel_biofuel.csv'
 f_corr_fuel_replaced_GREET = 'corr_fuel_replaced_GREET.csv'
 f_corr_biofuel_replacing_GREET = 'corr_biofuel_replacing_GREET.csv'
-f_corr_GGE_EIA = 'corr_GGE_EIA.csv'
+f_corr_GGE_GREET_fuel_replaced = 'corr_GGE_GREET_fuel_replaced.csv'
+f_corr_GGE_GREET_fuel_replacing = 'corr_GGE_GREET_fuel_replacing.csv'
 
 save_interim_files = True
  
@@ -82,7 +83,8 @@ ob_units = model_units(input_path_units, input_path_GREET, input_path_corr)
 corr_ref_fuel_biofuel = pd.read_csv(input_path_corr + '/' + f_corr_ref_fuel_biofuel, header=3, index_col=None)
 corr_fuel_replaced_GREET = pd.read_csv(input_path_corr + '/' + f_corr_fuel_replaced_GREET, header=3, index_col=None)
 corr_biofuel_replacing_GREET = pd.read_csv(input_path_corr + '/' + f_corr_biofuel_replacing_GREET, header=3, index_col=None)
-corr_GGE_EIA = pd.read_csv(input_path_corr + '/' + f_corr_GGE_EIA, header=3, index_col=None)
+corr_GGE_GREET_fuel_replaced = pd.read_csv(input_path_corr + '/' + f_corr_GGE_GREET_fuel_replaced, header=3, index_col=None)
+corr_GGE_GREET_fuel_replacing = pd.read_csv(input_path_corr + '/' + f_corr_GGE_GREET_fuel_replacing, header=3, index_col=None)
 
 
 #%%
@@ -242,8 +244,16 @@ MAC_df.loc[MAC_df['GREET Pathway for replaced fuel'].isna(), ['Case/Scenario', '
 MAC_df = MAC_df.loc[~ MAC_df['GREET Pathway for replaced fuel'].isna(), :].copy()
 
 
+# Assumption: non-liquid final products are skipped and not credited at the moment
+MAC_df = MAC_df.loc[~ MAC_df['MFSP_replacing fuel_Units (denominator)'].isin(['lb']), : ].copy()
+
+# dropping rows with no data on cost replaced fuel
+MAC_df = MAC_df.loc[~MAC_df['Cost_replaced fuel'].isna(), :]
+
 #%%
 # Step: Unit check and conversions
+
+# Unit check for Replaced Fuel
 
 # barrel to gallon
 MAC_df[['Unit (Denominator)_Cost replaced fuel', 'Cost_replaced fuel']] = \
@@ -256,32 +266,65 @@ MAC_df[['Unit (Denominator)_Cost replaced fuel', 'Cost_replaced fuel']] = \
         given_unit = 'gal').copy()
     
 # Convert fuel cost USD per gallon to $ per GGE
-# This conversion is done especially if certain calculations in future require in units of GGE
+# This conversion is done especially if certain calculations in future is required in GGE
 
-# Map Replaced fuel to Energy carrier, Energy carrier type for GGE conversion
-MAC_df = pd.merge(MAC_df, corr_GGE_EIA, how='left', left_on=['Replaced Fuel'], right_on=['B2B fuel name']).reset_index(drop=True)
+# Map Replaced fuel to 'GREET_Fuel', 'GREET_Fuel type' type for GGE conversion
+MAC_df = pd.merge(MAC_df, corr_GGE_GREET_fuel_replaced, how='left', 
+                  left_on=['Replaced Fuel'], 
+                  right_on=['B2B fuel name']).reset_index(drop=True)
 
-MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['Energy carrier', 'Energy carrier type', 'GGE']], 
+MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['GREET_Fuel', 'GREET_Fuel type', 'GGE']], 
                   how='left', 
-                  on=['Energy carrier', 'Energy carrier type']).reset_index(drop=True)
+                  on=['GREET_Fuel', 'GREET_Fuel type']).reset_index(drop=True)
 MAC_df['Cost_replaced fuel'] = MAC_df['Cost_replaced fuel'] / MAC_df['GGE']
 MAC_df['Unit (Denominator)_Cost replaced fuel'] = 'GGE'
 MAC_df['Unit (Numerator)_Cost replaced fuel'] = 'USD'
-MAC_df.drop(columns=['Energy carrier', 'Energy carrier type', 'B2B fuel name', 'GGE'], inplace=True)
+MAC_df.drop(columns=['GREET_Fuel', 'GREET_Fuel type', 'B2B fuel name', 'GGE'], inplace=True)
 
 # Convert fuel cost from $ per GGE to $ per MMBtu
+# extract CI of gasoline
 tempdf = ob_units.hv_EIA.loc[(ob_units.hv_EIA['Energy carrier'] == 'Gasoline') &
                              (ob_units.hv_EIA['Energy carrier type'] == 'Petroleum Gasoline'), ['LHV', 'Unit']]
-pd.merge(MAC_df, tempdf, how='left', on
+# convert unit
+tempdf[['unit_numerator', 'unit_denominator']] = tempdf['Unit'].str.split('/', 1, expand=True)
+tempdf.drop(columns=['Unit'], inplace=True)
+tempdf[['unit_numerator', 'LHV']] = \
+    ob_units.unit_convert_df (
+        tempdf[['unit_numerator', 'LHV']],
+        Unit='unit_numerator',
+        Value='LHV',
+        if_unit_numerator=True,
+        if_given_unit=True,
+        given_unit='mmbtu').copy()
+tempdf['unit_denominator'] = 'GGE'
+# merge with MAC df for unit conversion
+MAC_df = pd.merge(MAC_df, tempdf, how='left', 
+                  left_on='Unit (Denominator)_Cost replaced fuel', 
+                  right_on='unit_denominator').reset_index(drop=True)
+MAC_df['Cost_replaced fuel'] = MAC_df['Cost_replaced fuel']/MAC_df['LHV'] # unit: $/MMBTU
+MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
 
+# Unit check for Replacing Fuel
 
+# $/gal to $/GGE
+# Map Replacing fuel to 'GREET_Fuel', 'GREET_Fuel type' for GGE conversion
+MAC_df = pd.merge(MAC_df, corr_GGE_GREET_fuel_replacing, how='left', 
+                  left_on=['Biofuel Flow Name'], 
+                  right_on=['B2B fuel name']).reset_index(drop=True)
+    
+MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['GREET_Fuel', 'GREET_Fuel type', 'GGE']], 
+                  how='left', 
+                  on=['GREET_Fuel', 'GREET_Fuel type']).reset_index(drop=True)
+MAC_df.loc[MAC_df['MFSP_remaining fuel_Units (denominator)'] == 'gal', 'MFSP_replacing fuel'] = \
+    MAC_df.loc[MAC_df['MFSP_remaining fuel_Units (denominator)'] == 'gal', 'MSFP_replacing fuel'] / \
+    MAC_df.loc[MAC_df['MFSP_remaining fuel_Units (denominator)'] == 'gal', 'GGE']
+MAC_df.loc[MAC_df['MFSP_remaining fuel_Units (denominator)'] == 'gal', 'Unit (Denominator)_Cost replacing fuel'] = 'GGE'
+MAC_df.drop(columns=['GREET_Fuel', 'GREET_Fuel type', 'B2B fuel name', 'GGE'], inplace=True)
 
-"""
-# unit conversion example code from Decarbonization Model
-ob_EPA_GHGI.activity_elec_non_combust_exp [['EF_Unit (Numerator)', 'Total Emissions']] = ob_units.unit_convert_df (
-    ob_EPA_GHGI.activity_elec_non_combust_exp [['EF_Unit (Numerator)', 'Total Emissions']], Unit='EF_Unit (Numerator)', Value='Total Emissions', if_given_unit = True, 
-    given_unit = electric_gen_ef['EF_Unit (Numerator)'].unique()[0]).copy()
-"""
+>>>>> Not all GGE values are available yet, need to check on this!!
+
+# GGE to MMBtu, assuming replacing fuel has same LHV as replaced fuel
+
 
 #%%
 # Step: Calculate MAC by Cost Items
