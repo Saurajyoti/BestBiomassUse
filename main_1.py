@@ -37,9 +37,9 @@ f_EIA_price = 'EIA Dataset-energy_price-.csv'
 f_GREET_efs = 'GREET_EF_EERE.csv'
 
 # declare correspondence files
-f_corr_ref_fuel_biofuel = 'corr_ref_fuel_biofuel.csv'
-f_corr_fuel_replaced_GREET = 'corr_fuel_replaced_GREET.csv'
-f_corr_biofuel_replacing_GREET = 'corr_biofuel_replacing_GREET.csv'
+f_corr_replaced_replacing_fuel = 'corr_replaced_replacing_fuel.csv'
+f_corr_fuel_replaced_GREET_pathway = 'corr_fuel_replaced_GREET_pathway.csv'
+f_corr_fuel_replacing_GREET_pathway = 'corr_fuel_replacing_GREET_pathway.csv'
 f_corr_GGE_GREET_fuel_replaced = 'corr_GGE_GREET_fuel_replaced.csv'
 f_corr_GGE_GREET_fuel_replacing = 'corr_GGE_GREET_fuel_replacing.csv'
 
@@ -81,9 +81,9 @@ ef = pd.read_csv(input_path_GREET + '/' + f_GREET_efs, header = 3, index_col=Non
 ob_units = model_units(input_path_units, input_path_GREET, input_path_corr)
 
 # load correspondence files
-corr_ref_fuel_biofuel = pd.read_csv(input_path_corr + '/' + f_corr_ref_fuel_biofuel, header=3, index_col=None)
-corr_fuel_replaced_GREET = pd.read_csv(input_path_corr + '/' + f_corr_fuel_replaced_GREET, header=3, index_col=None)
-corr_biofuel_replacing_GREET = pd.read_csv(input_path_corr + '/' + f_corr_biofuel_replacing_GREET, header=3, index_col=None)
+corr_replaced_replacing_fuel = pd.read_csv(input_path_corr + '/' + f_corr_replaced_replacing_fuel, header=3, index_col=None)
+corr_fuel_replaced_GREET_pathway = pd.read_csv(input_path_corr + '/' + f_corr_fuel_replaced_GREET_pathway, header=3, index_col=None)
+corr_fuel_replacing_GREET_pathway = pd.read_csv(input_path_corr + '/' + f_corr_fuel_replacing_GREET_pathway, header=3, index_col=None)
 corr_GGE_GREET_fuel_replaced = pd.read_csv(input_path_corr + '/' + f_corr_GGE_GREET_fuel_replaced, header=3, index_col=None)
 corr_GGE_GREET_fuel_replacing = pd.read_csv(input_path_corr + '/' + f_corr_GGE_GREET_fuel_replacing, header=3, index_col=None)
 
@@ -180,17 +180,24 @@ if save_interim_files == True:
 
 # Step: Merge correspondence tables and GREET emission factors
 
-# map conventional fuels those are replaced with biofuels
-MAC_df = pd.merge(MFSP_agg, corr_ref_fuel_biofuel, how = 'left', 
+# Aggregrate carbon intensities to for various GHGs to CO2e
+
+ef = ef.groupby(['GREET Pathway', 'Unit (Numerator)', 'Unit (Denominator)', 'Case', 'Scope', 'Year'], as_index=False).\
+        agg({'Reference case' : 'sum', 'Elec0' : 'sum'}).reset_index(drop=True)
+ef['Formula'] = 'Carbon dioxide equivalent'
+ef['Formula'] = 'CO2e'
+ 
+# map replaced fuels with replacing fuels
+MAC_df = pd.merge(MFSP_agg, corr_replaced_replacing_fuel, how = 'left', 
                on=['Case/Scenario', 'Biofuel Flow Name', 'Feedstock']).reset_index(drop=True) 
 
-# map biofuels with GREET pathways
-MAC_df = pd.merge(MAC_df, corr_biofuel_replacing_GREET, how='left',
+# map replacing fuels with GREET pathways
+MAC_df = pd.merge(MAC_df, corr_fuel_replacing_GREET_pathway, how='left',
                on=['Case/Scenario', 'Biofuel Flow Name', 'Feedstock']).reset_index(drop=True)
 MAC_df.rename(columns={'GREET Pathway' : 'GREET Pathway for replacing fuel'}, inplace=True)
 
-# map conventional fuels with GREET pathways
-MAC_df = pd.merge(MAC_df, corr_fuel_replaced_GREET, how='left', on=['Replaced Fuel']).reset_index(drop=True)
+# map replaced fuels with GREET pathways
+MAC_df = pd.merge(MAC_df, corr_fuel_replaced_GREET_pathway, how='left', on=['Replaced Fuel']).reset_index(drop=True)
 MAC_df.rename(columns={'GREET Pathway' : 'GREET Pathway for replaced fuel'}, inplace=True)
 
 # map GREET carbon intensities for replaced fuels, considering Decarb Model reference case carbon intensities only
@@ -209,12 +216,12 @@ MAC_df.drop(['GREET Pathway'], axis=1, inplace=True)
 
 # map GREET carbon intensities for replacing fuels
 MAC_df = pd.merge(MAC_df, ef, how='left', 
-                  left_on=['GREET Pathway for replacing fuel', 'Year'],
-                  right_on=['GREET Pathway', 'Year']).reset_index(drop=True)
+                  left_on=['GREET Pathway for replacing fuel', 'Year', 'Formula_replaced fuel'],
+                  right_on=['GREET Pathway', 'Year', 'Formula']).reset_index(drop=True)
 MAC_df.rename(columns={'Flow Name' : 'Flow Name_replacing fuel',
                        'Formula' :'Formula_replacing fuel',
                        'Unit (Numerator)' : 'Unit (Numerator)_CI replacing fuel',
-                       'Unit (Denominator)' : 'Unit (Denominator)_replacing fuel',
+                       'Unit (Denominator)' : 'Unit (Denominator)_CI replacing fuel',
                        'Case' : 'Case_replacing fuel',
                        'Scope' : 'Scope_replacing fuel',
                        'Reference case' : 'CI_replacing fuel',
@@ -251,17 +258,25 @@ MAC_df = MAC_df.loc[~ MAC_df['MFSP_replacing fuel_Units (denominator)'].isin(['l
 # dropping rows with no data on cost replaced fuel
 MAC_df = MAC_df.loc[~MAC_df['Cost_replaced fuel'].isna(), :]
 
+
+#%%
+# Step: Correct for inflation to the year of study
+MAC_df['Year_Cost_replaced fuel'] = pd.to_numeric(MAC_df['Year_Cost_replaced fuel'])
+MAC_df['Adjusted Cost_replaced fuel'] = \
+    MAC_df.apply(lambda x: cpi.inflate(x['Cost_replaced fuel'], x['Year_Cost_replaced fuel'], to=study_year), axis=1)
+MAC_df['Adjusted Cost Year'] = study_year
+
 #%%
 # Step: Unit check and conversions
 
 # Unit check for Replaced Fuel
 
 # barrel to gallon
-MAC_df[['Unit (Denominator)_Cost replaced fuel', 'Cost_replaced fuel']] = \
+MAC_df[['Unit (Denominator)_Cost replaced fuel', 'Adjusted Cost_replaced fuel']] = \
     ob_units.unit_convert_df (
-        MAC_df[['Unit (Denominator)_Cost replaced fuel', 'Cost_replaced fuel']], 
+        MAC_df[['Unit (Denominator)_Cost replaced fuel', 'Adjusted Cost_replaced fuel']], 
         Unit='Unit (Denominator)_Cost replaced fuel', 
-        Value='Cost_replaced fuel', 
+        Value='Adjusted Cost_replaced fuel', 
         if_unit_numerator = False,
         if_given_unit = True, 
         given_unit = 'gal').copy()
@@ -274,10 +289,10 @@ MAC_df = pd.merge(MAC_df, corr_GGE_GREET_fuel_replaced, how='left',
                   left_on=['Replaced Fuel'], 
                   right_on=['B2B fuel name']).reset_index(drop=True)
 
-MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['GREET_Fuel', 'GREET_Fuel type', 'GGE']], 
+MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['GREET_Fuel', 'GREET_Fuel type', 'GGE']].drop_duplicates(), 
                   how='left', 
                   on=['GREET_Fuel', 'GREET_Fuel type']).reset_index(drop=True)
-MAC_df['Cost_replaced fuel'] = MAC_df['Cost_replaced fuel'] / MAC_df['GGE']
+MAC_df['Adjusted Cost_replaced fuel'] = MAC_df['Adjusted Cost_replaced fuel'] / MAC_df['GGE']
 MAC_df['Unit (Denominator)_Cost replaced fuel'] = 'GGE'
 MAC_df['Unit (Numerator)_Cost replaced fuel'] = 'USD'
 MAC_df.drop(columns=['GREET_Fuel', 'GREET_Fuel type', 'B2B fuel name', 'GGE'], inplace=True)
@@ -302,7 +317,7 @@ tempdf['unit_denominator'] = 'GGE'
 MAC_df = pd.merge(MAC_df, tempdf, how='left', 
                   left_on='Unit (Denominator)_Cost replaced fuel', 
                   right_on='unit_denominator').reset_index(drop=True)
-MAC_df['Cost_replaced fuel'] = MAC_df['Cost_replaced fuel']/MAC_df['LHV'] # unit: $/MMBTU
+MAC_df['Adjusted Cost_replaced fuel'] = MAC_df['Adjusted Cost_replaced fuel']/MAC_df['LHV'] # unit: $/MMBTU
 MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
 
 
@@ -314,13 +329,13 @@ MAC_df = pd.merge(MAC_df, corr_GGE_GREET_fuel_replacing, how='left',
                   left_on=['Biofuel Flow Name'], 
                   right_on=['B2B fuel name']).reset_index(drop=True)
     
-MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['GREET_Fuel', 'GREET_Fuel type', 'GGE']], 
+MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['GREET_Fuel', 'GREET_Fuel type', 'GGE']].drop_duplicates(), 
                   how='left', 
                   on=['GREET_Fuel', 'GREET_Fuel type']).reset_index(drop=True)
 MAC_df.loc[MAC_df['MFSP_replacing fuel_Units (denominator)'] == 'gal', 'MFSP_replacing fuel'] = \
     MAC_df.loc[MAC_df['MFSP_replacing fuel_Units (denominator)'] == 'gal', 'MFSP_replacing fuel'] / \
     MAC_df.loc[MAC_df['MFSP_replacing fuel_Units (denominator)'] == 'gal', 'GGE']
-MAC_df.loc[MAC_df['MFSP_replacing fuel_Units (denominator)'] == 'gal', 'Unit (Denominator)_Cost replacing fuel'] = 'GGE'
+MAC_df.loc[MAC_df['MFSP_replacing fuel_Units (denominator)'] == 'gal', 'MFSP_replacing fuel_Units (denominator)'] = 'GGE'
 MAC_df.drop(columns=['GREET_Fuel', 'GREET_Fuel type', 'B2B fuel name', 'GGE'], inplace=True)
 
 # Convert fuel cost from $ per GGE to $ per MMBtu
@@ -346,14 +361,16 @@ MAC_df = pd.merge(MAC_df, tempdf, how='left',
 MAC_df['MFSP_replacing fuel'] = MAC_df['MFSP_replacing fuel']/MAC_df['LHV'] # unit: $/MMBTU
 MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
 
-
 #%%
 # Step: Calculate MAC by Cost Items
 
 # MAC = (MFSP_biofuel - MFSP_ref) / (CI_ref - CI_biofuel)
 # Unit: ($/MMBtu - $/MMBtu) / (g/MMBtu - g/MMBtu) = $/g
-MAC_df['MAC_calculated'] = (MAC_df['MFSP_replacing fuel'] - MAC_df['Cost_replaced fuel']) / \
+MAC_df['MAC_calculated'] = (MAC_df['MFSP_replacing fuel'] - MAC_df['Adjusted Cost_replaced fuel']) / \
                            (MAC_df['CI_replaced fuel'] - MAC_df['CI_replacing fuel'])
+                           
+MAC_df['CI of replaced fuel higher'] = MAC_df['CI_replaced fuel'] > MAC_df['CI_replacing fuel']
+MAC_df['Cost of replaced fuel higher'] = MAC_df['Adjusted Cost_replaced fuel'] > MAC_df['MFSP_replacing fuel']
 
 # Save interim data tables
 if save_interim_files == True:
