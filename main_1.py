@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+"""    
 Created on Wed Jul 27 11:34:10 2022
 
 @author: skar
@@ -115,6 +115,12 @@ cost_feedstocks.rename(columns={'Stream Description' : 'Feedstock Stream Descrip
 
 # Merge with the cost items df
 cost_items = pd.merge(cost_items, cost_feedstocks, how='left', on='Case/Scenario').reset_index(drop=True)
+
+#%%
+# Create unique list of Items is {Purchased Inputs, Coproducts, and Waste Disposal}
+
+lci_items = cost_items.loc[cost_items['Item'].isin(['Coproducts', 'Purchased Inputs', 'Waste Disposal']), 
+                           ['Item', 'Stream Description', 'Flow Name']].drop_duplicates()
 
 #%%
 
