@@ -186,7 +186,7 @@ if save_interim_files == True:
 
 # Step: Merge correspondence tables and GREET emission factors
 
-# Aggregrate carbon intensities to for various GHGs to CO2e
+# Aggregrate carbon intensities for various GHGs to CO2e
 
 ef = ef.groupby(['GREET Pathway', 'Unit (Numerator)', 'Unit (Denominator)', 'Case', 'Scope', 'Year'], as_index=False).\
         agg({'Reference case' : 'sum', 'Elec0' : 'sum'}).reset_index(drop=True)
@@ -290,7 +290,7 @@ MAC_df[['Unit (Denominator)_Cost replaced fuel', 'Adjusted Cost_replaced fuel']]
 # Convert fuel cost USD per gallon to $ per GGE
 # This conversion is done especially if certain calculations in future is required in GGE
 
-# Map Replaced fuel to 'GREET_Fuel', 'GREET_Fuel type' type for GGE conversion
+# Map Replaced fuel to 'GREET_Fuel', 'GREET_Fuel type' for GGE conversion
 MAC_df = pd.merge(MAC_df, corr_GGE_GREET_fuel_replaced, how='left', 
                   left_on=['Replaced Fuel'], 
                   right_on=['B2B fuel name']).reset_index(drop=True)
@@ -373,7 +373,7 @@ MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
 # MAC = (MFSP_biofuel - MFSP_ref) / (CI_ref - CI_biofuel)
 # Unit: ($/MMBtu - $/MMBtu) / (g/MMBtu - g/MMBtu) = $/g
 MAC_df['MAC_calculated'] = (MAC_df['MFSP_replacing fuel'] - MAC_df['Adjusted Cost_replaced fuel']) / \
-                           (MAC_df['CI_replaced fuel'] - MAC_df['CI_replacing fuel'])
+                           (MAC_df['CI_replaced fuel'] - MAC_df['Total LCA'])
                            
 MAC_df['CI of replaced fuel higher'] = MAC_df['CI_replaced fuel'] > MAC_df['CI_replacing fuel']
 MAC_df['Cost of replaced fuel higher'] = MAC_df['Adjusted Cost_replaced fuel'] > MAC_df['MFSP_replacing fuel']
