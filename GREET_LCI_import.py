@@ -3,6 +3,9 @@
 Created on Mon Jan  9 14:00:34 2023
 
 @author: skar
+
+Collect LCI data by year from GREET1 as per correspondence file.
+
 """
 
 #%%
