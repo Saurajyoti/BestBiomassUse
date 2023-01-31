@@ -47,6 +47,8 @@ f_corr_GGE_GREET_fuel_replaced = 'corr_GGE_GREET_fuel_replaced.csv'
 f_corr_GGE_GREET_fuel_replacing = 'corr_GGE_GREET_fuel_replacing.csv'
 f_corr_itemized_LCI = 'corr_LCI_GREET_temporal.csv'
 
+study_year = 2021
+
 save_interim_files = True
  
 
@@ -81,25 +83,26 @@ df_econ = df_econ[['Case/Scenario', 'Parameter',
 
 # Temporarily filter df_econ for QA
 
-df_econ = df_econ.loc[df_econ['Case/Scenario'].isin(['2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel',
-                                                     '2015 Biochemical Catalysis Design Report',
+df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([#'2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel',
+                                                     #'2015 Biochemical Catalysis Design Report',
                                                      '2018 Biochemical Design Case: BDO Pathway',
                                                      '2018 Biochemical Design Case: Organic Acids Pathway',
-                                                     '2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-                                                     '2018, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-                                                     '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-                                                     '2020, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+                                                     #'2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+                                                     #'2018, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+                                                     #'2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+                                                     #'2020, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
                                                      'Biochemical 2019 SOT: Acids Pathway (Burn Lignin Case)',
                                                      'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - "Base" Case)',
                                                      'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - High)',
                                                      'Biochemical 2019 SOT: BDO Pathway (Burn Lignin Case)',
                                                      'Biochemical 2019 SOT: BDO Pathway (Convert Lignin - Base)',
-                                                     'Biomass to Gasoline and Diesel Using Integrated Hydropyrolysis and Hydroconversion',
-                                                     'Cellulosic Ethanol',
-                                                     'Cellulosic Ethanol with Jet Upgrading',
-                                                     'Fischer-Tropsch SPK',
-                                                     'Gasification to Methanol',
-                                                     'Gasoline from upgraded bio-oil from pyrolysis'
+                                                     'Biochemical 2019 SOT: BDO Pathway (Convert Lignin - High)',
+                                                     #'Biomass to Gasoline and Diesel Using Integrated Hydropyrolysis and Hydroconversion',
+                                                     #'Cellulosic Ethanol',
+                                                     #'Cellulosic Ethanol with Jet Upgrading',
+                                                     #'Fischer-Tropsch SPK',
+                                                     #'Gasification to Methanol',
+                                                     #'Gasoline from upgraded bio-oil from pyrolysis'
                                                      ])].reset_index(drop=True)
 
 
@@ -173,8 +176,6 @@ cost_items = pd.merge(cost_items, biofuel_yield2, how='left', on='Case/Scenario'
 # drop blanks
 cost_items = cost_items.loc[~cost_items['Total Cost'].isin(['-']), : ]
 
-study_year = 2021
-
 #cpi.update()
 
 cost_items['Adjusted Total Cost'] = cost_items.apply(lambda x: cpi.inflate(x['Total Cost'], x['Cost Year'], to=study_year), axis=1)
@@ -187,6 +188,10 @@ cost_items['Adjusted Cost Year'] = study_year
 cost_items['Itemized MFSP'] = cost_items['Adjusted Total Cost'].astype(float) / cost_items['Biofuel Flow'].astype(float)
 cost_items['Itemized MFSP: Unit (numerator)'] = cost_items['Total Cost: Unit (numerator)']
 cost_items['Itemized MFSP: Unit (denominator)'] = cost_items['Biofuel Flow: Unit (numerator)']
+
+# For co-products we consider their cost as credit to the MFSP [co-product credit by displacement]
+cost_items.loc[cost_items['Item'] == 'Coproducts', 'Itemized MFSP'] = \
+    cost_items.loc[cost_items['Item'] == 'Coproducts', 'Itemized MFSP'] * -1
 
 MFSP_agg = cost_items[['Case/Scenario',
                        'Feedstock',
@@ -236,7 +241,7 @@ LCA_items = df_econ.loc[df_econ['Item'].isin(['Purchased Inputs',
                                                'Waste Disposal',
                                                'Coproducts']), : ].copy()
 # temporary value for production year
-LCA_items['Production Year'] = 2021
+LCA_items['Production Year'] = study_year
 
 # Merge itemized LCAs to LCIs
 LCA_items = pd.merge(LCA_items, corr_itemized_LCA, how='left', 
@@ -559,11 +564,3 @@ cost_items_agg = cost_items.groupby(['Case/Scenario', 'Feedstock', 'Biofuel Flow
 
     
 #%%
-
-# Graphs to be created
-# LCA (kgCO2e/MJ) vs pathways
-# TEA ($/GGE) vs pathways
-# MAC ($/kgCO2e) vs pathways
-# LCA vs TEA (kg CO2e/ MJ vs $ per GGE)
-
-# Four quard plot: ratio of ghg of alt fuels and the conv fuels vs. ratio of MFSP of alt fuels and conventional fuels
