@@ -47,11 +47,16 @@ f_corr_GGE_GREET_fuel_replaced = 'corr_GGE_GREET_fuel_replaced.csv'
 f_corr_GGE_GREET_fuel_replacing = 'corr_GGE_GREET_fuel_replacing.csv'
 f_corr_itemized_LCI = 'corr_LCI_GREET_temporal.csv'
 
+# Year of study, to which inflation will be adjusted
 study_year = 2021
 
-save_interim_files = True
- 
+# Option to control cost credit for coproducts while calculating aggregrated MFSP
+consider_coproduct_cost_credit = False
 
+# Option to control emissions credit for coproducts while calculating aggregrated CIs
+consider_coproduct_env_credit = False
+
+save_interim_files = True
 #%%
 # import packages
 import pandas as pd
@@ -59,6 +64,8 @@ import numpy as np
 import os
 from datetime import datetime
 import cpi
+
+#cpi.update()
 
 # Import user defined modules
 os.chdir(code_path_prefix)
@@ -176,14 +183,12 @@ cost_items = pd.merge(cost_items, biofuel_yield2, how='left', on='Case/Scenario'
 # drop blanks
 cost_items = cost_items.loc[~cost_items['Total Cost'].isin(['-']), : ]
 
-#cpi.update()
-
 cost_items['Adjusted Total Cost'] = cost_items.apply(lambda x: cpi.inflate(x['Total Cost'], x['Cost Year'], to=study_year), axis=1)
 cost_items['Adjusted Cost Year'] = study_year
 
 #%%
 
-# Step: Calculate itemized Marginal Fuel Selling Price (MFSP)
+# Step: Calculate itemized and aggregrated Marginal Fuel Selling Price (MFSP)
 
 cost_items['Itemized MFSP'] = cost_items['Adjusted Total Cost'].astype(float) / cost_items['Biofuel Flow'].astype(float)
 cost_items['Itemized MFSP: Unit (numerator)'] = cost_items['Total Cost: Unit (numerator)']
@@ -193,13 +198,19 @@ cost_items['Itemized MFSP: Unit (denominator)'] = cost_items['Biofuel Flow: Unit
 cost_items.loc[cost_items['Item'] == 'Coproducts', 'Itemized MFSP'] = \
     cost_items.loc[cost_items['Item'] == 'Coproducts', 'Itemized MFSP'] * -1
 
-MFSP_agg = cost_items[['Case/Scenario',
+MFSP_agg = cost_items.copy()
+
+if consider_coproduct_cost_credit == False:
+    MFSP_agg = MFSP_agg.loc[~MFSP_agg['Item'].isin(['Coproducts']), :]
+
+MFSP_agg = MFSP_agg[['Case/Scenario',
                        'Feedstock',
                        'Itemized MFSP: Unit (numerator)', 
                        'Itemized MFSP: Unit (denominator)',
                        'Adjusted Cost Year',
                        'Itemized MFSP']]
 MFSP_agg = MFSP_agg[MFSP_agg['Itemized MFSP'].notna()]
+    
 MFSP_agg = MFSP_agg.groupby(['Case/Scenario',
                              'Feedstock',
                              'Itemized MFSP: Unit (numerator)', 
@@ -284,7 +295,7 @@ if ignored_LCA_items.shape[0] > 0:
 
 # Step: Itemized and aggregrated LCA metric per pathway
 
-# Few LCA mappings are probably buggy, omitting it until QA
+# Some LCA mappings are probably buggy, omitting it until QA
 LCA_items = LCA_items.loc[~LCA_items['Flow Name'].isin(['Makeup Water',
                                                         'Makeup water',
                                                         'Cooling Tower Makeup',
@@ -310,19 +321,19 @@ LCA_items['Total LCA: Unit (denominator)'] = LCA_items['Biofuel Flow: Unit (nume
 
 #LCA_items['LCA_metric'] = ['CO2' if val in ['CO2', 'CO2 (w/ C in VOC & CO)'] else val for val in LCA_items['LCA_metric']]
 
+LCA_items_agg = LCA_items.copy()
+
+if consider_coproduct_env_credit == False:
+    LCA_items_agg = LCA_items_agg.loc[~LCA_items_agg['Item'].isin(['Coproducts']), : ]
+
 # Calculate net LCA metric per pathway
-LCA_items_agg = LCA_items.groupby(['Case/Scenario', 'LCA_metric', 
+LCA_items_agg = LCA_items_agg.groupby(['Case/Scenario', 'LCA_metric', 
                                    'Total LCA: Unit (numerator)', 
                                    'Total LCA: Unit (denominator)',
                                    'Production Year'], as_index=False).\
     agg({'Total LCA' : 'sum'})
 
 LCA_items_agg['Total LCA (g per MJ)'] = LCA_items_agg['Total LCA'] / 121.3 # Unit: g CO2e/MJ
-
-
-
-
-
 
 # Save interim data tables
 if save_interim_files == True:
