@@ -12,87 +12,128 @@ Collect LCI data by year from GREET1 as per correspondence file.
 
 import pandas as pd
 import xlwings as xw
+from datetime import datetime
 
 #%%
 # GREET1 model run for study years
 
 class GREET_LCI_import:
     
-    def __init__(self, model_path_prefix, file_model, sheet_input,
-                 corr_path_prefix, fcorr_LCI, sheet_corr_LCI,
-                 start_year, end_year, increment,
-                 file_save_sim):
+    def __init__(self, model_path_prefix, fmodel,
+                 corr_path_prefix, fcorr_LCI, sheet_input, sheet_output,
+                 gparam, sheet_gparam, cell_gparam,
+                 fsave_sim):
         
         self.model_path_prefix = model_path_prefix
-        self.file_model = file_model
-        self.sheet_input = sheet_input
+        self.fmodel = fmodel        
         
         self.corr_path_prefix = corr_path_prefix
         self.fcorr_LCI = fcorr_LCI
-        self.sheet_corr_LCI = sheet_corr_LCI
+        self.sheet_input = sheet_input
+        self.sheet_output = sheet_output
         
-        self.start_year = start_year
-        self.end_year = end_year
-        self.increment = increment      
-        
-        self.param_input_cell = 'E9' # Cell address of year parameter in the GREET1 2022 Inputs tab
+        self.gparam = gparam        
+        self.sheet_gparam = sheet_gparam
+        self.cell_gparam = cell_gparam
+             
+        self.fsave_sim = fsave_sim
         
         self.sim_df = pd.DataFrame() # initialize data frame to save runs
         
-        self.file_save_sim = file_save_sim
+        # read parameter value sets
+        self.sim_params = pd.read_excel(self.corr_path_prefix + '/' + self.fcorr_LCI, 
+                                        self.sheet_input, header=3, index_col=None)
         
     
-    def modify_GREET2_and_run(self, param_input_cell, param_val):
+    def modify_model_and_run(self, gparam_val, df_params):
         
         with xw.App(visible=False) as app:            
-            wb = xw.Book(model_path_prefix + '/' + file_model)
-            sheet = wb.sheets[self.sheet_input]
-            sheet[param_input_cell].value = param_val
+            
+            # open model workbook
+            wb = xw.Book(model_path_prefix + '/' + fmodel)
+            
+            # modify model with global parameter
+            sheet = wb.sheets[self.sheet_gparam]
+            sheet[cell_gparam].value = gparam_val
             wb.app.calculate()
             wb.save()
             
+            # modify model with set of parameters            
+            for r in range(df_params.shape[0]):
+                sheet = wb.sheets[df_params.iloc[r,0]]
+                sheet[df_params.iloc[r,1]].value = df_params.iloc[r,2]
+            wb.app.calculate()
+            wb.save()
+            
+            # update output sheet
             wb2 = xw.Book(self.corr_path_prefix + '/' + self.fcorr_LCI)
             wb2.app.calculate()
             wb2.save()
             
         self.temp_corr_LCI = pd.read_excel(self.corr_path_prefix + '/' + self.fcorr_LCI, 
-                                           self.sheet_corr_LCI, header=3, index_col=None)
+                                           self.sheet_output, header=3, index_col=None)
     
-    def save_sim_to_file(self):
+    def save_sim_to_file(self, mode, header):
         
-        self.sim_df.to_csv(self.corr_path_prefix + '/' + self.file_save_sim)
+        self.sim_df.to_csv(self.corr_path_prefix + '/' + self.fsave_sim, 
+                           mode=mode, header=header, index=False)
     
     def sim_model(self):
         
-        for y in range(self.start_year, self.end_year+1, self.increment):
-            print(f'Currently extracting data for year: {y}')            
-            self.modify_GREET2_and_run(self.param_input_cell, y)
-            self.temp_corr_LCI['Year'] = y           
-            self.sim_df = pd.concat([self.sim_df, self.temp_corr_LCI], ignore_index=True)
-       
-        self.save_sim_to_file()
+        n_param_sets = self.sim_params.shape[1] - 2
+        
+        # truncate if file exists and create
+        self.save_sim_to_file(mode='w', header=False)
+        write_header = True
+        
+        for gparam_val in gparam:
+            
+            for param_set in range(0, n_param_sets):
+                
+                df_params = self.sim_params.iloc[:,[0,1,param_set+2]]
+                
+                print(f'Run for global parameter value: {gparam_val} and parameter set: {param_set+1}') 
+                print( '    Elapsed time: ' + str(datetime.now() - init_time))
+                
+                self.modify_model_and_run(gparam_val, df_params)                
+                self.temp_corr_LCI['gparam_val'] = gparam_val
+                self.temp_corr_LCI['param_set'] = param_set + 1
+                
+                #self.sim_df = pd.concat([self.sim_df, self.temp_corr_LCI.copy()], ignore_index=True)
+                self.sim_df = self.temp_corr_LCI.copy()
+                
+                if write_header:
+                    self.save_sim_to_file(mode='a', header=write_header) # append output to file
+                    write_header = False
+                else:
+                    self.save_sim_to_file(mode='a', header=write_header) # append output to file
         
 
 if __name__ == '__main__':
     
-    model_path_prefix = 'C:/Users/skar/Box/saura_self/GREET_2022'
-    file_model = 'GREET1_2022.xlsm'
-    sheet_input = 'Inputs'
+    init_time = datetime.now()
     
-    corr_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Best use of biomass/data/correspondence_files'
-    fcorr_LCI = 'corr_LCI_GREET_pathway.xlsx'
-    sheet_corr_LCI = 'GREET_mappings'
+    model_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Algae/data/model'
+    fmodel = 'GREET_2022 Algae harmonization project_HTL_paper.xlsm'
     
-    file_save_sim = 'corr_LCI_GREET_temporal.csv'
+    corr_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Algae/data/correspondence_files'
+    fcorr_LCI = 'corr_LCI_GREET_pathway_Algae_run.xlsx'
+    sheet_input = 'param_inputs'
+    sheet_output = 'map_outputs'
+    
+    fsave_sim = 'GREET_Algae_sims.csv'
     
     
-    start_year = 2020
-    end_year = 2050
-    increment = 1
+    # list of global parameter to run all scenarios
+    gparam = [1, 2]    
+    sheet_gparam = 'Algae' # the sheet in fmodel that has the parameter
+    cell_gparam = 'AI556' # the cell in fmodel sheet_gparam where parameter is located
     
-    obj = GREET_LCI_import(model_path_prefix, file_model, sheet_input, 
-                           corr_path_prefix, fcorr_LCI, sheet_corr_LCI,
-                           start_year, end_year, increment,
-                           file_save_sim)
+    obj = GREET_LCI_import(model_path_prefix, fmodel,
+                           corr_path_prefix, fcorr_LCI, sheet_input, sheet_output,
+                           gparam, sheet_gparam, cell_gparam,
+                           fsave_sim)
     
     obj.sim_model()
+    
+    print( '    Total run time: ' + str(datetime.now() - init_time)) 
