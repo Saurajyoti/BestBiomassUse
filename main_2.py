@@ -51,10 +51,10 @@ f_corr_itemized_LCI = 'corr_LCI_GREET_temporal.csv'
 study_year = 2021
 
 # Option to control cost credit for coproducts while calculating aggregrated MFSP
-consider_coproduct_cost_credit = False
+consider_coproduct_cost_credit = True
 
 # Option to control emissions credit for coproducts while calculating aggregrated CIs
-consider_coproduct_env_credit = False
+consider_coproduct_env_credit = True
 
 save_interim_files = True
 #%%
@@ -90,26 +90,39 @@ df_econ = df_econ[['Case/Scenario', 'Parameter',
 
 # Temporarily filter df_econ for QA
 
-df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([#'2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel',
-                                                     #'2015 Biochemical Catalysis Design Report',
+df_econ = df_econ.loc[df_econ['Case/Scenario'].isin(['2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel',
+                                                     '2015 Biochemical Catalysis Design Report',
                                                      '2018 Biochemical Design Case: BDO Pathway',
                                                      '2018 Biochemical Design Case: Organic Acids Pathway',
-                                                     #'2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-                                                     #'2018, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-                                                     #'2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-                                                     #'2020, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+                                                     '2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+                                                     '2018, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+                                                     '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+                                                     '2020, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
                                                      'Biochemical 2019 SOT: Acids Pathway (Burn Lignin Case)',
                                                      'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - "Base" Case)',
                                                      'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - High)',
                                                      'Biochemical 2019 SOT: BDO Pathway (Burn Lignin Case)',
                                                      'Biochemical 2019 SOT: BDO Pathway (Convert Lignin - Base)',
                                                      'Biochemical 2019 SOT: BDO Pathway (Convert Lignin - High)',
-                                                     #'Biomass to Gasoline and Diesel Using Integrated Hydropyrolysis and Hydroconversion',
-                                                     #'Cellulosic Ethanol',
-                                                     #'Cellulosic Ethanol with Jet Upgrading',
-                                                     #'Fischer-Tropsch SPK',
-                                                     #'Gasification to Methanol',
-                                                     #'Gasoline from upgraded bio-oil from pyrolysis'
+                                                     'Biomass to Gasoline and Diesel Using Integrated Hydropyrolysis and Hydroconversion',
+                                                     'Corn stover ETJ', 
+                                                     'Dry Mill (Corn) ETJ',
+                                                     'Ex Situ CFP 2022 Target Case', 
+                                                     'Ex-Situ CFP 2019 SOT',
+                                                     'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
+                                                     'Ex-Situ Fixed Bed 2022 Projection',
+                                                     'In-Situ CFP 2022 Target Case',
+                                                     'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+                                                     'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+                                                     'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+                                                     'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+                                                     'Pathway HT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+                                                     'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
+                                                     'Cellulosic Ethanol',
+                                                     'Cellulosic Ethanol with Jet Upgrading',
+                                                     'Fischer-Tropsch SPK',
+                                                     'Gasification to Methanol',
+                                                     'Gasoline from upgraded bio-oil from pyrolysis'
                                                      ])].reset_index(drop=True)
 
 
@@ -298,7 +311,9 @@ if ignored_LCA_items.shape[0] > 0:
 # Some LCA mappings are probably buggy, omitting it until QA
 LCA_items = LCA_items.loc[~LCA_items['Flow Name'].isin(['Makeup Water',
                                                         'Makeup water',
+                                                        'Water make-up',
                                                         'Cooling Tower Makeup',
+                                                        'Cooling Tower Make-up',
                                                         'Cooling tower water makeup',
                                                         'Cooling tower chemicals',
                                                         'Cooling Water Makeup']), :].reset_index(drop=True)
