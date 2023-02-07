@@ -80,7 +80,7 @@ class GREET_LCI_import:
     
     def sim_model(self):
         
-        n_param_sets = self.sim_params.shape[1] - 2
+        n_param_sets = self.sim_params.shape[1] - 3
         
         # truncate if file exists and create
         self.save_sim_to_file(mode='w', header=False)
@@ -90,7 +90,7 @@ class GREET_LCI_import:
             
             for param_set in range(0, n_param_sets):
                 
-                df_params = self.sim_params.iloc[:,[0,1,param_set+2]]
+                df_params = self.sim_params.iloc[:,[1,2,param_set+3]]
                 
                 print(f'Run for global parameter value: {gparam_val} and parameter set: {param_set+1}') 
                 print( '    Elapsed time: ' + str(datetime.now() - init_time))
@@ -125,7 +125,7 @@ if __name__ == '__main__':
     
     
     # list of global parameter to run all scenarios
-    gparam = [1, 2]    
+    gparam = [1]    
     sheet_gparam = 'Algae' # the sheet in fmodel that has the parameter
     cell_gparam = 'AI556' # the cell in fmodel sheet_gparam where parameter is located
     
