@@ -26,7 +26,7 @@ input_path_EIA_price = input_path_prefix + '/EIA'
 input_path_corr = input_path_prefix + '/correspondence_files'
 input_path_units = input_path_prefix + '/Units'
 
-f_TEA = 'TEA Database_01_21_2023.xlsx'
+f_TEA = 'TEA Database_02_09_2023.xlsx'
 sheet_TEA = 'Biofuel'
 
 f_out_itemized_mfsp = 'mfsp_itemized.csv'
@@ -47,14 +47,20 @@ f_corr_GGE_GREET_fuel_replaced = 'corr_GGE_GREET_fuel_replaced.csv'
 f_corr_GGE_GREET_fuel_replacing = 'corr_GGE_GREET_fuel_replacing.csv'
 f_corr_itemized_LCI = 'corr_LCI_GREET_temporal.csv'
 
-# Year of study, to which inflation will be adjusted
-study_year = 2021
+f_corr_params_variability = 'corr_params_variability.xlsx'
+sheet_corr_params_variability = 'input_table'
 
-# Option to control cost credit for coproducts while calculating aggregrated MFSP
+# Year of study, to which inflation will be adjusted
+study_year = 2016
+
+# Toggle cost credit for coproducts while calculating aggregrated MFSP
 consider_coproduct_cost_credit = True
 
-# Option to control emissions credit for coproducts while calculating aggregrated CIs
+# Toggle to control emissions credit for coproducts while calculating aggregrated CIs
 consider_coproduct_env_credit = True
+
+# Toggle variability study
+consider_variability_study = True
 
 save_interim_files = True
 #%%
@@ -116,7 +122,7 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin(['2013 Biochemical Design Ca
                                                      'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
                                                      'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
                                                      'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-                                                     'Pathway HT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+                                                     'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
                                                      'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
                                                      'Cellulosic Ethanol',
                                                      'Cellulosic Ethanol with Jet Upgrading',
@@ -124,6 +130,16 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin(['2013 Biochemical Design Ca
                                                      'Gasification to Methanol',
                                                      'Gasoline from upgraded bio-oil from pyrolysis'
                                                      ])].reset_index(drop=True)
+
+# When studying variability of unit cost on MFSP and MAC,
+# following pathways are avoided because detailed LCI are not available
+cases_to_avoid = ['Corn stover ETJ',
+                  'Dry Mill (Corn) ETJ',
+                  'Cellulosic Ethanol',
+                  'Cellulosic Ethanol with Jet Upgrading',
+                  'Fischer-Tropsch SPK',
+                  'Gasification to Methanol',
+                  'Gasoline from upgraded bio-oil from pyrolysis']
 
 
 EIA_price = pd.read_csv(input_path_EIA_price + '/' + f_EIA_price, index_col=None)
@@ -140,6 +156,7 @@ corr_fuel_replacing_GREET_pathway = pd.read_csv(input_path_corr + '/' + f_corr_f
 corr_GGE_GREET_fuel_replaced = pd.read_csv(input_path_corr + '/' + f_corr_GGE_GREET_fuel_replaced, header=3, index_col=None)
 corr_GGE_GREET_fuel_replacing = pd.read_csv(input_path_corr + '/' + f_corr_GGE_GREET_fuel_replacing, header=3, index_col=None)
 corr_itemized_LCA = pd.read_csv(input_path_corr + '/' + f_corr_itemized_LCI, header=0, index_col=0)
+corr_params_variability = pd.read_excel(input_path_corr + '/' + f_corr_params_variability, sheet_name=sheet_corr_params_variability, header=3, index_col=None)
 
 #%%
 
@@ -190,26 +207,68 @@ biofuel_yield2 = biofuel_yield.groupby(['Case/Scenario', 'Biofuel Flow: Unit (nu
 cost_items = pd.merge(cost_items, biofuel_yield2, how='left', on='Case/Scenario').reset_index(drop=True)
 
 #%%
+# Step: calculate cost per variability of parameters
 
-# Step: Correct for inflation to the year of study
+var_params = corr_params_variability.loc[corr_params_variability['col_param'].isin(['Cost Item']), : ]
+
+# Function to expand on the input variability table 
+def variability_table(var_params):
+    var_tbl = pd.DataFrame(columns=var_params.columns.to_list() + ['param_value'] )
+    for r in range(0, var_params.shape[0]):
+        if var_params.loc[r, 'param_dist'] == 'linear':
+            val = var_params.loc[r,'param_min']
+            while (var_params.loc[r,'param_max'] - val) > 0.0001:  
+               #var_params.loc[r,'param_value'] = val                              
+               var_tbl = pd.concat([var_tbl, 
+                                    pd.DataFrame({
+                                     'col_param' : [var_params.loc[r,'col_param']],
+                                     'col_val' : [var_params.loc[r,'col_val']],
+                                     'param_name' : [var_params.loc[r,'param_name']],
+                                     'param_min' : [var_params.loc[r,'param_min']],
+                                     'param_max' : [var_params.loc[r,'param_max']],
+                                     'param_dist' : [var_params.loc[r,'param_dist']],
+                                     'dist_option' : [var_params.loc[r,'dist_option']],
+                                     'param_value' : [val]})
+                                    ])
+               val = val + var_params.loc[r,'dist_option']
+    return var_tbl
+    
+var_params_tbl = variability_table(var_params).reset_index(drop=True)
+var_params_tbl['variability_id'] = var_params_tbl.index
+
+
+cost_items_tbl = pd.DataFrame(columns=cost_items.columns.to_list() + ['variability_id'])
+for r in range(0, var_params_tbl.shape[0]):
+    cost_items.loc[
+        cost_items[var_params_tbl.loc[r, 'col_param']].isin([var_params_tbl.loc[r, 'param_name']]), 
+        var_params_tbl.loc[r, 'col_val']] = var_params_tbl.loc[r, 'param_value']
+    cost_items['variability_id'] = var_params_tbl.loc[r, 'variability_id']
+    cost_items_tbl = pd.concat([cost_items_tbl, cost_items])
+
+cost_items_tbl = cost_items_tbl.merge(var_params_tbl, how='left', on='variability_id').reset_index(drop=True)
+
+# Calculate itemized MFSP
 
 # drop blanks
 cost_items = cost_items.loc[~cost_items['Total Cost'].isin(['-']), : ]
+ 
+cost_items['Total Cost'] = cost_items['Flow'] * cost_items['Operating Time'] * cost_items['Unit Cost']
 
+# Correct for inflation to the year of study
 cost_items['Adjusted Total Cost'] = cost_items.apply(lambda x: cpi.inflate(x['Total Cost'], x['Cost Year'], to=study_year), axis=1)
 cost_items['Adjusted Cost Year'] = study_year
-
-#%%
-
-# Step: Calculate itemized and aggregrated Marginal Fuel Selling Price (MFSP)
-
+   
+# Calculate itemized MFSP
 cost_items['Itemized MFSP'] = cost_items['Adjusted Total Cost'].astype(float) / cost_items['Biofuel Flow'].astype(float)
 cost_items['Itemized MFSP: Unit (numerator)'] = cost_items['Total Cost: Unit (numerator)']
 cost_items['Itemized MFSP: Unit (denominator)'] = cost_items['Biofuel Flow: Unit (numerator)']
 
 # For co-products we consider their cost as credit to the MFSP [co-product credit by displacement]
 cost_items.loc[cost_items['Item'] == 'Coproducts', 'Itemized MFSP'] = \
-    cost_items.loc[cost_items['Item'] == 'Coproducts', 'Itemized MFSP'] * -1
+cost_items.loc[cost_items['Item'] == 'Coproducts', 'Itemized MFSP'] * -1
+
+#%%
+# Step: Calculate aggregrated Marginal Fuel Selling Price (MFSP)
 
 MFSP_agg = cost_items.copy()
 
