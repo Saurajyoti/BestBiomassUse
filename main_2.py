@@ -51,7 +51,7 @@ f_corr_params_variability = 'corr_params_variability.xlsx'
 sheet_corr_params_variability = 'input_table'
 
 # Year of study, to which inflation will be adjusted
-study_year = 2016
+study_year = 2021
 
 # Toggle cost credit for coproducts while calculating aggregrated MFSP
 consider_coproduct_cost_credit = True
@@ -94,53 +94,54 @@ df_econ = df_econ[['Case/Scenario', 'Parameter',
        'Total Cost', 'Total Flow: Unit (numerator)',
        'Total Flow: Unit (denominator)', 'Total Flow', 'Cost Year']]
 
-# Temporarily filter df_econ for QA
-
-df_econ = df_econ.loc[df_econ['Case/Scenario'].isin(['2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel',
-                                                     '2015 Biochemical Catalysis Design Report',
-                                                     '2018 Biochemical Design Case: BDO Pathway',
-                                                     '2018 Biochemical Design Case: Organic Acids Pathway',
-                                                     '2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-                                                     '2018, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-                                                     '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-                                                     '2020, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-                                                     'Biochemical 2019 SOT: Acids Pathway (Burn Lignin Case)',
-                                                     'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - "Base" Case)',
-                                                     'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - High)',
-                                                     'Biochemical 2019 SOT: BDO Pathway (Burn Lignin Case)',
-                                                     'Biochemical 2019 SOT: BDO Pathway (Convert Lignin - Base)',
-                                                     'Biochemical 2019 SOT: BDO Pathway (Convert Lignin - High)',
-                                                     'Biomass to Gasoline and Diesel Using Integrated Hydropyrolysis and Hydroconversion',
-                                                     'Corn stover ETJ', 
-                                                     'Dry Mill (Corn) ETJ',
-                                                     'Ex Situ CFP 2022 Target Case', 
-                                                     'Ex-Situ CFP 2019 SOT',
-                                                     'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
-                                                     'Ex-Situ Fixed Bed 2022 Projection',
-                                                     'In-Situ CFP 2022 Target Case',
-                                                     'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-                                                     'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-                                                     'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-                                                     'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-                                                     'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
-                                                     'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
-                                                     'Cellulosic Ethanol',
-                                                     'Cellulosic Ethanol with Jet Upgrading',
-                                                     'Fischer-Tropsch SPK',
-                                                     'Gasification to Methanol',
-                                                     'Gasoline from upgraded bio-oil from pyrolysis'
-                                                     ])].reset_index(drop=True)
+# Select pathways to consider
+df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([
+    '2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel',
+    '2015 Biochemical Catalysis Design Report',
+    '2018 Biochemical Design Case: BDO Pathway',
+    '2018 Biochemical Design Case: Organic Acids Pathway',
+    '2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+    '2018, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+    '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+    '2020, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+    'Biochemical 2019 SOT: Acids Pathway (Burn Lignin Case)',
+    'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - "Base" Case)',
+    'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - High)',
+    'Biochemical 2019 SOT: BDO Pathway (Burn Lignin Case)',
+    'Biochemical 2019 SOT: BDO Pathway (Convert Lignin - Base)',
+    'Biochemical 2019 SOT: BDO Pathway (Convert Lignin - High)',
+    'Biomass to Gasoline and Diesel Using Integrated Hydropyrolysis and Hydroconversion',
+    'Corn stover ETJ', 
+    'Dry Mill (Corn) ETJ',
+    'Ex Situ CFP 2022 Target Case', 
+    'Ex-Situ CFP 2019 SOT',
+    'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
+    'Ex-Situ Fixed Bed 2022 Projection',
+    'In-Situ CFP 2022 Target Case',
+    'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+    'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+    'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+    'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+    'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+    'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
+    'Cellulosic Ethanol',
+    'Cellulosic Ethanol with Jet Upgrading',
+    'Fischer-Tropsch SPK',
+    'Gasification to Methanol',
+    'Gasoline from upgraded bio-oil from pyrolysis'
+    ])].reset_index(drop=True)
 
 # When studying variability of unit cost on MFSP and MAC,
-# following pathways are avoided because detailed LCI are not available
-cases_to_avoid = ['Corn stover ETJ',
-                  'Dry Mill (Corn) ETJ',
-                  'Cellulosic Ethanol',
+# following pathways are avoided because detailed LCI are not available yet
+cases_to_avoid = ['Cellulosic Ethanol',
                   'Cellulosic Ethanol with Jet Upgrading',
                   'Fischer-Tropsch SPK',
                   'Gasification to Methanol',
                   'Gasoline from upgraded bio-oil from pyrolysis']
 
+# Exclude cases to avoid if performing variability analysis
+if consider_variability_study:
+    df_econ = df_econ.loc[~df_econ['Case/Scenario'].isin(cases_to_avoid)].reset_index(drop=True)
 
 EIA_price = pd.read_csv(input_path_EIA_price + '/' + f_EIA_price, index_col=None)
 
@@ -209,6 +210,18 @@ cost_items = pd.merge(cost_items, biofuel_yield2, how='left', on='Case/Scenario'
 #%%
 # Step: calculate cost per variability of parameters
 
+# drop blanks
+cost_items = cost_items.loc[~cost_items['Total Cost'].isin(['-']), : ]
+
+# unit check
+check_units = (cost_items['Flow: Unit (numerator)'] != cost_items['Cost: Unit (denominator)']) |\
+    (cost_items['Flow: Unit (denominator)'] != cost_items['Operating Time: Unit'])
+cost_items = cost_items.loc[~check_units]
+check_units = cost_items.loc[check_units, : ]
+if check_units.shape[0] > 0:
+    print("Warning: The following cost items need attention as the units are not harmonized ..")
+    print(check_units)
+
 var_params = corr_params_variability.loc[corr_params_variability['col_param'].isin(['Cost Item']), : ]
 
 # Function to expand on the input variability table 
@@ -249,45 +262,88 @@ cost_items_tbl = cost_items_tbl.merge(var_params_tbl, how='left', on='variabilit
 
 # Calculate itemized MFSP
 
-# drop blanks
-cost_items = cost_items.loc[~cost_items['Total Cost'].isin(['-']), : ]
- 
-cost_items['Total Cost'] = cost_items['Flow'] * cost_items['Operating Time'] * cost_items['Unit Cost']
+def mult_numeric(a,b,c):
+    if ((type(a) is int) | (type(a) is float)) &\
+       ((type(b) is int) | (type(b) is float)) &\
+       ((type(c) is int) | (type(c) is float)):
+           return a*b*c
+    else:
+         return 0
+     
+# re-calculate total cost
+cost_items_tbl.loc[cost_items_tbl['Flow'] != '-', 'Flow'] =\
+    pd.to_numeric(cost_items_tbl.loc[cost_items_tbl['Flow'] != '-', 'Flow']).copy()
+cost_items_tbl.loc[cost_items_tbl['Operating Time'] != '-', 'Operating Time'] =\
+    pd.to_numeric(cost_items_tbl.loc[cost_items_tbl['Operating Time'] != '-', 'Operating Time']).copy()
+cost_items_tbl.loc[cost_items_tbl['Unit Cost'] != '-', 'Unit Cost'] =\
+    pd.to_numeric(cost_items_tbl.loc[cost_items_tbl['Unit Cost'] != '-', 'Unit Cost']).copy()
 
+cost_items_tbl.loc[((cost_items_tbl['Flow'] != '-') &
+                   (cost_items_tbl['Operating Time'] != '-') &
+                   (cost_items_tbl['Unit Cost'] != '-'))
+    ,'Total Cost'] = \
+    cost_items_tbl.loc[((cost_items_tbl['Flow'] != '-') &
+                       (cost_items_tbl['Operating Time'] != '-') &
+                       (cost_items_tbl['Unit Cost'] != '-')), 'Flow'] *\
+    cost_items_tbl.loc[((cost_items_tbl['Flow'] != '-') &
+                        (cost_items_tbl['Operating Time'] != '-') &
+                        (cost_items_tbl['Unit Cost'] != '-')), 'Operating Time'] *\
+    cost_items_tbl.loc[((cost_items_tbl['Flow'] != '-') &
+                       (cost_items_tbl['Operating Time'] != '-') &
+                       (cost_items_tbl['Unit Cost'] != '-')), 'Unit Cost']
+    
 # Correct for inflation to the year of study
-cost_items['Adjusted Total Cost'] = cost_items.apply(lambda x: cpi.inflate(x['Total Cost'], x['Cost Year'], to=study_year), axis=1)
-cost_items['Adjusted Cost Year'] = study_year
+cost_items_tbl['Adjusted Total Cost'] = cost_items_tbl.apply(lambda x: cpi.inflate(x['Total Cost'], x['Cost Year'], to=study_year), axis=1)
+cost_items_tbl['Adjusted Cost Year'] = study_year
    
 # Calculate itemized MFSP
-cost_items['Itemized MFSP'] = cost_items['Adjusted Total Cost'].astype(float) / cost_items['Biofuel Flow'].astype(float)
-cost_items['Itemized MFSP: Unit (numerator)'] = cost_items['Total Cost: Unit (numerator)']
-cost_items['Itemized MFSP: Unit (denominator)'] = cost_items['Biofuel Flow: Unit (numerator)']
+cost_items_tbl['Itemized MFSP'] = cost_items_tbl['Adjusted Total Cost'].astype(float) / cost_items_tbl['Biofuel Flow'].astype(float)
+cost_items_tbl['Itemized MFSP: Unit (numerator)'] = cost_items_tbl['Total Cost: Unit (numerator)']
+cost_items_tbl['Itemized MFSP: Unit (denominator)'] = cost_items_tbl['Biofuel Flow: Unit (numerator)']
 
 # For co-products we consider their cost as credit to the MFSP [co-product credit by displacement]
-cost_items.loc[cost_items['Item'] == 'Coproducts', 'Itemized MFSP'] = \
-cost_items.loc[cost_items['Item'] == 'Coproducts', 'Itemized MFSP'] * -1
+cost_items_tbl.loc[cost_items_tbl['Item'] == 'Coproducts', 'Itemized MFSP'] = \
+  cost_items_tbl.loc[cost_items_tbl['Item'] == 'Coproducts', 'Itemized MFSP'] * -1
 
 #%%
 # Step: Calculate aggregrated Marginal Fuel Selling Price (MFSP)
 
-MFSP_agg = cost_items.copy()
+MFSP_agg = cost_items_tbl.copy()
 
 if consider_coproduct_cost_credit == False:
     MFSP_agg = MFSP_agg.loc[~MFSP_agg['Item'].isin(['Coproducts']), :]
 
 MFSP_agg = MFSP_agg[['Case/Scenario',
-                       'Feedstock',
-                       'Itemized MFSP: Unit (numerator)', 
-                       'Itemized MFSP: Unit (denominator)',
-                       'Adjusted Cost Year',
-                       'Itemized MFSP']]
+                     'Feedstock',
+                     'Itemized MFSP: Unit (numerator)', 
+                     'Itemized MFSP: Unit (denominator)',
+                     'Adjusted Cost Year',
+                     'Itemized MFSP',
+                     'variability_id',
+                     'col_param',
+                     'col_val',
+                     'param_name',
+                     'param_min',
+                     'param_max',
+                     'param_dist',
+                     'dist_option',
+                     'param_value']]
 MFSP_agg = MFSP_agg[MFSP_agg['Itemized MFSP'].notna()]
     
 MFSP_agg = MFSP_agg.groupby(['Case/Scenario',
                              'Feedstock',
                              'Itemized MFSP: Unit (numerator)', 
                              'Itemized MFSP: Unit (denominator)',
-                             'Adjusted Cost Year']).agg({'Itemized MFSP' : 'sum'}).reset_index()
+                             'Adjusted Cost Year',
+                             'variability_id',
+                             'col_param',
+                             'col_val',
+                             'param_name',
+                             'param_min',
+                             'param_max',
+                             'param_dist',
+                             'dist_option',
+                             'param_value']).agg({'Itemized MFSP' : 'sum'}).reset_index()
 MFSP_agg.rename(columns={'Itemized MFSP' : 'MFSP replacing fuel',
                          'Itemized MFSP: Unit (numerator)' : 'MFSP replacing fuel: Unit (numerator)',
                          'Itemized MFSP: Unit (denominator)' : 'MFSP replacing fuel: Unit (denominator)'}, inplace=True)
@@ -298,7 +354,7 @@ MFSP_agg = pd.merge(biofuel_yield[['Case/Scenario', 'Biofuel Flow Name']].drop_d
 
 # Save interim data tables
 if save_interim_files == True:
-    cost_items.to_csv(output_path_prefix + '/' + f_out_itemized_mfsp)
+    cost_items_tbl.to_csv(output_path_prefix + '/' + f_out_itemized_mfsp)
     MFSP_agg.to_csv(output_path_prefix + '/' + f_out_agg_mfsp)
 
 #%%
@@ -421,20 +477,9 @@ if save_interim_files == True:
 # Merge aggregrated LCA metric to MFSP tables
 MAC_df = pd.merge(MFSP_agg, LCA_items_agg, on=['Case/Scenario']).reset_index(drop=True)
 
-# Aggregrate carbon intensities for various GHGs to CO2e
-#ef = ef.groupby(['GREET Pathway', 'Unit (Numerator)', 'Unit (Denominator)', 'Case', 'Scope', 'Year'], as_index=False).\
-#        agg({'Reference case' : 'sum', 'Elec0' : 'sum'}).reset_index(drop=True)
-#ef['Formula'] = 'Carbon dioxide equivalent'
-#ef['Formula'] = 'CO2e'
- 
 # map replaced fuels with replacing fuels
 MAC_df = pd.merge(MAC_df, corr_replaced_replacing_fuel, how = 'left', 
                on=['Case/Scenario', 'Biofuel Flow Name', 'Feedstock']).reset_index(drop=True) 
-
-# map replacing fuels with GREET pathways
-#MAC_df = pd.merge(MAC_df, corr_fuel_replacing_GREET_pathway, how='left',
-#               on=['Case/Scenario', 'Biofuel Flow Name', 'Feedstock']).reset_index(drop=True)
-#MAC_df.rename(columns={'GREET Pathway' : 'GREET Pathway for replacing fuel'}, inplace=True)
 
 # map replaced fuels with GREET pathways
 MAC_df = pd.merge(MAC_df, corr_fuel_replaced_GREET_pathway, how='left', on=['Replaced Fuel']).reset_index(drop=True)
@@ -453,20 +498,6 @@ MAC_df.rename(columns={'Flow Name' : 'Flow Name_replaced fuel',
                        'Reference case' : 'CI replaced fuel',
                        'Elec0' : 'CI Elec0_replaced fuel'}, inplace=True)
 MAC_df.drop(['GREET Pathway'], axis=1, inplace=True)
-
-# map GREET carbon intensities for replacing fuels
-#MAC_df = pd.merge(MAC_df, ef, how='left', 
-#                  left_on=['GREET Pathway for replacing fuel', 'Year', 'Formula_replaced fuel'],
-#                  right_on=['GREET Pathway', 'Year', 'Formula']).reset_index(drop=True)
-#MAC_df.rename(columns={'Flow Name' : 'Flow Name_replacing fuel',
-#                       'Formula' :'Formula_replacing fuel',
-#                       'Unit (Numerator)' : 'Unit (Numerator)_CI replacing fuel',
-#                       'Unit (Denominator)' : 'Unit (Denominator)_CI replacing fuel',
-#                       'Case' : 'Case_replacing fuel',
-#                       'Scope' : 'Scope_replacing fuel',
-#                       'Reference case' : 'CI_replacing fuel',
-#                       'Elec0' : 'CI_Elec0_replacing fuel'}, inplace=True)
-#MAC_df.drop(['GREET Pathway'], axis=1, inplace=True)
 
 # Map MFSP of replaced fuels
 MAC_df = pd.merge(MAC_df, 
