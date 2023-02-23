@@ -63,6 +63,7 @@ consider_coproduct_env_credit = True
 consider_variability_study = True
 
 save_interim_files = True
+
 #%%
 # import packages
 import pandas as pd
@@ -77,6 +78,39 @@ import cpi
 os.chdir(code_path_prefix)
 
 from unit_conversions import model_units
+
+#%%
+# User defined function definitions
+
+# Function to expand on the input variability table 
+def variability_table(var_params):
+    var_tbl = pd.DataFrame(columns=var_params.columns.to_list() + ['param_value'] )
+    for r in range(0, var_params.shape[0]):
+        if var_params.loc[r, 'param_dist'] == 'linear':
+            val = var_params.loc[r,'param_min']
+            while (var_params.loc[r,'param_max'] - val) > 0.0001:  
+               #var_params.loc[r,'param_value'] = val                              
+               var_tbl = pd.concat([var_tbl, 
+                                    pd.DataFrame({
+                                     'col_param' : [var_params.loc[r,'col_param']],
+                                     'col_val' : [var_params.loc[r,'col_val']],
+                                     'param_name' : [var_params.loc[r,'param_name']],
+                                     'param_min' : [var_params.loc[r,'param_min']],
+                                     'param_max' : [var_params.loc[r,'param_max']],
+                                     'param_dist' : [var_params.loc[r,'param_dist']],
+                                     'dist_option' : [var_params.loc[r,'dist_option']],
+                                     'param_value' : [val]})
+                                    ])
+               val = val + var_params.loc[r,'dist_option']
+    return var_tbl
+
+def mult_numeric(a,b,c):
+    if ((type(a) is int) | (type(a) is float)) &\
+       ((type(b) is int) | (type(b) is float)) &\
+       ((type(c) is int) | (type(c) is float)):
+           return a*b*c
+    else:
+         return 0
 
 #%%
 # Step: Load data file and select columns for computation
@@ -213,137 +247,130 @@ cost_items = pd.merge(cost_items, biofuel_yield2, how='left', on='Case/Scenario'
 # drop blanks
 cost_items = cost_items.loc[~cost_items['Total Cost'].isin(['-']), : ]
 
-# unit check
-check_units = (cost_items['Flow: Unit (numerator)'] != cost_items['Cost: Unit (denominator)']) |\
-    (cost_items['Flow: Unit (denominator)'] != cost_items['Operating Time: Unit'])
-cost_items = cost_items.loc[~check_units]
-check_units = cost_items.loc[check_units, : ]
-if check_units.shape[0] > 0:
-    print("Warning: The following cost items need attention as the units are not harmonized ..")
-    print(check_units)
-
-var_params = corr_params_variability.loc[corr_params_variability['col_param'].isin(['Cost Item']), : ]
-
-# Function to expand on the input variability table 
-def variability_table(var_params):
-    var_tbl = pd.DataFrame(columns=var_params.columns.to_list() + ['param_value'] )
-    for r in range(0, var_params.shape[0]):
-        if var_params.loc[r, 'param_dist'] == 'linear':
-            val = var_params.loc[r,'param_min']
-            while (var_params.loc[r,'param_max'] - val) > 0.0001:  
-               #var_params.loc[r,'param_value'] = val                              
-               var_tbl = pd.concat([var_tbl, 
-                                    pd.DataFrame({
-                                     'col_param' : [var_params.loc[r,'col_param']],
-                                     'col_val' : [var_params.loc[r,'col_val']],
-                                     'param_name' : [var_params.loc[r,'param_name']],
-                                     'param_min' : [var_params.loc[r,'param_min']],
-                                     'param_max' : [var_params.loc[r,'param_max']],
-                                     'param_dist' : [var_params.loc[r,'param_dist']],
-                                     'dist_option' : [var_params.loc[r,'dist_option']],
-                                     'param_value' : [val]})
-                                    ])
-               val = val + var_params.loc[r,'dist_option']
-    return var_tbl
+if consider_variability_study:
     
-var_params_tbl = variability_table(var_params).reset_index(drop=True)
-var_params_tbl['variability_id'] = var_params_tbl.index
 
+    # unit check
+    check_units = (cost_items['Flow: Unit (numerator)'] != cost_items['Cost: Unit (denominator)']) |\
+        (cost_items['Flow: Unit (denominator)'] != cost_items['Operating Time: Unit'])
+    cost_items = cost_items.loc[~check_units]
+    check_units = cost_items.loc[check_units, : ]
+    if check_units.shape[0] > 0:
+        print("Warning: The following cost items need attention as the units are not harmonized ..")
+        print(check_units)
+    
+    var_params = corr_params_variability.loc[corr_params_variability['col_param'].isin(['Cost Item']), : ]
+            
+    var_params_tbl = variability_table(var_params).reset_index(drop=True)
+    var_params_tbl['variability_id'] = var_params_tbl.index
+    
+    
+    cost_items_temp = cost_items.copy()
 
-cost_items_tbl = pd.DataFrame(columns=cost_items.columns.to_list() + ['variability_id'])
-for r in range(0, var_params_tbl.shape[0]):
-    cost_items.loc[
-        cost_items[var_params_tbl.loc[r, 'col_param']].isin([var_params_tbl.loc[r, 'param_name']]), 
-        var_params_tbl.loc[r, 'col_val']] = var_params_tbl.loc[r, 'param_value']
-    cost_items['variability_id'] = var_params_tbl.loc[r, 'variability_id']
-    cost_items_tbl = pd.concat([cost_items_tbl, cost_items])
-
-cost_items_tbl = cost_items_tbl.merge(var_params_tbl, how='left', on='variability_id').reset_index(drop=True)
-
-# Calculate itemized MFSP
-
-def mult_numeric(a,b,c):
-    if ((type(a) is int) | (type(a) is float)) &\
-       ((type(b) is int) | (type(b) is float)) &\
-       ((type(c) is int) | (type(c) is float)):
-           return a*b*c
-    else:
-         return 0
-     
-# re-calculate total cost
-cost_items_tbl.loc[cost_items_tbl['Flow'] != '-', 'Flow'] =\
-    pd.to_numeric(cost_items_tbl.loc[cost_items_tbl['Flow'] != '-', 'Flow']).copy()
-cost_items_tbl.loc[cost_items_tbl['Operating Time'] != '-', 'Operating Time'] =\
-    pd.to_numeric(cost_items_tbl.loc[cost_items_tbl['Operating Time'] != '-', 'Operating Time']).copy()
-cost_items_tbl.loc[cost_items_tbl['Unit Cost'] != '-', 'Unit Cost'] =\
-    pd.to_numeric(cost_items_tbl.loc[cost_items_tbl['Unit Cost'] != '-', 'Unit Cost']).copy()
-
-cost_items_tbl.loc[((cost_items_tbl['Flow'] != '-') &
-                   (cost_items_tbl['Operating Time'] != '-') &
-                   (cost_items_tbl['Unit Cost'] != '-'))
-    ,'Total Cost'] = \
-    cost_items_tbl.loc[((cost_items_tbl['Flow'] != '-') &
-                       (cost_items_tbl['Operating Time'] != '-') &
-                       (cost_items_tbl['Unit Cost'] != '-')), 'Flow'] *\
-    cost_items_tbl.loc[((cost_items_tbl['Flow'] != '-') &
-                        (cost_items_tbl['Operating Time'] != '-') &
-                        (cost_items_tbl['Unit Cost'] != '-')), 'Operating Time'] *\
-    cost_items_tbl.loc[((cost_items_tbl['Flow'] != '-') &
-                       (cost_items_tbl['Operating Time'] != '-') &
-                       (cost_items_tbl['Unit Cost'] != '-')), 'Unit Cost']
+    cost_items = pd.DataFrame(columns=cost_items_temp.columns.to_list() + ['variability_id'])
+    for r in range(0, var_params_tbl.shape[0]):
+        cost_items_temp.loc[
+            cost_items_temp[var_params_tbl.loc[r, 'col_param']].isin([var_params_tbl.loc[r, 'param_name']]), 
+            var_params_tbl.loc[r, 'col_val']] = var_params_tbl.loc[r, 'param_value']
+        cost_items_temp['variability_id'] = var_params_tbl.loc[r, 'variability_id']
+        cost_items = pd.concat([cost_items, cost_items_temp])
+    
+    cost_items = cost_items.merge(var_params_tbl, how='left', on='variability_id').reset_index(drop=True)
+    
+    # Calculate itemized MFSP
+    
+    # re-calculate total cost
+    cost_items.loc[cost_items['Flow'] != '-', 'Flow'] =\
+        pd.to_numeric(cost_items.loc[cost_items['Flow'] != '-', 'Flow']).copy()
+    cost_items.loc[cost_items['Operating Time'] != '-', 'Operating Time'] =\
+        pd.to_numeric(cost_items.loc[cost_items['Operating Time'] != '-', 'Operating Time']).copy()
+    cost_items.loc[cost_items['Unit Cost'] != '-', 'Unit Cost'] =\
+        pd.to_numeric(cost_items.loc[cost_items['Unit Cost'] != '-', 'Unit Cost']).copy()
+    
+    cost_items.loc[((cost_items['Flow'] != '-') &
+                       (cost_items['Operating Time'] != '-') &
+                       (cost_items['Unit Cost'] != '-'))
+        ,'Total Cost'] = \
+        cost_items.loc[((cost_items['Flow'] != '-') &
+                           (cost_items['Operating Time'] != '-') &
+                           (cost_items['Unit Cost'] != '-')), 'Flow'] *\
+        cost_items.loc[((cost_items['Flow'] != '-') &
+                            (cost_items['Operating Time'] != '-') &
+                            (cost_items['Unit Cost'] != '-')), 'Operating Time'] *\
+        cost_items.loc[((cost_items['Flow'] != '-') &
+                           (cost_items['Operating Time'] != '-') &
+                           (cost_items['Unit Cost'] != '-')), 'Unit Cost']
     
 # Correct for inflation to the year of study
-cost_items_tbl['Adjusted Total Cost'] = cost_items_tbl.apply(lambda x: cpi.inflate(x['Total Cost'], x['Cost Year'], to=study_year), axis=1)
-cost_items_tbl['Adjusted Cost Year'] = study_year
+cost_items['Adjusted Total Cost'] = cost_items.apply(lambda x: cpi.inflate(x['Total Cost'], x['Cost Year'], to=study_year), axis=1)
+cost_items['Adjusted Cost Year'] = study_year
    
 # Calculate itemized MFSP
-cost_items_tbl['Itemized MFSP'] = cost_items_tbl['Adjusted Total Cost'].astype(float) / cost_items_tbl['Biofuel Flow'].astype(float)
-cost_items_tbl['Itemized MFSP: Unit (numerator)'] = cost_items_tbl['Total Cost: Unit (numerator)']
-cost_items_tbl['Itemized MFSP: Unit (denominator)'] = cost_items_tbl['Biofuel Flow: Unit (numerator)']
+cost_items['Itemized MFSP'] = cost_items['Adjusted Total Cost'].astype(float) / cost_items['Biofuel Flow'].astype(float)
+cost_items['Itemized MFSP: Unit (numerator)'] = cost_items['Total Cost: Unit (numerator)']
+cost_items['Itemized MFSP: Unit (denominator)'] = cost_items['Biofuel Flow: Unit (numerator)']
 
 # For co-products we consider their cost as credit to the MFSP [co-product credit by displacement]
-cost_items_tbl.loc[cost_items_tbl['Item'] == 'Coproducts', 'Itemized MFSP'] = \
-  cost_items_tbl.loc[cost_items_tbl['Item'] == 'Coproducts', 'Itemized MFSP'] * -1
+cost_items.loc[cost_items['Item'] == 'Coproducts', 'Itemized MFSP'] = \
+  cost_items.loc[cost_items['Item'] == 'Coproducts', 'Itemized MFSP'] * -1
 
 #%%
 # Step: Calculate aggregrated Marginal Fuel Selling Price (MFSP)
 
-MFSP_agg = cost_items_tbl.copy()
+MFSP_agg = cost_items.copy()
 
 if consider_coproduct_cost_credit == False:
     MFSP_agg = MFSP_agg.loc[~MFSP_agg['Item'].isin(['Coproducts']), :]
 
-MFSP_agg = MFSP_agg[['Case/Scenario',
-                     'Feedstock',
-                     'Itemized MFSP: Unit (numerator)', 
-                     'Itemized MFSP: Unit (denominator)',
-                     'Adjusted Cost Year',
-                     'Itemized MFSP',
-                     'variability_id',
-                     'col_param',
-                     'col_val',
-                     'param_name',
-                     'param_min',
-                     'param_max',
-                     'param_dist',
-                     'dist_option',
-                     'param_value']]
-MFSP_agg = MFSP_agg[MFSP_agg['Itemized MFSP'].notna()]
+if consider_variability_study:
     
-MFSP_agg = MFSP_agg.groupby(['Case/Scenario',
-                             'Feedstock',
-                             'Itemized MFSP: Unit (numerator)', 
-                             'Itemized MFSP: Unit (denominator)',
-                             'Adjusted Cost Year',
-                             'variability_id',
-                             'col_param',
-                             'col_val',
-                             'param_name',
-                             'param_min',
-                             'param_max',
-                             'param_dist',
-                             'dist_option',
-                             'param_value']).agg({'Itemized MFSP' : 'sum'}).reset_index()
+    MFSP_agg = MFSP_agg[['Case/Scenario',
+                         'Feedstock',
+                         'Itemized MFSP: Unit (numerator)', 
+                         'Itemized MFSP: Unit (denominator)',
+                         'Adjusted Cost Year',
+                         'Itemized MFSP',
+                         'variability_id',
+                         'col_param',
+                         'col_val',
+                         'param_name',
+                         'param_min',
+                         'param_max',
+                         'param_dist',
+                         'dist_option',
+                         'param_value']]
+    MFSP_agg = MFSP_agg[MFSP_agg['Itemized MFSP'].notna()]
+        
+    MFSP_agg = MFSP_agg.groupby(['Case/Scenario',
+                                 'Feedstock',
+                                 'Itemized MFSP: Unit (numerator)', 
+                                 'Itemized MFSP: Unit (denominator)',
+                                 'Adjusted Cost Year',
+                                 'variability_id',
+                                 'col_param',
+                                 'col_val',
+                                 'param_name',
+                                 'param_min',
+                                 'param_max',
+                                 'param_dist',
+                                 'dist_option',
+                                 'param_value']).agg({'Itemized MFSP' : 'sum'}).reset_index()
+else:
+    MFSP_agg = MFSP_agg[['Case/Scenario',
+                         'Feedstock',
+                         'Itemized MFSP: Unit (numerator)', 
+                         'Itemized MFSP: Unit (denominator)',
+                         'Adjusted Cost Year',
+                         'Itemized MFSP']]
+    MFSP_agg = MFSP_agg[MFSP_agg['Itemized MFSP'].notna()]
+        
+    MFSP_agg = MFSP_agg.groupby(['Case/Scenario',
+                                 'Feedstock',
+                                 'Itemized MFSP: Unit (numerator)', 
+                                 'Itemized MFSP: Unit (denominator)',
+                                 'Adjusted Cost Year'
+                                 ]).agg({'Itemized MFSP' : 'sum'}).reset_index()
+    
 MFSP_agg.rename(columns={'Itemized MFSP' : 'MFSP replacing fuel',
                          'Itemized MFSP: Unit (numerator)' : 'MFSP replacing fuel: Unit (numerator)',
                          'Itemized MFSP: Unit (denominator)' : 'MFSP replacing fuel: Unit (denominator)'}, inplace=True)
@@ -354,7 +381,7 @@ MFSP_agg = pd.merge(biofuel_yield[['Case/Scenario', 'Biofuel Flow Name']].drop_d
 
 # Save interim data tables
 if save_interim_files == True:
-    cost_items_tbl.to_csv(output_path_prefix + '/' + f_out_itemized_mfsp)
+    cost_items.to_csv(output_path_prefix + '/' + f_out_itemized_mfsp)
     MFSP_agg.to_csv(output_path_prefix + '/' + f_out_agg_mfsp)
 
 #%%
