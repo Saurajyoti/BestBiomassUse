@@ -195,6 +195,16 @@ def fmt_GREET_LCI(df):
                      'LCA: Unit (numerator)', 'LCA: Unit (denominator)']).agg({'LCA_value' : 'sum'}).reset_index()
     df['LCA_metric'] = 'CO2e'
     
+    # harmonize units
+    # GREET tonnes represent Short Ton
+    df['LCA: Unit (denominator)'] = ['Short Tons' if val == 'ton' else val for val in df['LCA: Unit (denominator)'] ]
+        
+    # convert LCA unit of flow to model standard unit
+    df.loc[:, ['LCA: Unit (denominator)', 'LCA_value']] = \
+        ob_units.unit_convert_df(df.loc[:, ['LCA: Unit (denominator)', 'LCA_value']],
+         Unit = 'LCA: Unit (denominator)', Value = 'LCA_value',
+         if_unit_numerator = False, if_given_category=False)   
+    
     return df
     
 
@@ -477,6 +487,21 @@ if save_interim_files == True:
 LCA_items = df_econ.loc[df_econ['Item'].isin(['Purchased Inputs',
                                                'Waste Disposal',
                                                'Coproducts']), : ].copy()
+LCA_items = LCA_items[['Case/Scenario', 
+                       'Parameter', 
+                       'Item', 
+                       'Stream Description', 
+                       'Flow Name',
+                       'Flow: Unit (numerator)',
+                       'Flow: Unit (denominator)',
+                       'Flow',
+                       'Operating Time: Unit',
+                       'Operating Time',
+                       'Operating Time (%)',
+                       'Total Flow: Unit (numerator)',
+                       'Total Flow: Unit (denominator)',
+                       'Total Flow']]
+
 # temporary value for production year
 LCA_items['Production Year'] = study_year
 
@@ -488,23 +513,7 @@ LCA_items = pd.merge(LCA_items, corr_itemized_LCA, how='left',
                      left_on=['Item', 'Stream Description', 'Flow Name', 'Production Year'],
                      right_on=['Item', 'Stream Description', 'Flow Name', 'Year']).reset_index(drop=True)
 
-# remove trailing spaces for the Metric column
-#LCA_items['LCA_metric'] = LCA_items['LCA_metric'].str.strip()
-
-# Considering CO2e metric only at the moment, 'CO2 (w/ C in VOC & CO)' is not considered now
-LCA_items = LCA_items.loc[LCA_items['LCA_metric'].isin(['CO2']), :]
-
 # harmonize units
-# GREET tonnes represent Short Ton, convert to metric ton
-LCA_items['LCA: Unit (denominator)'] = ['Short Tons' if val == 'ton' else val for val in LCA_items['LCA: Unit (denominator)'] ]
-LCA_items['LCA_value'] = pd.to_numeric(LCA_items['LCA_value'])
-
-# convert LCA unit of flow to model standard unit
-LCA_items.loc[:, ['LCA: Unit (denominator)', 'LCA_value']] = \
-    ob_units.unit_convert_df(LCA_items.loc[:, ['LCA: Unit (denominator)', 'LCA_value']],
-     Unit = 'LCA: Unit (denominator)', Value = 'LCA_value',
-     if_unit_numerator = False, if_given_category=False)
-
 # converting material flow units to model standard units
 LCA_items['Total Flow'] = ['0' if val == '-' else val for val in LCA_items['Total Flow'] ]
 LCA_items['Total Flow'] = pd.to_numeric(LCA_items['Total Flow'])
@@ -512,8 +521,8 @@ LCA_items.loc[~(LCA_items['Total Flow: Unit (numerator)'].isin(['-'])),
               ['Total Flow: Unit (numerator)', 'Total Flow']] = \
     ob_units.unit_convert_df(LCA_items.loc[~(LCA_items['Total Flow: Unit (numerator)'].isin(['-'])), ['Total Flow: Unit (numerator)', 'Total Flow']],
      Unit = 'Total Flow: Unit (numerator)', Value = 'Total Flow',
-     if_unit_numerator = True, if_given_category=False)    
-
+     if_unit_numerator = True, if_given_category=False)
+    
 # Identify non-harmonized units if any
 ignored_LCA_items = LCA_items.loc[LCA_items['Total Flow: Unit (numerator)'] != LCA_items['LCA: Unit (denominator)'], : ]
 if ignored_LCA_items.shape[0] > 0:
