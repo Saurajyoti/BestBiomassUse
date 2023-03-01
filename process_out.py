@@ -13,12 +13,16 @@ sheet_PC = 'PC'
 
 path_out = 'C:/Users/skar/Box/saura_self/Proj - Algae/data/correspondence_files/output files'
 fs_out = ['GREET_Algae_sims_PC_[1,1].csv',
-          'GREET_Algae_sims_PC_[2,1]_[3,1].csv']
+          'GREET_Algae_sims_PC_[2,1]_[3,1].csv',
+          'GREET_Algae_sims_PC_[1,2].csv',
+          'GREET_Algae_sims_PC_[2,2].csv']
 
 f_formatted = 'GREET_Algae_sims_PC_sk.xlsx'
 
 param_set_fs_out = [['1-1'],
-                    ['2-1', '3-1']]
+                    ['2-1', '3-1'],
+                    ['1-2'],
+                    ['2-2']]
 
 df_all = pd.DataFrame()
 for idx in range(len(fs_out)):
