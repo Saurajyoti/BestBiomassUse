@@ -26,7 +26,7 @@ input_path_EIA_price = input_path_prefix + '/EIA'
 input_path_corr = input_path_prefix + '/correspondence_files'
 input_path_units = input_path_prefix + '/Units'
 
-f_TEA = 'TEA Database_02_09_2023.xlsx'
+f_TEA = 'TEA Database_add_pathways_03_02_2023.xlsx'
 sheet_TEA = 'Biofuel'
 
 f_out_itemized_mfsp = 'mfsp_itemized.csv'
@@ -63,6 +63,11 @@ consider_coproduct_env_credit = False
 consider_variability_study = False
 
 save_interim_files = True
+
+dict_gco2e = {
+    'CO2' : 1,
+    'N2O' : 298,
+    'CH4' : 25}
 
 #%%
 # import packages
@@ -111,16 +116,13 @@ def mult_numeric(a,b,c):
            return a*b*c
     else:
          return 
-     
+
 # Function to add header rows to LCA metric rows, select subset of LCA metrices, and calculate CO2e
 def fmt_GREET_LCI(df):
-    df = corr_itemized_LCA.copy()   
+    #df = corr_itemized_LCA.copy()   
+    
     df = df.drop_duplicates().reset_index(drop=True)
-    df.fillna('', inplace=True)
-    dict_gco2e = {
-        'CO2' : 1,
-        'N2O' : 298,
-        'CH4' : 25}
+    df.fillna('', inplace=True)    
     
     # add header to LCI metrices rows    
     df[['Unit (numerator)', 'Unit (denominator)']] = df['Unit'].str.split('/', expand=True)
@@ -206,6 +208,21 @@ def fmt_GREET_LCI(df):
          if_unit_numerator = False, if_given_category=False)   
     
     return df
+
+def ef_calc_co2e(df):
+    # calculate CO2e
+    df['mult'] = df['Formula'].map(dict_gco2e)
+    df['Reference case'] = pd.to_numeric(df['Reference case'])
+    df['Elec0'] = pd.to_numeric(df['Elec0'] )
+    df['Reference case'] = df['Reference case'] * df['mult']   
+    df['Elec0'] = df['Elec0'] * df['mult'] 
+    df = df.groupby(['GREET Pathway', 'Unit (Numerator)',
+           'Unit (Denominator)', 'Case', 'Scope', 'Year'
+           ]).agg({'Reference case' : 'sum',
+                   'Elec0' : 'sum'}).reset_index()
+    df['Formula'] = 'CO2e'
+    df['Flow Name'] = 'Carbon dioxide equivalent'
+    return df
     
 
 #%%
@@ -230,9 +247,9 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([
     # '2015 Biochemical Catalysis Design Report',
     # '2018 Biochemical Design Case: BDO Pathway',
     # '2018 Biochemical Design Case: Organic Acids Pathway',
-     '2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+    # '2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
     # '2018, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-    # '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+     '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
     # '2020, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
     # 'Biochemical 2019 SOT: Acids Pathway (Burn Lignin Case)',
     # 'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - "Base" Case)',
@@ -287,11 +304,14 @@ corr_fuel_replacing_GREET_pathway = pd.read_csv(input_path_corr + '/' + f_corr_f
 corr_GGE_GREET_fuel_replaced = pd.read_csv(input_path_corr + '/' + f_corr_GGE_GREET_fuel_replaced, header=3, index_col=None)
 corr_GGE_GREET_fuel_replacing = pd.read_csv(input_path_corr + '/' + f_corr_GGE_GREET_fuel_replacing, header=3, index_col=None)
 corr_itemized_LCA = pd.read_csv(input_path_corr + '/' + f_corr_itemized_LCI, header=0, index_col=0)
-corr_params_variability = pd.read_excel(input_path_corr + '/' + f_corr_params_variability, sheet_name=sheet_corr_params_variability, header=3, index_col=None)
+if consider_variability_study:
+    corr_params_variability = pd.read_excel(input_path_corr + '/' + f_corr_params_variability, sheet_name=sheet_corr_params_variability, header=3, index_col=None)
 
 #%%
 
 # Step: Create Cost Item table
+
+df_econ.loc[df_econ['Stream Description'].isna(), 'Stream Description'] = ''
 
 # Subset cost items to use for itemized MFSP calculation
 cost_items = df_econ.loc[df_econ['Item'].isin(['Purchased Inputs',
@@ -305,7 +325,7 @@ cost_items = df_econ.loc[df_econ['Item'].isin(['Purchased Inputs',
 cost_items.drop_duplicates(inplace=True)
 
 # Separate feedstock demand yearly flows
-cost_feedstocks = df_econ.loc[df_econ['Item'] == 'Feedstock Cost', 
+cost_feedstocks = df_econ.loc[df_econ['Item'] == 'Feedstock', 
                              ['Case/Scenario', 'Stream Description', 'Flow Name', 
                               'Flow: Unit (numerator)', 'Flow: Unit (denominator)', 'Flow']].copy()
 cost_feedstocks.rename(columns={'Stream Description' : 'Feedstock Stream Description',
@@ -484,9 +504,10 @@ if save_interim_files == True:
 
 # Step: Merge Itemized LCAs to TEA-pathway LCIs    
     
-LCA_items = df_econ.loc[df_econ['Item'].isin(['Purchased Inputs',
-                                               'Waste Disposal',
-                                               'Coproducts']), : ].copy()
+LCA_items = df_econ.loc[df_econ['Item'].isin(['Feedstock',
+                                              'Purchased Inputs',
+                                              'Waste Disposal',
+                                              'Coproducts']), : ].copy()
 LCA_items = LCA_items[['Case/Scenario', 
                        'Parameter', 
                        'Item', 
@@ -501,6 +522,8 @@ LCA_items = LCA_items[['Case/Scenario',
                        'Total Flow: Unit (numerator)',
                        'Total Flow: Unit (denominator)',
                        'Total Flow']]
+
+
 
 # temporary value for production year
 LCA_items['Production Year'] = study_year
@@ -584,6 +607,9 @@ if save_interim_files == True:
 
 # Step: Merge correspondence tables and GREET emission factors
 
+# harmonize emission factors of conventional fuels to CO2e unit
+ef = ef_calc_co2e(ef)
+
 # Merge aggregrated LCA metric to MFSP tables
 MAC_df = pd.merge(MFSP_agg, LCA_items_agg, on=['Case/Scenario']).reset_index(drop=True)
 
@@ -617,10 +643,13 @@ MAC_df = pd.merge(MAC_df,
                   right_on=['Year', 'Energy carrier']).reset_index(drop=True)
 MAC_df.rename(columns={'Value' : 'Cost_replaced fuel',
                        'Cost basis' : 'Cost basis_replaced fuel'}, inplace=True)
+
 MAC_df[['Year_Cost_replaced fuel', 'Unit Cost_replaced fuel (Numerator)']] = MAC_df['Unit'].str.split(' ', n=1, expand = True)
+
 MAC_df[['Unit Cost_replaced fuel (Numerator)', 
         'Unit Cost_replaced fuel (Denominator)']] = \
       MAC_df['Unit Cost_replaced fuel (Numerator)'].str.split('/', n=1, expand = True)
+
 MAC_df.rename(columns={'Unit Cost_replaced fuel (Numerator)' : 'Cost replaced fuel: Unit (Numerator)', 
                        'Unit Cost_replaced fuel (Denominator)' : 'Cost replaced fuel: Unit (Denominator)'}, inplace=True)
 
@@ -711,49 +740,51 @@ MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
 
 # $/gal to $/GGE
 # Map Replacing fuel to 'GREET_Fuel', 'GREET_Fuel type' for GGE conversion
-MAC_df = pd.merge(MAC_df, corr_GGE_GREET_fuel_replacing, how='left', 
-                  left_on=['Biofuel Flow Name'], 
-                  right_on=['B2B fuel name']).reset_index(drop=True)
-    
-MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['GREET_Fuel', 'GREET_Fuel type', 'GGE']].drop_duplicates(), 
-                  how='left', 
-                  on=['GREET_Fuel', 'GREET_Fuel type']).reset_index(drop=True)
-MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'gal', 'MFSP replacing fuel'] = \
-    MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'gal', 'MFSP replacing fuel'] / \
-    MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'gal', 'GGE']
-MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'gal', 'MFSP replacing fuel: Unit (denominator)'] = 'GGE'
-MAC_df.drop(columns=['GREET_Fuel', 'GREET_Fuel type', 'B2B fuel name', 'GGE'], inplace=True)
-
-# Convert fuel cost from $ per GGE to $ per MJ
-# extract CI of gasoline
-tempdf = ob_units.hv_EIA.loc[(ob_units.hv_EIA['Energy carrier'] == 'Gasoline') &
-                             (ob_units.hv_EIA['Energy carrier type'] == 'Petroleum Gasoline'), ['LHV', 'Unit']]
-# convert unit
-tempdf[['unit_numerator', 'unit_denominator']] = tempdf['Unit'].str.split('/', n=1, expand=True)
-tempdf.drop(columns=['Unit'], inplace=True)
-tempdf[['unit_numerator', 'LHV']] = \
-    ob_units.unit_convert_df (
-        tempdf[['unit_numerator', 'LHV']],
-        Unit='unit_numerator',
-        Value='LHV',
-        if_unit_numerator=True,
-        if_given_unit=True,
-        given_unit='MJ').copy()
-tempdf['unit_denominator'] = 'GGE'
-# merge with MAC df for unit conversion
-MAC_df = pd.merge(MAC_df, tempdf, how='left', 
-                  left_on='MFSP replacing fuel: Unit (denominator)', 
-                  right_on='unit_denominator').reset_index(drop=True)
-MAC_df['MFSP replacing fuel'] = MAC_df['MFSP replacing fuel']/MAC_df['LHV'] # unit: $/MJ
-MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'GGE', 'MFSP replacing fuel: Unit (denominator)'] = \
-    MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'unit_numerator']
-
-MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'Total LCA'] = \
-    MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'Total LCA']/MAC_df['LHV'] # unit: g/MJ
-MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'Total LCA: Unit (denominator)'] = \
-    MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'unit_numerator']
-    
-MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
+# =============================================================================
+# MAC_df = pd.merge(MAC_df, corr_GGE_GREET_fuel_replacing, how='left', 
+#                   left_on=['Biofuel Flow Name'], 
+#                   right_on=['B2B fuel name']).reset_index(drop=True)
+#     
+# MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['GREET_Fuel', 'GREET_Fuel type', 'GGE']].drop_duplicates(), 
+#                   how='left', 
+#                   on=['GREET_Fuel', 'GREET_Fuel type']).reset_index(drop=True)
+# MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'gal', 'MFSP replacing fuel'] = \
+#     MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'gal', 'MFSP replacing fuel'] / \
+#     MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'gal', 'GGE']
+# MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'gal', 'MFSP replacing fuel: Unit (denominator)'] = 'GGE'
+# MAC_df.drop(columns=['GREET_Fuel', 'GREET_Fuel type', 'B2B fuel name', 'GGE'], inplace=True)
+# 
+# # Convert fuel cost from $ per GGE to $ per MJ
+# # extract CI of gasoline
+# tempdf = ob_units.hv_EIA.loc[(ob_units.hv_EIA['Energy carrier'] == 'Gasoline') &
+#                              (ob_units.hv_EIA['Energy carrier type'] == 'Petroleum Gasoline'), ['LHV', 'Unit']]
+# # convert unit
+# tempdf[['unit_numerator', 'unit_denominator']] = tempdf['Unit'].str.split('/', n=1, expand=True)
+# tempdf.drop(columns=['Unit'], inplace=True)
+# tempdf[['unit_numerator', 'LHV']] = \
+#     ob_units.unit_convert_df (
+#         tempdf[['unit_numerator', 'LHV']],
+#         Unit='unit_numerator',
+#         Value='LHV',
+#         if_unit_numerator=True,
+#         if_given_unit=True,
+#         given_unit='MJ').copy()
+# tempdf['unit_denominator'] = 'GGE'
+# # merge with MAC df for unit conversion
+# MAC_df = pd.merge(MAC_df, tempdf, how='left', 
+#                   left_on='MFSP replacing fuel: Unit (denominator)', 
+#                   right_on='unit_denominator').reset_index(drop=True)
+# MAC_df['MFSP replacing fuel'] = MAC_df['MFSP replacing fuel']/MAC_df['LHV'] # unit: $/MJ
+# MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'GGE', 'MFSP replacing fuel: Unit (denominator)'] = \
+#     MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'unit_numerator']
+# 
+# MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'Total LCA'] = \
+#     MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'Total LCA']/MAC_df['LHV'] # unit: g/MJ
+# MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'Total LCA: Unit (denominator)'] = \
+#     MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'unit_numerator']
+#     
+# MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
+# =============================================================================
 
 # unit check for CI replaced fuel
 MAC_df[['dummy_unit', 'CI Elec0_replaced fuel']] = \
