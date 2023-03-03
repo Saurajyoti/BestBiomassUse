@@ -9,20 +9,16 @@ import pandas as pd
 
 path_in = 'C:/Users/skar/Box/saura_self/Proj - Algae/data/correspondence_files'
 f_in = 'corr_LCI_GREET_pathway_Algae_v1_run.xlsx'
-sheet_PC = 'PC'
+sheet_PC = 'Fuel'
 
 path_out = 'C:/Users/skar/Box/saura_self/Proj - Algae/data/correspondence_files/output files'
-fs_out = ['GREET_Algae_sims_PC_[1,1].csv',
-          'GREET_Algae_sims_PC_[2,1]_[3,1].csv',
-          'GREET_Algae_sims_PC_[1,2].csv',
-          'GREET_Algae_sims_PC_[2,2].csv']
+fs_out = ['GREET_Algae_sims_Fuel.csv']
 
-f_formatted = 'GREET_Algae_sims_PC_sk.xlsx'
+f_formatted = 'GREET_Algae_sims_Fuel_sk.xlsx'
 
-param_set_fs_out = [['1-1'],
-                    ['2-1', '3-1'],
-                    ['1-2'],
-                    ['2-2']]
+param_set_fs_out = [['1-1', '2-1', '3-1',
+                    '1-2', '2-2', '3,2',
+                    '1,3', '2,3', '3,3']]
 
 df_all = pd.DataFrame()
 for idx in range(len(fs_out)):

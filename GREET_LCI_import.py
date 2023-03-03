@@ -128,11 +128,11 @@ if __name__ == '__main__':
     # Global parameter declarations
     sheet_gparam = ['Algae', 'Algae'] # the sheets in fmodel that has the parameters
     cell_gparam = ['AI556', 'AF555'] # the cells in fmodel sheet_gparam where parameters are located
-    gparam = [#[1,1],  # value set of global parameters
-              #[2,1],
-              #[3,1],
-              #[1,2],
-              #[2,2],
+    gparam = [[1,1],  # value set of global parameters
+              [2,1],
+              [3,1],
+              [1,2],
+              [2,2],
               [3,2],
               [1,3],
               [2,3],
