@@ -23,6 +23,9 @@ sheet_tea = 'TEA'
 
 f_save = 'mac_for_pathways.csv'
 
+# Toggle if one wants to avoid pathways those produce higher CIs than the target fuel
+filter_by_CI_reduction = False
+
 #%%
 
 import pandas as pd
@@ -126,12 +129,13 @@ mac = mac.loc[~inconsistent_units, :].copy()
 mac['percent_CI_abated'] = (mac['CI_replaced']-mac['CI'])/mac['CI_replaced']*100
 
 # filter out alternative pathways with higher environmental impact than conventional pathways
-not_effective = mac.loc[mac['CI'] > mac['CI_replaced'], : ]
-mac = mac.loc[mac['CI'] <= mac['CI_replaced'], : ]
-
-if not_effective.shape[0]>0:
-    print('The following pathways have higher carbon intensity than conventional pathways, hence not considered as feasible options:')
-    print(not_effective)
+if filter_by_CI_reduction:    
+    not_effective = mac.loc[mac['CI'] > mac['CI_replaced'], : ]
+    mac = mac.loc[mac['CI'] <= mac['CI_replaced'], : ]
+    
+    if not_effective.shape[0]>0:
+        print('The following pathways have higher carbon intensity than conventional pathways, hence not considered as feasible options:')
+        print(not_effective)
 
 # calculate MAC
 mac['mac'] = (mac['MFSP']-mac['mfsp_replaced']) / (mac['CI_replaced']-mac['CI'])

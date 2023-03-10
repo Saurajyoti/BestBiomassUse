@@ -57,7 +57,7 @@ study_year = 2021
 consider_coproduct_cost_credit = True
 
 # Toggle to control emissions credit for coproducts while calculating aggregrated CIs
-consider_coproduct_env_credit = False
+consider_coproduct_env_credit = True
 
 # Toggle variability study
 consider_variability_study = False
@@ -68,6 +68,10 @@ dict_gco2e = {
     'CO2' : 1,
     'N2O' : 298,
     'CH4' : 25}
+
+# List of stream descriptions that have biogenic C and their CO2 is not excluded
+biogenic_lci = ['Biochar',
+                'Flue gas']
 
 #%%
 # import packages
@@ -187,6 +191,10 @@ def fmt_GREET_LCI(df):
     
     df.drop(columns=['count_m_x', 'count_m_y', 'dummy_metric'], inplace=True)
     
+    # Avoid biogenic CO2 emissions
+    df = df.loc[~((df['Stream Description'].isin(biogenic_lci)) &
+                (df['LCA_metric'].isin(['CO2']))), : ]
+    
     # calculate CO2e
     df['mult'] = df['LCA_metric'].map(dict_gco2e)
     df['LCA_value'] = pd.to_numeric(df['LCA_value'])
@@ -265,17 +273,22 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([
     # 'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
     # 'Ex-Situ Fixed Bed 2022 Projection',
     # 'In-Situ CFP 2022 Target Case',
-    # 'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-    # 'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-    # 'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-    # 'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-    # 'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+     'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+     'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+     'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+     'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+     'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
     # 'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
     # 'Cellulosic Ethanol',
     # 'Cellulosic Ethanol with Jet Upgrading',
     # 'Fischer-Tropsch SPK',
     # 'Gasification to Methanol',
     # 'Gasoline from upgraded bio-oil from pyrolysis'
+    '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
+    '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
+    '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
+    '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
+    '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates'
     ])].reset_index(drop=True)
 
 # When studying variability of unit cost on MFSP and MAC,

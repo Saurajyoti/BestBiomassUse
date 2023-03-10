@@ -17,6 +17,8 @@ f_lca_itemized = 'lca_itemized.csv'
 f_lca_agg = 'lca_agg.csv'
 f_mac = 'mac.csv'
 
+f_pathway_mac = 'mac_for_pathways.xlsx'
+
 #%%
 # Libraries
 import pandas as pd
@@ -103,3 +105,13 @@ g.figure.set_size_inches(6.5, 4.5)
 g.figure.savefig(fig_path_prefix+'\\'+'plot_LCA_MFSP.jpg', dpi=400)
 
 # Four quard plot: ratio of ghg of alt fuels and the conv fuels vs. ratio of MFSP of alt fuels and conventional fuels
+
+
+#%%
+
+# Pathway level analysis - graphs
+
+# perc CI reduction vs MAC
+
+fig_pathway_prcCI_vs_MAC = 'pathway_prcCI_vs_MAC'
+
