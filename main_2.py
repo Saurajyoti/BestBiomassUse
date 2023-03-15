@@ -60,7 +60,7 @@ consider_coproduct_cost_credit = True
 consider_coproduct_env_credit = True
 
 # Toggle variability study
-consider_variability_study = False
+consider_variability_study = True
 
 save_interim_files = True
 
