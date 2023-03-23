@@ -26,7 +26,7 @@ input_path_EIA_price = input_path_prefix + '/EIA'
 input_path_corr = input_path_prefix + '/correspondence_files'
 input_path_units = input_path_prefix + '/Units'
 
-f_TEA = 'TEA Database_add_pathways_03_02_2023.xlsx'
+f_TEA = 'TEA Database_add_pathways_03_20_2023.xlsx'
 sheet_TEA = 'Biofuel'
 
 f_out_itemized_mfsp = 'mfsp_itemized.csv'
@@ -45,7 +45,8 @@ f_corr_fuel_replaced_GREET_pathway = 'corr_fuel_replaced_GREET_pathway.csv'
 f_corr_fuel_replacing_GREET_pathway = 'corr_fuel_replacing_GREET_pathway.csv'
 f_corr_GGE_GREET_fuel_replaced = 'corr_GGE_GREET_fuel_replaced.csv'
 f_corr_GGE_GREET_fuel_replacing = 'corr_GGE_GREET_fuel_replacing.csv'
-f_corr_itemized_LCI = 'corr_LCI_GREET_temporal.csv'
+f_corr_itemized_LCI = 'corr_LCI_GREET_temporal_03_17_2023.csv'
+f_corr_replaced_EIA_mfsp = 'corr_replaced_EIA_mfsp.csv'
 
 f_corr_params_variability = 'corr_params_variability.xlsx'
 sheet_corr_params_variability = 'input_table'
@@ -60,7 +61,7 @@ consider_coproduct_cost_credit = True
 consider_coproduct_env_credit = True
 
 # Toggle variability study
-consider_variability_study = True
+consider_variability_study = False
 
 save_interim_files = True
 
@@ -69,7 +70,7 @@ dict_gco2e = {
     'N2O' : 298,
     'CH4' : 25}
 
-# List of stream descriptions that have biogenic C and their CO2 is not excluded
+# List of Stream_Flows that have biogenic C and their CO2 is not excluded
 biogenic_lci = ['Biochar',
                 'Flue gas']
 
@@ -136,8 +137,8 @@ def fmt_GREET_LCI(df):
                                       'Unit (numerator)' : 'LCA: Unit (numerator)',
                                       'Unit (denominator)' : 'LCA: Unit (denominator)'}, inplace=True)
     df = df[['Item',
-             'Stream Description',
-             'Flow Name',
+             'Stream_Flow',
+             'Stream_LCA',
              'GREET1 sheet',
              'Coproduct allocation method',
              'GREET classification of coproduct',
@@ -170,10 +171,10 @@ def fmt_GREET_LCI(df):
                     (df['LCA_metric'].str.contains('N2O', regex=False).replace({True:1, False:0})) +\
                     (((df['LCA_metric'].str.contains('CH4', regex=False)) &\
                                      ~(df['LCA_metric'].str.contains('Biogenic CH4', regex=False))).replace({True:1, False:0}))
-    df_sub = df.groupby(['Item', 'Stream Description', 'Flow Name', 
+    df_sub = df.groupby(['Item', 'Stream_Flow', 'Stream_LCA', 
                          'Year','GREET1 sheet','Coproduct allocation method',
                          'GREET classification of coproduct'], dropna=False).agg({'count_m' : 'sum'}).reset_index()
-    df = pd.merge(df, df_sub, how='left', on=['Item', 'Stream Description', 'Flow Name',
+    df = pd.merge(df, df_sub, how='left', on=['Item', 'Stream_Flow', 'Stream_LCA',
                                               'Year', 'GREET1 sheet', 'Coproduct allocation method',
                                               'GREET classification of coproduct']).reset_index(drop=True)
      
@@ -192,14 +193,14 @@ def fmt_GREET_LCI(df):
     df.drop(columns=['count_m_x', 'count_m_y', 'dummy_metric'], inplace=True)
     
     # Avoid biogenic CO2 emissions
-    df = df.loc[~((df['Stream Description'].isin(biogenic_lci)) &
+    df = df.loc[~((df['Stream_Flow'].isin(biogenic_lci)) &
                 (df['LCA_metric'].isin(['CO2']))), : ]
     
     # calculate CO2e
     df['mult'] = df['LCA_metric'].map(dict_gco2e)
     df['LCA_value'] = pd.to_numeric(df['LCA_value'])
     df['LCA_value'] = df['LCA_value'] * df['mult']    
-    df = df.groupby(['Item', 'Stream Description', 'Flow Name', 
+    df = df.groupby(['Item', 'Stream_Flow', 'Stream_LCA', 
                      'Year','GREET1 sheet','Coproduct allocation method',
                      'GREET classification of coproduct',
                      'LCA: Unit (numerator)', 'LCA: Unit (denominator)']).agg({'LCA_value' : 'sum'}).reset_index()
@@ -229,7 +230,7 @@ def ef_calc_co2e(df):
            ]).agg({'Reference case' : 'sum',
                    'Elec0' : 'sum'}).reset_index()
     df['Formula'] = 'CO2e'
-    df['Flow Name'] = 'Carbon dioxide equivalent'
+    df['Stream_LCA'] = 'Carbon dioxide equivalent'
     return df
     
 
@@ -241,7 +242,7 @@ init_time = datetime.now()
 df_econ = pd.read_excel(input_path_TEA + '/' + f_TEA, sheet_name = sheet_TEA, header = 3, index_col=None)
 
 df_econ = df_econ[['Case/Scenario', 'Parameter',
-       'Item', 'Stream Description', 'Flow Name', 'Flow: Unit (numerator)',
+       'Item', 'Stream_Flow', 'Stream_LCA', 'Flow: Unit (numerator)',
        'Flow: Unit (denominator)', 'Flow', 'Cost Item',
        'Cost: Unit (numerator)', 'Cost: Unit (denominator)', 'Unit Cost',
        'Operating Time: Unit', 'Operating Time', 'Operating Time (%)',
@@ -257,7 +258,11 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([
     # '2018 Biochemical Design Case: Organic Acids Pathway',
     # '2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
     # '2018, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-     '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+    
+    ###
+    '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+    ###
+    
     # '2020, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
     # 'Biochemical 2019 SOT: Acids Pathway (Burn Lignin Case)',
     # 'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - "Base" Case)',
@@ -273,22 +278,39 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([
     # 'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
     # 'Ex-Situ Fixed Bed 2022 Projection',
     # 'In-Situ CFP 2022 Target Case',
-     'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-     'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-     'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-     'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-     'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+    
+    ###
+    'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+    'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+    'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+    'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+    'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+    ##
+    
     # 'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
     # 'Cellulosic Ethanol',
     # 'Cellulosic Ethanol with Jet Upgrading',
     # 'Fischer-Tropsch SPK',
     # 'Gasification to Methanol',
     # 'Gasoline from upgraded bio-oil from pyrolysis'
+    
+    ###
     '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
     '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
     '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
     '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
-    '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates'
+    '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
+    ###
+    
+    '2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+    '2022, Marine biocrude via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+    '2022, Partially upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+    '2022, Partially upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+    '2022, Fully upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+    '2022, Fully upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+    '2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass',
+    '2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass',
+    
     ])].reset_index(drop=True)
 
 # When studying variability of unit cost on MFSP and MAC,
@@ -317,6 +339,7 @@ corr_fuel_replacing_GREET_pathway = pd.read_csv(input_path_corr + '/' + f_corr_f
 corr_GGE_GREET_fuel_replaced = pd.read_csv(input_path_corr + '/' + f_corr_GGE_GREET_fuel_replaced, header=3, index_col=None)
 corr_GGE_GREET_fuel_replacing = pd.read_csv(input_path_corr + '/' + f_corr_GGE_GREET_fuel_replacing, header=3, index_col=None)
 corr_itemized_LCA = pd.read_csv(input_path_corr + '/' + f_corr_itemized_LCI, header=0, index_col=0)
+corr_replaced_EIA_mfsp = pd.read_csv(input_path_corr + '/' + f_corr_replaced_EIA_mfsp, header=3, index_col=None) 
 if consider_variability_study:
     corr_params_variability = pd.read_excel(input_path_corr + '/' + f_corr_params_variability, sheet_name=sheet_corr_params_variability, header=3, index_col=None)
 
@@ -324,25 +347,26 @@ if consider_variability_study:
 
 # Step: Create Cost Item table
 
-df_econ.loc[df_econ['Stream Description'].isna(), 'Stream Description'] = ''
+df_econ.loc[df_econ['Stream_Flow'].isna(), 'Stream_Flow'] = ''
 
 # Subset cost items to use for itemized MFSP calculation
-cost_items = df_econ.loc[df_econ['Item'].isin(['Purchased Inputs',
+cost_items = df_econ.loc[df_econ['Item'].isin(['Feedstock',
+                                               'Purchased Inputs',
                                                'Waste Disposal',
                                                'Coproducts',
                                                'Fixed Costs',
-                                               'Capital Depreciation',
-                                               'Average Income Tax',
-                                               'Average Return on Investment',
+                                               #'Capital Depreciation',
+                                               #'Average Income Tax',
+                                               #'Average Return on Investment',
                                                'Cost by process steps']), : ].copy()
 cost_items.drop_duplicates(inplace=True)
 
 # Separate feedstock demand yearly flows
 cost_feedstocks = df_econ.loc[df_econ['Item'] == 'Feedstock', 
-                             ['Case/Scenario', 'Stream Description', 'Flow Name', 
+                             ['Case/Scenario', 'Stream_Flow', 'Stream_LCA', 
                               'Flow: Unit (numerator)', 'Flow: Unit (denominator)', 'Flow']].copy()
-cost_feedstocks.rename(columns={'Stream Description' : 'Feedstock Stream Description',
-                                'Flow Name' : 'Feedstock',
+cost_feedstocks.rename(columns={'Stream_Flow' : 'Feedstock Stream_Flow',
+                                'Stream_LCA' : 'Feedstock',
                                 'Flow: Unit (numerator)' : 'Feedstock Flow: Unit (numerator)', 
                                 'Flow: Unit (denominator)' : 'Feedstock Flow: Unit (denominator)',
                                 'Flow' : 'Feedstock Flow'}, inplace=True)
@@ -356,9 +380,9 @@ cost_items = pd.merge(cost_items, cost_feedstocks, how='left', on='Case/Scenario
 
 # Separate biofuel yield flows
 biofuel_yield = df_econ.loc[df_econ['Item'] == 'Final Product',
-                            ['Case/Scenario', 'Flow Name', 'Total Flow: Unit (numerator)', 
+                            ['Case/Scenario', 'Stream_LCA', 'Total Flow: Unit (numerator)', 
                              'Total Flow: Unit (denominator)', 'Total Flow']].reset_index(drop=True).copy()
-biofuel_yield.rename(columns={'Flow Name' : 'Biofuel Flow Name',
+biofuel_yield.rename(columns={'Stream_LCA' : 'Biofuel Stream_LCA',
                               'Total Flow: Unit (numerator)' : 'Biofuel Flow: Unit (numerator)', 
                               'Total Flow: Unit (denominator)' : 'Biofuel Flow: Unit (denominator)',
                               'Total Flow' : 'Biofuel Flow'}, inplace=True)
@@ -374,7 +398,7 @@ cost_items = pd.merge(cost_items, biofuel_yield2, how='left', on='Case/Scenario'
 # Step: calculate cost per variability of parameters
 
 # drop blanks
-cost_items = cost_items.loc[~cost_items['Total Cost'].isin(['-']), : ]
+cost_items = cost_items.loc[~(cost_items['Total Cost'].isin(['-']) | cost_items['Total Cost'].isna()), : ]
 
 if consider_variability_study:
     
@@ -431,6 +455,8 @@ if consider_variability_study:
                            (cost_items['Unit Cost'] != '-')), 'Unit Cost']
     
 # Correct for inflation to the year of study
+cost_items['Cost Year'] = cost_items['Cost Year'].astype(int)
+#cost_items['Total Cost'] = pd.to_numeric(cost_items['Total Cost'])
 cost_items['Adjusted Total Cost'] = cost_items.apply(lambda x: cpi.inflate(x['Total Cost'], x['Cost Year'], to=study_year), axis=1)
 cost_items['Adjusted Cost Year'] = study_year
    
@@ -505,7 +531,7 @@ MFSP_agg.rename(columns={'Itemized MFSP' : 'MFSP replacing fuel',
                          'Itemized MFSP: Unit (denominator)' : 'MFSP replacing fuel: Unit (denominator)'}, inplace=True)
 
 # Getting back the Final Product column
-MFSP_agg = pd.merge(biofuel_yield[['Case/Scenario', 'Biofuel Flow Name']].drop_duplicates(), 
+MFSP_agg = pd.merge(biofuel_yield[['Case/Scenario', 'Biofuel Stream_LCA']].drop_duplicates(), 
                     MFSP_agg, how='left', on='Case/Scenario').reset_index(drop=True)
 
 # Save interim data tables
@@ -524,8 +550,8 @@ LCA_items = df_econ.loc[df_econ['Item'].isin(['Feedstock',
 LCA_items = LCA_items[['Case/Scenario', 
                        'Parameter', 
                        'Item', 
-                       'Stream Description', 
-                       'Flow Name',
+                       'Stream_Flow', 
+                       'Stream_LCA',
                        'Flow: Unit (numerator)',
                        'Flow: Unit (denominator)',
                        'Flow',
@@ -546,8 +572,8 @@ corr_itemized_LCA = fmt_GREET_LCI(corr_itemized_LCA)
 
 # Merge itemized LCAs to LCIs
 LCA_items = pd.merge(LCA_items, corr_itemized_LCA, how='left', 
-                     left_on=['Item', 'Stream Description', 'Flow Name', 'Production Year'],
-                     right_on=['Item', 'Stream Description', 'Flow Name', 'Year']).reset_index(drop=True)
+                     left_on=['Item', 'Stream_Flow', 'Stream_LCA', 'Production Year'],
+                     right_on=['Item', 'Stream_Flow', 'Stream_LCA', 'Year']).reset_index(drop=True)
 
 # harmonize units
 # converting material flow units to model standard units
@@ -562,7 +588,7 @@ LCA_items.loc[~(LCA_items['Total Flow: Unit (numerator)'].isin(['-'])),
 # Identify non-harmonized units if any
 ignored_LCA_items = LCA_items.loc[LCA_items['Total Flow: Unit (numerator)'] != LCA_items['LCA: Unit (denominator)'], : ]
 if ignored_LCA_items.shape[0] > 0:
-    print("Warning: The following need attention as the units are not harmonized ..")
+    print("Warning: The following LCA items need attention as the units are not harmonized ..")
     print(ignored_LCA_items)
 
 #%%
@@ -570,7 +596,7 @@ if ignored_LCA_items.shape[0] > 0:
 # Step: Itemized and aggregrated LCA metric per pathway
 
 # Some LCA mappings are probably buggy, omitting it until QA
-LCA_items = LCA_items.loc[~LCA_items['Flow Name'].isin(['Makeup Water',
+LCA_items = LCA_items.loc[~LCA_items['Stream_LCA'].isin(['Makeup Water',
                                                         'Makeup water',
                                                         'Water make-up',
                                                         'Cooling Tower Makeup',
@@ -628,7 +654,7 @@ MAC_df = pd.merge(MFSP_agg, LCA_items_agg, on=['Case/Scenario']).reset_index(dro
 
 # map replaced fuels with replacing fuels
 MAC_df = pd.merge(MAC_df, corr_replaced_replacing_fuel, how = 'left', 
-               on=['Case/Scenario', 'Biofuel Flow Name', 'Feedstock']).reset_index(drop=True) 
+               on=['Case/Scenario', 'Biofuel Stream_LCA', 'Feedstock']).reset_index(drop=True) 
 
 # map replaced fuels with GREET pathways
 MAC_df = pd.merge(MAC_df, corr_fuel_replaced_GREET_pathway, how='left', on=['Replaced Fuel']).reset_index(drop=True)
@@ -638,7 +664,7 @@ MAC_df.rename(columns={'GREET Pathway' : 'GREET Pathway for replaced fuel'}, inp
 MAC_df = pd.merge(MAC_df, ef.loc[ef['Case'] == 'Reference case', : ], how='left', 
                   left_on=['GREET Pathway for replaced fuel', 'LCA_metric', 'Production Year'],
                   right_on=['GREET Pathway', 'Formula', 'Year']).reset_index(drop=True)
-MAC_df.rename(columns={'Flow Name' : 'Flow Name_replaced fuel',
+MAC_df.rename(columns={'Stream_LCA' : 'Stream_LCA_replaced fuel',
                        'Formula' :'Formula_replaced fuel',
                        'Unit (Numerator)' : 'CI replaced fuel: Unit (Numerator)',
                        'Unit (Denominator)' : 'CI replaced fuel: Unit (Denominator)',
@@ -649,10 +675,14 @@ MAC_df.rename(columns={'Flow Name' : 'Flow Name_replaced fuel',
 MAC_df.drop(['GREET Pathway'], axis=1, inplace=True)
 
 # Map MFSP of replaced fuels
+MAC_df = pd.merge(MAC_df,
+                  corr_replaced_EIA_mfsp,
+                  how='left',
+                  on=['Replaced Fuel']).reset_index(drop=True)
 MAC_df = pd.merge(MAC_df, 
                   EIA_price[['Year', 'Value', 'Energy carrier', 'Cost basis', 'Unit']],
                   how='left', 
-                  left_on=['Year', 'Replaced Fuel'], 
+                  left_on=['Year', 'EIA_fuel_mapping_for_price'], 
                   right_on=['Year', 'Energy carrier']).reset_index(drop=True)
 MAC_df.rename(columns={'Value' : 'Cost_replaced fuel',
                        'Cost basis' : 'Cost basis_replaced fuel'}, inplace=True)
@@ -669,7 +699,7 @@ MAC_df.rename(columns={'Unit Cost_replaced fuel (Numerator)' : 'Cost replaced fu
 MAC_df.drop(['Energy carrier', 'Unit'], axis=1, inplace=True)
 
 # Drop off data for which GREET pathways are not mapped until now
-missing_GREET_mappings = MAC_df.loc[MAC_df['GREET Pathway for replaced fuel'].isna(), ['Case/Scenario', 'Biofuel Flow Name', 'Feedstock', 'Replaced Fuel']].drop_duplicates()
+missing_GREET_mappings = MAC_df.loc[MAC_df['GREET Pathway for replaced fuel'].isna(), ['Case/Scenario', 'Biofuel Stream_LCA', 'Feedstock', 'Replaced Fuel']].drop_duplicates()
 if missing_GREET_mappings.shape[0] > 0:
     print("Warning: The following pathways are currently dropped as their mappings to GREET CIs are not available as input ..")
     print(missing_GREET_mappings)
@@ -697,20 +727,20 @@ MAC_df['Adjusted Cost Year'] = study_year
 
 # Unit check for Replaced Fuel
 
-# barrel to gallon
+ # barrel to gallon
 MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']] = \
-    ob_units.unit_convert_df (
-        MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']], 
-        Unit='Cost replaced fuel: Unit (Denominator)', 
-        Value='Adjusted Cost_replaced fuel', 
-        if_unit_numerator = False,
-        if_given_unit = True, 
-        given_unit = 'gal').copy()
+     ob_units.unit_convert_df (
+         MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']], 
+         Unit='Cost replaced fuel: Unit (Denominator)', 
+         Value='Adjusted Cost_replaced fuel', 
+         if_unit_numerator = False,
+         if_given_unit = True, 
+         given_unit = 'gal').copy()
     
-# Convert fuel cost USD per gallon to $ per GGE
-# This conversion is done especially if certain calculations in future is required in GGE
+# # Convert fuel cost USD per gallon to $ per GGE
+# # This conversion is done especially if certain calculations in future is required in GGE
 
-# Map Replaced fuel to 'GREET_Fuel', 'GREET_Fuel type' for GGE conversion
+# # Map Replaced fuel to 'GREET_Fuel', 'GREET_Fuel type' for GGE conversion
 MAC_df = pd.merge(MAC_df, corr_GGE_GREET_fuel_replaced, how='left', 
                   left_on=['Replaced Fuel'], 
                   right_on=['B2B fuel name']).reset_index(drop=True)
@@ -726,7 +756,7 @@ MAC_df.drop(columns=['GREET_Fuel', 'GREET_Fuel type', 'B2B fuel name', 'GGE'], i
 # Convert fuel cost from $ per GGE to $ per MJ
 # extract CI of gasoline
 tempdf = ob_units.hv_EIA.loc[(ob_units.hv_EIA['Energy carrier'] == 'Gasoline') &
-                             (ob_units.hv_EIA['Energy carrier type'] == 'Petroleum Gasoline'), ['LHV', 'Unit']]
+                              (ob_units.hv_EIA['Energy carrier type'] == 'Petroleum Gasoline'), ['LHV', 'Unit']]
 # convert unit
 tempdf[['unit_numerator', 'unit_denominator']] = tempdf['Unit'].str.split('/', n=1, expand=True)
 tempdf.drop(columns=['Unit'], inplace=True)
@@ -755,7 +785,7 @@ MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
 # Map Replacing fuel to 'GREET_Fuel', 'GREET_Fuel type' for GGE conversion
 # =============================================================================
 # MAC_df = pd.merge(MAC_df, corr_GGE_GREET_fuel_replacing, how='left', 
-#                   left_on=['Biofuel Flow Name'], 
+#                   left_on=['Biofuel Stream_LCA'], 
 #                   right_on=['B2B fuel name']).reset_index(drop=True)
 #     
 # MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['GREET_Fuel', 'GREET_Fuel type', 'GGE']].drop_duplicates(), 
@@ -852,7 +882,7 @@ cost_items['MAC Value'] = cost_items['Flow'] * cost_items['Unit Cost'] / \
                             cost_items['Feedstock Flow'] * cost_items['Operating Time'] /  cost_items['Biofuel Flow']
 
 # Aggregrate MAC for each feedstock-biofuel conversion pathways
-cost_items_agg = cost_items.groupby(['Case/Scenario', 'Feedstock', 'Biofuel Flow Name']).agg({'MAC Value' : 'sum'}).reset_index()
+cost_items_agg = cost_items.groupby(['Case/Scenario', 'Feedstock', 'Biofuel Stream_LCA']).agg({'MAC Value' : 'sum'}).reset_index()
 """
 
     
