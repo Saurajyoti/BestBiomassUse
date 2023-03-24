@@ -279,13 +279,14 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([
     # 'Ex-Situ Fixed Bed 2022 Projection',
     # 'In-Situ CFP 2022 Target Case',
     
+    
     ###
     'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
     'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
     'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
     'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
     'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
-    ##
+    ###
     
     # 'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
     # 'Cellulosic Ethanol',
@@ -300,6 +301,8 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([
     '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
     '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
     '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
+    
+    '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
     ###
     
     '2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge',
@@ -355,9 +358,11 @@ cost_items = df_econ.loc[df_econ['Item'].isin(['Feedstock',
                                                'Waste Disposal',
                                                'Coproducts',
                                                'Fixed Costs',
-                                               #'Capital Depreciation',
-                                               #'Average Income Tax',
-                                               #'Average Return on Investment',
+                                               
+                                               'Capital Depreciation',
+                                               'Average Income Tax',
+                                               'Average Return on Investment',
+                                               
                                                'Cost by process steps']), : ].copy()
 cost_items.drop_duplicates(inplace=True)
 
@@ -464,6 +469,16 @@ cost_items['Adjusted Cost Year'] = study_year
 cost_items['Itemized MFSP'] = cost_items['Adjusted Total Cost'].astype(float) / cost_items['Biofuel Flow'].astype(float)
 cost_items['Itemized MFSP: Unit (numerator)'] = cost_items['Total Cost: Unit (numerator)']
 cost_items['Itemized MFSP: Unit (denominator)'] = cost_items['Biofuel Flow: Unit (numerator)']
+
+# Identify non-harmonized units if any
+ignored_cost_items = cost_items.loc[cost_items['Total Flow: Unit (numerator)'] != cost_items['Cost: Unit (denominator)'], : ]
+if ignored_cost_items.shape[0] > 0:
+    print("Warning: The following cost items need attention as the units are not harmonized ..")
+    print(ignored_cost_items)
+ignored_cost_items = ignored_cost_items[['Case/Scenario', 'Parameter', 'Item',
+                                         'Stream_Flow', 'Stream_LCA',
+                                         'Total Flow: Unit (numerator)', 'Cost: Unit (denominator)']]
+
 
 # For co-products we consider their cost as credit to the MFSP [co-product credit by displacement]
 cost_items.loc[cost_items['Item'] == 'Coproducts', 'Itemized MFSP'] = \
