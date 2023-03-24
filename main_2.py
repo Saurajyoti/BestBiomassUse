@@ -45,7 +45,7 @@ f_corr_fuel_replaced_GREET_pathway = 'corr_fuel_replaced_GREET_pathway.csv'
 f_corr_fuel_replacing_GREET_pathway = 'corr_fuel_replacing_GREET_pathway.csv'
 f_corr_GGE_GREET_fuel_replaced = 'corr_GGE_GREET_fuel_replaced.csv'
 f_corr_GGE_GREET_fuel_replacing = 'corr_GGE_GREET_fuel_replacing.csv'
-f_corr_itemized_LCI = 'corr_LCI_GREET_temporal_03_17_2023.csv'
+f_corr_itemized_LCI = 'corr_LCI_GREET_temporal_03_24_2023.csv'
 f_corr_replaced_EIA_mfsp = 'corr_replaced_EIA_mfsp.csv'
 
 f_corr_params_variability = 'corr_params_variability.xlsx'
@@ -67,12 +67,14 @@ save_interim_files = True
 
 dict_gco2e = {
     'CO2' : 1,
+    'CO2 (w/ C in VOC & CO)' : 1,
     'N2O' : 298,
     'CH4' : 25}
 
 # List of Stream_Flows that have biogenic C and their CO2 is not excluded
 biogenic_lci = ['Biochar',
-                'Flue gas']
+                'Flue gas',
+                'Biogenic CO2']
 
 #%%
 # import packages
@@ -125,6 +127,7 @@ def mult_numeric(a,b,c):
 # Function to add header rows to LCA metric rows, select subset of LCA metrices, and calculate CO2e
 def fmt_GREET_LCI(df):
     #df = corr_itemized_LCA.copy()   
+    #df = df.loc[df['Stream_Flow'] == 'MDO (0.5% sulfur) (well to hall)', : ].reset_index(drop=True)
     
     df = df.drop_duplicates().reset_index(drop=True)
     df.fillna('', inplace=True)    
@@ -133,9 +136,9 @@ def fmt_GREET_LCI(df):
     df[['Unit (numerator)', 'Unit (denominator)']] = df['Unit'].str.split('/', expand=True)
 
     df.rename(columns={'GREET row names_level1' : 'LCA_metric',
-                                      'values_level1' : 'LCA_value',
-                                      'Unit (numerator)' : 'LCA: Unit (numerator)',
-                                      'Unit (denominator)' : 'LCA: Unit (denominator)'}, inplace=True)
+                       'values_level1' : 'LCA_value',
+                       'Unit (numerator)' : 'LCA: Unit (numerator)',
+                       'Unit (denominator)' : 'LCA: Unit (denominator)'}, inplace=True)
     df = df[['Item',
              'Stream_Flow',
              'Stream_LCA',
@@ -168,29 +171,47 @@ def fmt_GREET_LCI(df):
     # If CO2, CH4, N2O are available, ignore GHG or CO2 w/ VOC mertics
     df['count_m'] = (((df['LCA_metric'].str.contains('CO2', regex=False)) &\
                      ~(df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))).replace({True:1, False:0})) +\
+                    (((df['LCA_metric'].str.contains('CO2', regex=False)) &\
+                    (df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))).replace({True:1, False:0})) +\
                     (df['LCA_metric'].str.contains('N2O', regex=False).replace({True:1, False:0})) +\
                     (((df['LCA_metric'].str.contains('CH4', regex=False)) &\
-                                     ~(df['LCA_metric'].str.contains('Biogenic CH4', regex=False))).replace({True:1, False:0}))
+                     ~(df['LCA_metric'].str.contains('Biogenic CH4', regex=False))).replace({True:1, False:0}))
     df_sub = df.groupby(['Item', 'Stream_Flow', 'Stream_LCA', 
                          'Year','GREET1 sheet','Coproduct allocation method',
                          'GREET classification of coproduct'], dropna=False).agg({'count_m' : 'sum'}).reset_index()
     df = pd.merge(df, df_sub, how='left', on=['Item', 'Stream_Flow', 'Stream_LCA',
                                               'Year', 'GREET1 sheet', 'Coproduct allocation method',
                                               'GREET classification of coproduct']).reset_index(drop=True)
-     
+    
+    # if CO2 and CO2 (w/C ..) both are present the count becomes 4
+    df_sub = df.loc[(df['count_m_y'] == 4), :]    
+    df_sub = df_sub.loc[((df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
+                        ~(df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))) |                         
+                        (df_sub['LCA_metric'].str.contains('N2O', regex=False)) |
+                        (df_sub['LCA_metric'].str.contains('CH4', regex=False)) &\
+                        ~(df['LCA_metric'].str.contains('Biogenic CH4', regex=False)), :]     
+    df = df.loc[df['count_m_y']!=4, : ].copy()
+    df = pd.concat([df,df_sub]).reset_index(drop=True)
+    
+    # if CO2 or CO2 (w/C ..) one is present the count becomes 3
     df_sub = df.loc[(df['count_m_y'] == 3), :]
-    df_sub = df_sub.loc[(df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
-                     ~(df['LCA_metric'].str.contains('CO2 (w/ C', regex=False)) | 
+    df_sub = df_sub.loc[((df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
+                        ~(df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))) | 
+                        ((df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
+                        (df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))) |
                         (df_sub['LCA_metric'].str.contains('N2O', regex=False)) |
                         (df_sub['LCA_metric'].str.contains('CH4', regex=False)) &\
                         ~(df['LCA_metric'].str.contains('Biogenic CH4', regex=False)), :]     
     df = df.loc[df['count_m_y']!=3, : ].copy()
     df = pd.concat([df,df_sub]).reset_index(drop=True)
     
-    df[['dummy_metric', 'LCA_metric']] = df['LCA_metric'].str.split('__', expand=True)
-    df.loc[df['LCA_metric'].isna(), 'LCA_metric'] = df.loc[df['LCA_metric'].isna(), 'dummy_metric'] 
-    
-    df.drop(columns=['count_m_x', 'count_m_y', 'dummy_metric'], inplace=True)
+    df_sub = df['LCA_metric'].str.split('__', expand=True)
+    if df_sub.shape[1] == 2:        
+        df[['dummy_metric', 'LCA_metric']] = df['LCA_metric'].str.split('__', expand=True)
+        df.loc[df['LCA_metric'].isna(), 'LCA_metric'] = df.loc[df['LCA_metric'].isna(), 'dummy_metric'] 
+        df.drop(columns=['count_m_x', 'count_m_y', 'dummy_metric'], inplace=True)
+    else:
+        df.drop(columns=['count_m_x', 'count_m_y'], inplace=True)
     
     # Avoid biogenic CO2 emissions
     df = df.loc[~((df['Stream_Flow'].isin(biogenic_lci)) &
@@ -661,6 +682,30 @@ if save_interim_files == True:
 
 # Step: Merge correspondence tables and GREET emission factors
 
+# Merge aggregrated LCA metric to MFSP tables
+MAC_df = pd.merge(MFSP_agg, LCA_items_agg, on=['Case/Scenario']).reset_index(drop=True)
+
+# map replaced fuels with replacing fuels
+MAC_df = pd.merge(MAC_df, corr_replaced_replacing_fuel, how = 'left', 
+               on=['Case/Scenario', 'Biofuel Stream_LCA', 'Feedstock']).reset_index(drop=True) 
+
+# map replaced fuels with GREET pathways
+MAC_df = pd.merge(MAC_df, corr_fuel_replaced_GREET_pathway, how='left', on=['Replaced Fuel']).reset_index(drop=True)
+MAC_df.rename(columns={'GREET Pathway' : 'GREET Pathway for replaced fuel'}, inplace=True)
+
+# map replaced fuels to their CIs
+MAC_df = pd.merge(MAC_df,
+                  corr_itemized_LCA,
+                  left_on=['Item', 'Stream_Flow', 'Stream_LCA', 'Production Year'],
+                  right_on=['Item', 'Stream_Flow', 'Stream_LCA', 'Year']).reset_index(drop=True)
+MAC_df.drop(['Year', 'GREET1 sheet', 'Coproduct allocation method', 
+             'GREET classification of coproduct'], axis=1, inplace=True)
+MAC_df.rename(columns={'LCA: Unit (numerator)' : 'CI replaced fuel: Unit (Numerator)',
+                       'LCA: Unit (denominator)' : 'CI replaced fuel: Unit (Denominator)',
+                       'LCA_value' : 'CI replaced fuel',
+                       'LCA_metric_y' : 'Metric_replaced fuel'}, inplace=True)
+
+"""
 # harmonize emission factors of conventional fuels to CO2e unit
 ef = ef_calc_co2e(ef)
 
@@ -688,6 +733,7 @@ MAC_df.rename(columns={'Stream_LCA' : 'Stream_LCA_replaced fuel',
                        'Reference case' : 'CI replaced fuel',
                        'Elec0' : 'CI Elec0_replaced fuel'}, inplace=True)
 MAC_df.drop(['GREET Pathway'], axis=1, inplace=True)
+"""
 
 # Map MFSP of replaced fuels
 MAC_df = pd.merge(MAC_df,
@@ -697,7 +743,7 @@ MAC_df = pd.merge(MAC_df,
 MAC_df = pd.merge(MAC_df, 
                   EIA_price[['Year', 'Value', 'Energy carrier', 'Cost basis', 'Unit']],
                   how='left', 
-                  left_on=['Year', 'EIA_fuel_mapping_for_price'], 
+                  left_on=['Production Year', 'EIA_fuel_mapping_for_price'], 
                   right_on=['Year', 'Energy carrier']).reset_index(drop=True)
 MAC_df.rename(columns={'Value' : 'Cost_replaced fuel',
                        'Cost basis' : 'Cost basis_replaced fuel'}, inplace=True)
@@ -713,6 +759,7 @@ MAC_df.rename(columns={'Unit Cost_replaced fuel (Numerator)' : 'Cost replaced fu
 
 MAC_df.drop(['Energy carrier', 'Unit'], axis=1, inplace=True)
 
+"""
 # Drop off data for which GREET pathways are not mapped until now
 missing_GREET_mappings = MAC_df.loc[MAC_df['GREET Pathway for replaced fuel'].isna(), ['Case/Scenario', 'Biofuel Stream_LCA', 'Feedstock', 'Replaced Fuel']].drop_duplicates()
 if missing_GREET_mappings.shape[0] > 0:
@@ -720,13 +767,14 @@ if missing_GREET_mappings.shape[0] > 0:
     print(missing_GREET_mappings)
 MAC_df = MAC_df.loc[~ MAC_df['GREET Pathway for replaced fuel'].isna(), :].copy()
 
+
 # Assumption: non-liquid final products are skipped and not credited at the moment
 # If classified as 'Coproducts', displacement based credit is considered for LCA and price credit is considered for MFSP 
 MAC_df = MAC_df.loc[~ MAC_df['MFSP replacing fuel: Unit (denominator)'].isin(['lb']), : ].copy()
 
 # dropping rows with no data on cost replaced fuel
 MAC_df = MAC_df.loc[~MAC_df['Cost_replaced fuel'].isna(), :]
-
+"""
 #%%
 
 # Step: Correct for inflation to the year of study
@@ -752,7 +800,7 @@ MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']
          if_given_unit = True, 
          given_unit = 'gal').copy()
     
-# # Convert fuel cost USD per gallon to $ per GGE
+# # Convert fuel cost $/gallon to $/GGE
 # # This conversion is done especially if certain calculations in future is required in GGE
 
 # # Map Replaced fuel to 'GREET_Fuel', 'GREET_Fuel type' for GGE conversion
@@ -845,14 +893,6 @@ MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
 # =============================================================================
 
 # unit check for CI replaced fuel
-MAC_df[['dummy_unit', 'CI Elec0_replaced fuel']] = \
-    ob_units.unit_convert_df (
-        MAC_df[['CI replaced fuel: Unit (Denominator)', 'CI Elec0_replaced fuel']],
-        Unit='CI replaced fuel: Unit (Denominator)',
-        Value='CI Elec0_replaced fuel',
-        if_unit_numerator=False,
-        if_given_unit=True,
-        given_unit='MJ').copy()    
 MAC_df[['CI replaced fuel: Unit (Denominator)', 'CI replaced fuel']] = \
     ob_units.unit_convert_df (
         MAC_df[['CI replaced fuel: Unit (Denominator)', 'CI replaced fuel']],
@@ -861,7 +901,6 @@ MAC_df[['CI replaced fuel: Unit (Denominator)', 'CI replaced fuel']] = \
         if_unit_numerator=False,
         if_given_unit=True,
         given_unit='MJ').copy()
-MAC_df.drop(columns=['dummy_unit'], inplace=True)
 
 #%%
 # Step: Calculate MAC by Cost Items
