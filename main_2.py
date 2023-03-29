@@ -26,7 +26,7 @@ input_path_EIA_price = input_path_prefix + '/EIA'
 input_path_corr = input_path_prefix + '/correspondence_files'
 input_path_units = input_path_prefix + '/Units'
 
-f_TEA = 'TEA Database_add_pathways_03_20_2023.xlsx'
+f_TEA = 'TEA Database_add_pathways_03_27_2023.xlsx'
 sheet_TEA = 'Biofuel'
 
 f_out_itemized_mfsp = 'mfsp_itemized.csv'
@@ -69,7 +69,8 @@ dict_gco2e = {
     'CO2' : 1,
     'CO2 (w/ C in VOC & CO)' : 1,
     'N2O' : 298,
-    'CH4' : 25}
+    'CH4' : 25,
+    'Biogenic CH4' : 25}
 
 # List of Stream_Flows that have biogenic C and their CO2 is not excluded
 biogenic_lci = ['Biochar',
@@ -127,7 +128,7 @@ def mult_numeric(a,b,c):
 # Function to add header rows to LCA metric rows, select subset of LCA metrices, and calculate CO2e
 def fmt_GREET_LCI(df):
     #df = corr_itemized_LCA.copy()   
-    #df = df.loc[df['Stream_Flow'] == 'MDO (0.5% sulfur) (well to hall)', : ].reset_index(drop=True)
+    #df = df.loc[df['Stream_Flow'] == 'Manure Sludge (dry basis)', : ].reset_index(drop=True)
     
     df = df.drop_duplicates().reset_index(drop=True)
     df.fillna('', inplace=True)    
@@ -188,8 +189,7 @@ def fmt_GREET_LCI(df):
     df_sub = df_sub.loc[((df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
                         ~(df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))) |                         
                         (df_sub['LCA_metric'].str.contains('N2O', regex=False)) |
-                        (df_sub['LCA_metric'].str.contains('CH4', regex=False)) &\
-                        ~(df['LCA_metric'].str.contains('Biogenic CH4', regex=False)), :]     
+                        (df_sub['LCA_metric'].str.contains('CH4', regex=False)), :]     
     df = df.loc[df['count_m_y']!=4, : ].copy()
     df = pd.concat([df,df_sub]).reset_index(drop=True)
     
@@ -200,8 +200,7 @@ def fmt_GREET_LCI(df):
                         ((df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
                         (df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))) |
                         (df_sub['LCA_metric'].str.contains('N2O', regex=False)) |
-                        (df_sub['LCA_metric'].str.contains('CH4', regex=False)) &\
-                        ~(df['LCA_metric'].str.contains('Biogenic CH4', regex=False)), :]     
+                        (df_sub['LCA_metric'].str.contains('CH4', regex=False)), :]     
     df = df.loc[df['count_m_y']!=3, : ].copy()
     df = pd.concat([df,df_sub]).reset_index(drop=True)
     
@@ -581,8 +580,11 @@ if save_interim_files == True:
     
 LCA_items = df_econ.loc[df_econ['Item'].isin(['Feedstock',
                                               'Purchased Inputs',
+                                              'Coproducts',
+                                              'Final Product',
+                                              'CCS Stream',
                                               'Waste Disposal',
-                                              'Coproducts']), : ].copy()
+                                              ]), : ].copy()
 LCA_items = LCA_items[['Case/Scenario', 
                        'Parameter', 
                        'Item', 
@@ -626,12 +628,14 @@ ignored_LCA_items = LCA_items.loc[LCA_items['Total Flow: Unit (numerator)'] != L
 if ignored_LCA_items.shape[0] > 0:
     print("Warning: The following LCA items need attention as the units are not harmonized ..")
     print(ignored_LCA_items)
+LCA_items = LCA_items.loc[~(LCA_items['Total Flow: Unit (numerator)'] != LCA_items['LCA: Unit (denominator)']), : ]
 
 #%%
 
 # Step: Itemized and aggregrated LCA metric per pathway
 
-# Some LCA mappings are probably buggy, omitting it until QA
+"""
+# Some LCA mappings are unconfirmed or have marginal impact on CI estimation, hence ignored
 LCA_items = LCA_items.loc[~LCA_items['Stream_LCA'].isin(['Makeup Water',
                                                         'Makeup water',
                                                         'Water make-up',
@@ -640,6 +644,7 @@ LCA_items = LCA_items.loc[~LCA_items['Stream_LCA'].isin(['Makeup Water',
                                                         'Cooling tower water makeup',
                                                         'Cooling tower chemicals',
                                                         'Cooling Water Makeup']), :].reset_index(drop=True)
+"""
 
 # Calculate itemized LCA metric per year
 LCA_items['Total LCA'] = LCA_items['LCA_value'] * LCA_items['Total Flow']
@@ -666,12 +671,10 @@ if consider_coproduct_env_credit == False:
 
 # Calculate net LCA metric per pathway
 LCA_items_agg = LCA_items_agg.groupby(['Case/Scenario', 'LCA_metric', 
-                                   'Total LCA: Unit (numerator)', 
-                                   'Total LCA: Unit (denominator)',
-                                   'Production Year'], as_index=False).\
-    agg({'Total LCA' : 'sum'})
-
-#LCA_items_agg['Total LCA (g per MJ)'] = LCA_items_agg['Total LCA'] / 121.3 # Unit: g CO2e/MJ
+                                       'Total LCA: Unit (numerator)', 
+                                       'Total LCA: Unit (denominator)',
+                                       'Production Year'], as_index=False).\
+                              agg({'Total LCA' : 'sum'})
 
 # Save interim data tables
 if save_interim_files == True:

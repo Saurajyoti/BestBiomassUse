@@ -40,7 +40,8 @@ replaced_CI ={
     'diesel, gasoline' : 90.30, # g CO2e/MJ, GREET and Decarb 2b study  
     'jet fuel' : 84.5, # g CO2e/MJ, GREET and Decarb 2b study
     'naptha, jet fuel' : 84.5, # g CO2e/MJ, GREET and Decarb 2b study
-    'plastic' : 2600 # # g CO2e/kg, fossil derived HDPE plastic, Benavides et al., 2020
+    'plastic' : 2600, # g CO2e/kg, fossil derived HDPE plastic, Benavides et al., 2020
+    'marine' : 90.30 # g CO2e/MJ, assumint same as diesel
     }
 replaced_CI_unit_numerator ={
     'gasoline' : 'g CO2e', 
@@ -48,7 +49,8 @@ replaced_CI_unit_numerator ={
     'diesel, gasoline' : 'g CO2e', 
     'jet fuel' : 'g CO2e', 
     'naptha, jet fuel' : 'g CO2e', 
-    'plastic' : 'g CO2e' 
+    'plastic' : 'g CO2e' ,
+    'marine' : 'g CO2e'
     }
 replaced_CI_unit_denominator ={
     'gasoline' : 'MJ', 
@@ -56,7 +58,8 @@ replaced_CI_unit_denominator ={
     'diesel, gasoline' : 'MJ', 
     'jet fuel' : 'MJ', 
     'naptha, jet fuel' : 'MJ', 
-    'plastic' : 'kg'
+    'plastic' : 'kg',
+    'marine' : 'MJ'
     }
 
 replaced_mfsp ={
@@ -65,7 +68,8 @@ replaced_mfsp ={
     'diesel, gasoline' : 0.03, # g CO2e/MJ, GREET and Decarb 2b study  
     'jet fuel' : 0.02, # g CO2e/MJ, GREET and Decarb 2b study
     'naptha, jet fuel' : 0.02, # g CO2e/MJ, GREET and Decarb 2b study
-    'plastic' : 0.81 # # g CO2e/kg, fossil derived HDPE plastic, Benavides et al., 2020
+    'plastic' : 0.81, # # g CO2e/kg, fossil derived HDPE plastic, Benavides et al., 2020
+    'marine' : 0.03, # g CO2e/MJ, assuming same as diesel
     }
 replaced_mfsp_unit_numerator ={
     'gasoline' : 'USD', 
@@ -73,7 +77,8 @@ replaced_mfsp_unit_numerator ={
     'diesel, gasoline' : 'USD', 
     'jet fuel' : 'USD', 
     'naptha, jet fuel' : 'USD', 
-    'plastic' : 'USD' 
+    'plastic' : 'USD',
+    'marine' : 'USD'
     }
 replaced_mfsp_unit_denominator ={
     'gasoline' : 'MJ', 
@@ -81,7 +86,8 @@ replaced_mfsp_unit_denominator ={
     'diesel, gasoline' : 'MJ', 
     'jet fuel' : 'MJ', 
     'naptha, jet fuel' : 'MJ', 
-    'plastic' : 'kg'
+    'plastic' : 'kg',
+    'marine' : 'MJ'
     }
 
 #%%
