@@ -51,8 +51,11 @@ f_corr_replaced_EIA_mfsp = 'corr_replaced_EIA_mfsp.csv'
 f_corr_params_variability = 'corr_params_variability.xlsx'
 sheet_corr_params_variability = 'input_table'
 
-# Year of study, to which inflation will be adjusted
-study_year = 2021
+# Year of pathway production 
+production_year = 2022
+
+# cost adjust year to which inflation will be adjusted
+cost_year = 2016
 
 # Toggle cost credit for coproducts while calculating aggregrated MFSP
 consider_coproduct_cost_credit = True
@@ -306,11 +309,11 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([
     
     
     ###
-    'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-    'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-    'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-    'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-    'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+    # 'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+    # 'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+    # 'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+    # 'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+    # 'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
     ###
     
     # 'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
@@ -321,13 +324,13 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([
     # 'Gasoline from upgraded bio-oil from pyrolysis'
     
     ###
-    '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
-    '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
-    '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
-    '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
-    '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
+    # '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
+    # '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
+    # '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
+    # '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
+    # '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
     
-    '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
+    # '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
     ###
     
     '2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge',
@@ -487,8 +490,11 @@ if consider_variability_study:
 # Correct for inflation to the year of study
 cost_items['Cost Year'] = cost_items['Cost Year'].astype(int)
 #cost_items['Total Cost'] = pd.to_numeric(cost_items['Total Cost'])
-cost_items['Adjusted Total Cost'] = cost_items.apply(lambda x: cpi.inflate(x['Total Cost'], x['Cost Year'], to=study_year), axis=1)
-cost_items['Adjusted Cost Year'] = study_year
+cost_items['Adjusted Total Cost'] = cost_items.apply(lambda x: cpi.inflate(x['Total Cost'], x['Cost Year'], to=cost_year), axis=1)
+cost_items['Adjusted Cost Year'] = cost_year
+
+# accounting calculations for one production year only
+cost_items['Production Year'] = production_year
    
 # Calculate itemized MFSP
 cost_items['Itemized MFSP'] = cost_items['Adjusted Total Cost'].astype(float) / cost_items['Biofuel Flow'].astype(float)
@@ -521,6 +527,7 @@ if consider_variability_study:
     
     MFSP_agg = MFSP_agg[['Case/Scenario',
                          'Feedstock',
+                         'Production Year',
                          'Itemized MFSP: Unit (numerator)', 
                          'Itemized MFSP: Unit (denominator)',
                          'Adjusted Cost Year',
@@ -538,6 +545,7 @@ if consider_variability_study:
         
     MFSP_agg = MFSP_agg.groupby(['Case/Scenario',
                                  'Feedstock',
+                                 'Production Year',
                                  'Itemized MFSP: Unit (numerator)', 
                                  'Itemized MFSP: Unit (denominator)',
                                  'Adjusted Cost Year',
@@ -553,6 +561,7 @@ if consider_variability_study:
 else:
     MFSP_agg = MFSP_agg[['Case/Scenario',
                          'Feedstock',
+                         'Production Year',
                          'Itemized MFSP: Unit (numerator)', 
                          'Itemized MFSP: Unit (denominator)',
                          'Adjusted Cost Year',
@@ -561,6 +570,7 @@ else:
         
     MFSP_agg = MFSP_agg.groupby(['Case/Scenario',
                                  'Feedstock',
+                                 'Production Year',
                                  'Itemized MFSP: Unit (numerator)', 
                                  'Itemized MFSP: Unit (denominator)',
                                  'Adjusted Cost Year'
@@ -608,7 +618,7 @@ LCA_items = LCA_items[['Case/Scenario',
 
 
 # temporary value for production year
-LCA_items['Production Year'] = study_year
+LCA_items['Production Year'] = production_year
 
 # format LCI
 corr_itemized_LCA = fmt_GREET_LCI(corr_itemized_LCA)
@@ -691,7 +701,7 @@ if save_interim_files == True:
 # Step: Merge correspondence tables and GREET emission factors
 
 # Merge aggregrated LCA metric to MFSP tables
-MAC_df = pd.merge(MFSP_agg, LCA_items_agg, on=['Case/Scenario']).reset_index(drop=True)
+MAC_df = pd.merge(MFSP_agg, LCA_items_agg, on=['Case/Scenario', 'Production Year']).reset_index(drop=True)
 
 # map replaced fuels with replacing fuels
 MAC_df = pd.merge(MAC_df, corr_replaced_replacing_fuel, how = 'left', 
@@ -789,8 +799,8 @@ MAC_df = MAC_df.loc[~MAC_df['Cost_replaced fuel'].isna(), :]
 
 MAC_df['Year_Cost_replaced fuel'] = pd.to_numeric(MAC_df['Year_Cost_replaced fuel'])
 MAC_df['Adjusted Cost_replaced fuel'] = \
-    MAC_df.apply(lambda x: cpi.inflate(x['Cost_replaced fuel'], x['Year_Cost_replaced fuel'], to=study_year), axis=1)
-MAC_df['Adjusted Cost Year'] = study_year
+    MAC_df.apply(lambda x: cpi.inflate(x['Cost_replaced fuel'], x['Year_Cost_replaced fuel'], to=production_year), axis=1)
+MAC_df['Adjusted Cost Year'] = production_year
     
 #%%
 
@@ -845,8 +855,8 @@ MAC_df = pd.merge(MAC_df, tempdf, how='left',
                   left_on='Cost replaced fuel: Unit (Denominator)', 
                   right_on='unit_denominator').reset_index(drop=True)
 MAC_df['Adjusted Cost_replaced fuel'] = MAC_df['Adjusted Cost_replaced fuel']/MAC_df['LHV'] # unit: $/MJ
-MAC_df['Cost replaced fuel: Unit (Denominator)'] = MAC_df['unit_numerator']
-MAC_df['Cost replaced fuel: Unit (Numerator)'] = 'USD'
+MAC_df['Adjusted Cost replaced fuel: Unit (Denominator)'] = MAC_df['unit_numerator']
+MAC_df['Adjusted Cost replaced fuel: Unit (Numerator)'] = 'USD'
 MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
 
 
