@@ -65,17 +65,20 @@ consider_variability_study = False
 
 save_interim_files = True
 
-dict_gco2e = {
+dict_gco2e = { # Table 2, AR6/GWP100, GREET1 2022
     'CO2' : 1,
     'CO2 (w/ C in VOC & CO)' : 1,
-    'N2O' : 298,
-    'CH4' : 25,
-    'Biogenic CH4' : 25}
+    'N2O' : 273,
+    'CH4' : 29.8,
+    'Biogenic CH4' : 29.8}
 
 # List of Stream_Flows that have biogenic C and their CO2 is not excluded
 biogenic_lci = ['Biochar',
-                'Flue gas',
-                'Biogenic CO2']
+                'Flue gas',                
+                ]
+biogenic_emissions = ['Biogenic CO2',
+                      'Biogenic CH4'  # biogenic CH4 are not considered to have environmental effect
+                      ]
 
 #%%
 # import packages
@@ -212,9 +215,11 @@ def fmt_GREET_LCI(df):
     else:
         df.drop(columns=['count_m_x', 'count_m_y'], inplace=True)
     
-    # Avoid biogenic CO2 emissions
+    # Avoid biogenic stream flow
     df = df.loc[~((df['Stream_Flow'].isin(biogenic_lci)) &
                 (df['LCA_metric'].isin(['CO2']))), : ]
+    # Avoid biogenic emissions
+    df = df.loc[~(df['LCA_metric'].isin(biogenic_emissions)), : ]
     
     # calculate CO2e
     df['mult'] = df['LCA_metric'].map(dict_gco2e)
