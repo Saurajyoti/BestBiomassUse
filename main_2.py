@@ -309,38 +309,44 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([
     
     
     ###
-    # 'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-    # 'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-    # 'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-    # 'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-    # 'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+    'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+    'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+    'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+    'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+    'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
     ###
     
     # 'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
     # 'Cellulosic Ethanol',
-    # 'Cellulosic Ethanol with Jet Upgrading',
-    # 'Fischer-Tropsch SPK',
+     'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
+     'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
+     'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
+     'Decarb 2b: Fischer-Tropsch SPK',
+     'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
+     'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
     # 'Gasification to Methanol',
     # 'Gasoline from upgraded bio-oil from pyrolysis'
     
     ###
-    # '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
-    # '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
-    # '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
-    # '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
-    # '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
+    '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
+    '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
+    '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
+    '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
+    '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
     
-    # '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
+    '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
     ###
     
-    '2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-    '2022, Marine biocrude via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-    '2022, Partially upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-    '2022, Partially upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-    '2022, Fully upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-    '2022, Fully upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-    '2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass',
-    '2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass',
+    ###
+    # '2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+    # '2022, Marine biocrude via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+    # '2022, Partially upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+    # '2022, Partially upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+    # '2022, Fully upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+    # '2022, Fully upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+    # '2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass',
+    # '2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass',
+    ###
     
     ])].reset_index(drop=True)
 
