@@ -307,7 +307,7 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([
     # 'Ex-Situ Fixed Bed 2022 Projection',
     # 'In-Situ CFP 2022 Target Case',
     
-    
+    # Tan et al., 2016 pathways
     ###
     'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
     'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
@@ -316,17 +316,23 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([
     'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
     ###
     
+    # Decarb 2b pathways
     # 'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
     # 'Cellulosic Ethanol',
+    ###
      'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
      'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
      'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
      'Decarb 2b: Fischer-Tropsch SPK',
      'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
      'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
+     'Decarb 2b: Ex-Situ CFP',
+     'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
+    ###
     # 'Gasification to Methanol',
     # 'Gasoline from upgraded bio-oil from pyrolysis'
     
+    # 2021 SOT pathways
     ###
     '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
     '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
@@ -337,6 +343,7 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([
     '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
     ###
     
+    # Marine pathways
     ###
     # '2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge',
     # '2022, Marine biocrude via HTL from Manure with NH3 removal for 1000 MTPD Manure',
