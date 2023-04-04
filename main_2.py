@@ -27,7 +27,8 @@ input_path_corr = input_path_prefix + '/correspondence_files'
 input_path_units = input_path_prefix + '/Units'
 
 f_TEA = 'TEA Database_add_pathways_04_04_2023.xlsx'
-sheet_TEA = 'Inventory'
+sheet_TEA = 'Db'
+sheet_param_variability = 'var_p'
 
 f_out_itemized_mfsp = 'mfsp_itemized.csv'
 f_out_agg_mfsp = 'mfsp_agg.csv'
@@ -48,8 +49,8 @@ f_corr_GGE_GREET_fuel_replacing = 'corr_GGE_GREET_fuel_replacing.csv'
 f_corr_itemized_LCI = 'corr_LCI_GREET_temporal_03_24_2023.csv'
 f_corr_replaced_EIA_mfsp = 'corr_replaced_EIA_mfsp.csv'
 
-f_corr_params_variability = 'corr_params_variability.xlsx'
-sheet_corr_params_variability = 'input_table'
+#f_corr_params_variability = 'corr_params_variability.xlsx'
+#sheet_corr_params_variability = 'input_table'
 
 # Year of pathway production 
 production_year = 2022
@@ -96,6 +97,7 @@ from datetime import datetime
 import cpi
 import xlwings as xw
 from xlwings.constants import DeleteShiftDirection
+from xlwings.constants import AutoFillType
 
 #cpi.update()
 
@@ -391,7 +393,7 @@ corr_GGE_GREET_fuel_replacing = pd.read_csv(input_path_corr + '/' + f_corr_GGE_G
 corr_itemized_LCA = pd.read_csv(input_path_corr + '/' + f_corr_itemized_LCI, header=0, index_col=0)
 corr_replaced_EIA_mfsp = pd.read_csv(input_path_corr + '/' + f_corr_replaced_EIA_mfsp, header=3, index_col=None) 
 if consider_variability_study:
-    corr_params_variability = pd.read_excel(input_path_corr + '/' + f_corr_params_variability, sheet_name=sheet_corr_params_variability, header=3, index_col=None)
+    corr_params_variability =  pd.read_excel(input_path_TEA + '/' + f_TEA, sheet_name=sheet_param_variability, header=3, index_col=None)
 
 #%%
 
@@ -972,12 +974,9 @@ if write_to_dashboard:
         wb = xw.Book(input_path_TEA + '/' + f_TEA)
         
         if consider_variability_study:
-            a=0
-        
-        else:
             
-            sheet_1 = wb.sheets['LCA_agg']
-            sheet_1.range(str(4) + ':1048576').api.Delete(DeleteShiftDirection.xlShiftUp)
+            sheet_1 = wb.sheets['lca']
+            sheet_1.range(str(4) + ':1048576').clear_contents()
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
                 LCA_items_agg[['Case/Scenario',
                                'LCA_metric',
@@ -986,8 +985,170 @@ if write_to_dashboard:
                                'Production Year',
                                'Total LCA']]
             
-            sheet_1 = wb.sheets['MFSP_agg']
-            sheet_1.range(str(4) + ':1048576').api.Delete(DeleteShiftDirection.xlShiftUp)
+            sheet_1 = wb.sheets['mfsp_var']
+            sheet_1.range(str(4) + ':1048576').clear_contents()
+            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+            MFSP_agg[['variability_id',
+                      'col_param',
+                      'col_val',
+                      'param_name',
+                      'param_min',
+                      'param_max',
+                      'param_dist',
+                      'dist_option',
+                      'param_value',
+                      'Case/Scenario',	
+                      'Production Year',                      
+                      'MFSP replacing fuel: Unit (numerator)',
+                      'MFSP replacing fuel: Unit (denominator)',
+                      'MFSP replacing fuel',
+                      'Adjusted Cost Year'                    
+                      ]]
+            
+            sheet_1 = wb.sheets['mac_var']
+            sheet_1.range(str(4) + ':1048576').clear_contents()
+            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+            MAC_df[['variability_id',
+                    'col_param',
+                    'col_val',
+                    'param_name',
+                    'param_min',
+                    'param_max',
+                    'param_dist',
+                    'dist_option',
+                    'param_value',
+                    'Case/Scenario',
+                    'Biofuel Stream_LCA',
+                    'Feedstock',
+                    'Production Year',
+                    'MFSP replacing fuel: Unit (numerator)',
+                    'MFSP replacing fuel: Unit (denominator)',
+                    'Adjusted Cost Year',
+                    'MFSP replacing fuel',
+                    'Metric_replacing fuel',	
+                    'Total LCA: Unit (numerator)',
+                    'Total LCA: Unit (denominator)',
+                    'Total LCA',
+                    'Replaced Fuel',
+                    'Stream_Flow',
+                    'Stream_LCA'	,
+                    'CI replaced fuel: Unit (Numerator)',
+                    'CI replaced fuel: Unit (Denominator)',
+                    'CI replaced fuel',
+                    'Metric_replaced fuel',
+                    'EIA_fuel_mapping_for_price',
+                    'Year_Cost_replaced fuel',
+                    'Cost basis_replaced fuel',
+                    'Year_Cost_replaced fuel',
+                    'Cost replaced fuel: Unit (Numerator)',
+                    'Cost replaced fuel: Unit (Denominator)',
+                    'Adjusted Cost_replaced fuel',
+                    'Adjusted Cost replaced fuel: Unit (Denominator)',
+                    'Adjusted Cost replaced fuel: Unit (Numerator)',
+                    'MAC_calculated',
+                    'MAC_calculated: Unit (numerator)',
+                    'MAC_calculated: Unit (denominator)'
+                    
+                    ]]
+            
+            sheet_1 = wb.sheets['lca_itm']
+            sheet_1.range(str(4) + ':1048576').clear_contents()
+            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+                LCA_items[['Case/Scenario', 
+                           'Parameter', 
+                           'Item', 
+                           'Stream_Flow', 
+                           'Stream_LCA',
+                           'Flow: Unit (numerator)', 
+                           'Flow: Unit (denominator)', 
+                           'Flow',
+                           'Operating Time: Unit', 
+                           'Operating Time', 
+                           'Operating Time (%)',
+                           'Total Flow: Unit (numerator)', 
+                           'Total Flow: Unit (denominator)',
+                           'Total Flow', 
+                           'Production Year',
+                           #'Year', 
+                           #'GREET1 sheet',
+                           #'Coproduct allocation method', 
+                           #'GREET classification of coproduct',
+                           'LCA: Unit (numerator)',
+                           'LCA: Unit (denominator)',
+                           'LCA_value',
+                           'LCA_metric',
+                           'Total LCA',
+                           'Total LCA: Unit (numerator)',
+                           'Total LCA: Unit (denominator)',
+                           #'Biofuel Flow: Unit (numerator)',
+                           #'Biofuel Flow: Unit (denominator)',
+                           #'Biofuel Flow'
+                           ]]
+                
+            sheet_1 = wb.sheets['mfsp_itm_var']
+            sheet_1.range(str(4) + ':1048576').clear_contents()
+            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+                 cost_items[['variability_id',
+                             'col_param',
+                             'col_val',
+                             'param_name',
+                             'param_min',
+                             'param_max',
+                             'param_dist',
+                             'dist_option',
+                             'param_value',
+                             'Case/Scenario', 
+                             'Parameter', 
+                             'Item', 
+                             'Stream_Flow',
+                             'Stream_LCA',
+                             'Flow: Unit (numerator)',
+                             'Flow: Unit (denominator)',
+                             'Flow',
+                             'Cost Item',
+                             'Cost: Unit (numerator)', 
+                             'Cost: Unit (denominator)',
+                             'Unit Cost',
+                             'Operating Time: Unit',
+                             'Operating Time',
+                             'Operating Time (%)', 
+                             'Total Cost: Unit (numerator)',
+                             'Total Cost: Unit (denominator)',
+                             'Total Cost',
+                             'Total Flow: Unit (numerator)',
+                             'Total Flow: Unit (denominator)',
+                             'Total Flow', 
+                             'Cost Year',
+                             # 'Feedstock Stream_Flow',
+                             # 'Feedstock',
+                             # 'Feedstock Flow: Unit (numerator)',
+                             # 'Feedstock Flow: Unit (denominator)', 
+                             # 'Feedstock Flow',
+                             # 'Biofuel Flow: Unit (numerator)',
+                             # 'Biofuel Flow: Unit (denominator)',
+                             # 'Biofuel Flow',
+                             'Adjusted Total Cost', 
+                             'Adjusted Cost Year',
+                             'Production Year', 
+                             'Itemized MFSP', 
+                             'Itemized MFSP: Unit (numerator)',
+                             'Itemized MFSP: Unit (denominator)'
+                             ]]
+                
+        else:
+            
+            sheet_1 = wb.sheets['lca']            
+            sheet_1.range(str(4) + ':1048576').clear_contents()
+            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+                LCA_items_agg[['Case/Scenario',
+                               'LCA_metric',
+                               'Total LCA: Unit (numerator)',
+                               'Total LCA: Unit (denominator)',
+                               'Production Year',
+                               'Total LCA']]
+            
+            sheet_1 = wb.sheets['mfsp']
+            sheet_1.range(str(4) + ':1048576').clear_contents()
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
             MFSP_agg[['Case/Scenario',	
                       'Production Year', 
@@ -997,8 +1158,8 @@ if write_to_dashboard:
                       'Adjusted Cost Year'
                       ]]
             
-            sheet_1 = wb.sheets['MAC']
-            sheet_1.range(str(4) + ':1048576').api.Delete(DeleteShiftDirection.xlShiftUp)
+            sheet_1 = wb.sheets['mac']
+            sheet_1.range(str(4) + ':1048576').clear_contents()
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
             MAC_df[['Case/Scenario',
                     'Biofuel Stream_LCA',
@@ -1033,8 +1194,8 @@ if write_to_dashboard:
                     'MAC_calculated: Unit (denominator)'
                     ]]
             
-            sheet_1 = wb.sheets['LCA_itemized']
-            sheet_1.range(str(4) + ':1048576').api.Delete(DeleteShiftDirection.xlShiftUp)
+            sheet_1 = wb.sheets['lca_itm']
+            sheet_1.range(str(4) + ':1048576').clear_contents()
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
                 LCA_items[['Case/Scenario', 
                            'Parameter', 
@@ -1067,8 +1228,8 @@ if write_to_dashboard:
                            #'Biofuel Flow'
                            ]]
                 
-            sheet_1 = wb.sheets['MFSP_itemized']
-            sheet_1.range(str(4) + ':1048576').api.Delete(DeleteShiftDirection.xlShiftUp)
+            sheet_1 = wb.sheets['mfsp_itm']
+            sheet_1.range(str(4) + ':1048576').clear_contents()
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
                  cost_items[['Case/Scenario', 
                              'Parameter', 
@@ -1108,6 +1269,6 @@ if write_to_dashboard:
                              'Itemized MFSP: Unit (denominator)'
                              ]]
         wb.save()
-        
+        wb.close()
         
 #%%
