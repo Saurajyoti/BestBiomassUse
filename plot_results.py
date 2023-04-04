@@ -23,6 +23,7 @@ f_pathway_mac = 'mac_for_pathways.xlsx'
 # Libraries
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
 #import os
 #from datetime import datetime
 
@@ -43,11 +44,14 @@ sns.set_style("whitegrid")
 
 # LCA (kgCO2e/MJ) vs pathways
 lca_agg['ID'] = lca_agg.index
-g = sns.catplot(
-    data=lca_agg, kind='bar',
-    x='ID', y='Total LCA (g per MJ)',
+
+plt.figure(figsize=(12, 6))
+g = sns.barplot(
+    data=lca_agg,
+    x='Case/Scenario', y='Total LCA',
     palette='dark') #, alpha=0.6, height=6
 g.set_axis_labels("Pathways", "Emissions (g CO2 per MJ)", labelpad=10)
+g.set_xticklabels(g.get_xticklabels(), rotation=45, horizontalalignment='right')
 g.add_legend(title="")
 g.figure.set_size_inches(6.5, 4.5)
 g.figure.savefig(fig_path_prefix+'\\'+'plot_LCA.jpg', dpi=400)

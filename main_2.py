@@ -26,8 +26,8 @@ input_path_EIA_price = input_path_prefix + '/EIA'
 input_path_corr = input_path_prefix + '/correspondence_files'
 input_path_units = input_path_prefix + '/Units'
 
-f_TEA = 'TEA Database_add_pathways_03_27_2023.xlsx'
-sheet_TEA = 'Biofuel'
+f_TEA = 'TEA Database_add_pathways_04_04_2023.xlsx'
+sheet_TEA = 'Inventory'
 
 f_out_itemized_mfsp = 'mfsp_itemized.csv'
 f_out_agg_mfsp = 'mfsp_agg.csv'
@@ -66,6 +66,10 @@ consider_coproduct_env_credit = True
 # Toggle variability study
 consider_variability_study = False
 
+# Toggle write output to the dashboard workbook
+write_to_dashboard = True
+
+
 save_interim_files = True
 
 dict_gco2e = { # Table 2, AR6/GWP100, GREET1 2022
@@ -90,6 +94,8 @@ import numpy as np
 import os
 from datetime import datetime
 import cpi
+import xlwings as xw
+from xlwings.constants import DeleteShiftDirection
 
 #cpi.update()
 
@@ -279,83 +285,83 @@ df_econ = df_econ[['Case/Scenario', 'Parameter',
        'Total Flow: Unit (denominator)', 'Total Flow', 'Cost Year']]
 
 # Select pathways to consider
-df_econ = df_econ.loc[df_econ['Case/Scenario'].isin([
-    # '2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel',
-    # '2015 Biochemical Catalysis Design Report',
-    # '2018 Biochemical Design Case: BDO Pathway',
-    # '2018 Biochemical Design Case: Organic Acids Pathway',
-    # '2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-    # '2018, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-    
-    ###
-    '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-    ###
-    
-    # '2020, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-    # 'Biochemical 2019 SOT: Acids Pathway (Burn Lignin Case)',
-    # 'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - "Base" Case)',
-    # 'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - High)',
-    # 'Biochemical 2019 SOT: BDO Pathway (Burn Lignin Case)',
-    # 'Biochemical 2019 SOT: BDO Pathway (Convert Lignin - Base)',
-    # 'Biochemical 2019 SOT: BDO Pathway (Convert Lignin - High)',
-    # 'Biomass to Gasoline and Diesel Using Integrated Hydropyrolysis and Hydroconversion',
-    # 'Corn stover ETJ', 
-    # 'Dry Mill (Corn) ETJ',
-    # 'Ex Situ CFP 2022 Target Case', 
-    # 'Ex-Situ CFP 2019 SOT',
-    # 'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
-    # 'Ex-Situ Fixed Bed 2022 Projection',
-    # 'In-Situ CFP 2022 Target Case',
-    
-    # Tan et al., 2016 pathways
-    ###
-    'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-    'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-    'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-    'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-    'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
-    ###
-    
-    # Decarb 2b pathways
-    # 'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
-    # 'Cellulosic Ethanol',
-    ###
-     'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
-     'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
-     'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
-     'Decarb 2b: Fischer-Tropsch SPK',
-     'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
-     'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
-     'Decarb 2b: Ex-Situ CFP',
-     'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
-    ###
-    # 'Gasification to Methanol',
-    # 'Gasoline from upgraded bio-oil from pyrolysis'
-    
-    # 2021 SOT pathways
-    ###
-    '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
-    '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
-    '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
-    '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
-    '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
-    
-    '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
-    ###
-    
-    # Marine pathways
-    ###
-    # '2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-    # '2022, Marine biocrude via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-    # '2022, Partially upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-    # '2022, Partially upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-    # '2022, Fully upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-    # '2022, Fully upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-    # '2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass',
-    # '2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass',
-    ###
-    
-    ])].reset_index(drop=True)
+pathways_to_consider=[
+        # '2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel',
+        # '2015 Biochemical Catalysis Design Report',
+        # '2018 Biochemical Design Case: BDO Pathway',
+        # '2018 Biochemical Design Case: Organic Acids Pathway',
+        # '2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+        # '2018, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+        
+        ###
+        '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+        ###
+        
+        # '2020, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+        # 'Biochemical 2019 SOT: Acids Pathway (Burn Lignin Case)',
+        # 'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - "Base" Case)',
+        # 'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - High)',
+        # 'Biochemical 2019 SOT: BDO Pathway (Burn Lignin Case)',
+        # 'Biochemical 2019 SOT: BDO Pathway (Convert Lignin - Base)',
+        # 'Biochemical 2019 SOT: BDO Pathway (Convert Lignin - High)',
+        # 'Biomass to Gasoline and Diesel Using Integrated Hydropyrolysis and Hydroconversion',
+        # 'Corn stover ETJ', 
+        # 'Dry Mill (Corn) ETJ',
+        # 'Ex Situ CFP 2022 Target Case', 
+        # 'Ex-Situ CFP 2019 SOT',
+        # 'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
+        # 'Ex-Situ Fixed Bed 2022 Projection',
+        # 'In-Situ CFP 2022 Target Case',
+        
+        # Tan et al., 2016 pathways
+        ###
+        'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+        'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+        'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+        'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+        'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+        ###
+        
+        # Decarb 2b pathways
+        # 'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
+        # 'Cellulosic Ethanol',
+        ###
+         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
+         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
+         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
+         'Decarb 2b: Fischer-Tropsch SPK',
+         'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
+         'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
+         'Decarb 2b: Ex-Situ CFP',
+         'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
+        ###
+        # 'Gasification to Methanol',
+        # 'Gasoline from upgraded bio-oil from pyrolysis'
+        
+        # 2021 SOT pathways
+        ###
+        '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
+        '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
+        '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
+        '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
+        '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
+        
+        '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
+        ###
+        
+        # Marine pathways
+        ###
+        # '2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+        # '2022, Marine biocrude via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+        # '2022, Partially upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+        # '2022, Partially upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+        # '2022, Fully upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+        # '2022, Fully upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+        # '2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass',
+        # '2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass',
+        ###
+        ]
+df_econ = df_econ.loc[df_econ['Case/Scenario'].isin(pathways_to_consider)].reset_index(drop=True)
 
 # When studying variability of unit cost on MFSP and MAC,
 # following pathways are avoided because detailed LCI are not available yet
@@ -506,7 +512,7 @@ cost_items['Cost Year'] = cost_items['Cost Year'].astype(int)
 cost_items['Adjusted Total Cost'] = cost_items.apply(lambda x: cpi.inflate(x['Total Cost'], x['Cost Year'], to=cost_year), axis=1)
 cost_items['Adjusted Cost Year'] = cost_year
 
-# accounting calculations for one production year only
+# accounting calculations for one production year only for now
 cost_items['Production Year'] = production_year
    
 # Calculate itemized MFSP
@@ -734,6 +740,7 @@ MAC_df.drop(['Year', 'GREET1 sheet', 'Coproduct allocation method',
 MAC_df.rename(columns={'LCA: Unit (numerator)' : 'CI replaced fuel: Unit (Numerator)',
                        'LCA: Unit (denominator)' : 'CI replaced fuel: Unit (Denominator)',
                        'LCA_value' : 'CI replaced fuel',
+                       'LCA_metric_x' : 'Metric_replacing fuel',
                        'LCA_metric_y' : 'Metric_replaced fuel'}, inplace=True)
 
 """
@@ -942,8 +949,8 @@ MAC_df['MAC_calculated'] = (MAC_df['MFSP replacing fuel'] - MAC_df['Adjusted Cos
                            (MAC_df['CI replaced fuel'] - MAC_df['Total LCA'])
 MAC_df['MAC_calculated: Unit (numerator)'] = MAC_df['MFSP replacing fuel: Unit (numerator)']
 MAC_df['MAC_calculated: Unit (denominator)'] = MAC_df['Total LCA: Unit (numerator)'] 
-MAC_df['MAC_calculated'] = MAC_df['MAC_calculated']*1E3 # unit: $/kg CO2 avoided
-MAC_df['MAC_calculated: Unit (denominator)']  = 'kg'
+MAC_df['MAC_calculated'] = MAC_df['MAC_calculated']*1E6 # unit: $/MT CO2 avoided
+MAC_df['MAC_calculated: Unit (denominator)']  = 'MT'
 
 MAC_df['CI of replaced fuel higher'] = MAC_df['CI replaced fuel'] > MAC_df['Total LCA']
 MAC_df['Cost of replaced fuel higher'] = MAC_df['Adjusted Cost_replaced fuel'] > MAC_df['MFSP replacing fuel']
@@ -954,21 +961,153 @@ if save_interim_files == True:
     
     
 print( '    Elapsed time: ' + str(datetime.now() - init_time)) 
-
-"""
-numeric_cols = ['Flow', 'Unit Cost', 'Feedstock Flow', 'Operating Time', 'Biofuel Flow']
-for col_name in numeric_cols:
-    cost_items.loc[cost_items[col_name] == '-', col_name] = '0'
-
-cost_items[numeric_cols] = cost_items[numeric_cols].apply(pd.to_numeric)
-
-# (lb/hr) * (usd/lb) / (US dry ton/yr) * (hr/yr) / (GGE/US dry ton)
-cost_items['MAC Value'] = cost_items['Flow'] * cost_items['Unit Cost'] / \
-                            cost_items['Feedstock Flow'] * cost_items['Operating Time'] /  cost_items['Biofuel Flow']
-
-# Aggregrate MAC for each feedstock-biofuel conversion pathways
-cost_items_agg = cost_items.groupby(['Case/Scenario', 'Feedstock', 'Biofuel Stream_LCA']).agg({'MAC Value' : 'sum'}).reset_index()
-"""
-
     
+#%%
+# write data to the model dashboard tabs
+
+if write_to_dashboard:
+    
+    with xw.App(visible=False) as app: 
+        
+        wb = xw.Book(input_path_TEA + '/' + f_TEA)
+        
+        if consider_variability_study:
+            a=0
+        
+        else:
+            
+            sheet_1 = wb.sheets['LCA_agg']
+            sheet_1.range(str(4) + ':1048576').api.Delete(DeleteShiftDirection.xlShiftUp)
+            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+                LCA_items_agg[['Case/Scenario',
+                               'LCA_metric',
+                               'Total LCA: Unit (numerator)',
+                               'Total LCA: Unit (denominator)',
+                               'Production Year',
+                               'Total LCA']]
+            
+            sheet_1 = wb.sheets['MFSP_agg']
+            sheet_1.range(str(4) + ':1048576').api.Delete(DeleteShiftDirection.xlShiftUp)
+            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+            MFSP_agg[['Case/Scenario',	
+                      'Production Year', 
+                      'MFSP replacing fuel: Unit (numerator)',
+                      'MFSP replacing fuel: Unit (denominator)',
+                      'MFSP replacing fuel',
+                      'Adjusted Cost Year'
+                      ]]
+            
+            sheet_1 = wb.sheets['MAC']
+            sheet_1.range(str(4) + ':1048576').api.Delete(DeleteShiftDirection.xlShiftUp)
+            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+            MAC_df[['Case/Scenario',
+                    'Biofuel Stream_LCA',
+                    'Feedstock',
+                    'Production Year',
+                    'MFSP replacing fuel: Unit (numerator)',
+                    'MFSP replacing fuel: Unit (denominator)',
+                    'Adjusted Cost Year',
+                    'MFSP replacing fuel',
+                    'Metric_replacing fuel',	
+                    'Total LCA: Unit (numerator)',
+                    'Total LCA: Unit (denominator)',
+                    'Total LCA',
+                    'Replaced Fuel',
+                    'Stream_Flow',
+                    'Stream_LCA'	,
+                    'CI replaced fuel: Unit (Numerator)',
+                    'CI replaced fuel: Unit (Denominator)',
+                    'CI replaced fuel',
+                    'Metric_replaced fuel',
+                    'EIA_fuel_mapping_for_price',
+                    'Year_Cost_replaced fuel',
+                    'Cost basis_replaced fuel',
+                    'Year_Cost_replaced fuel',
+                    'Cost replaced fuel: Unit (Numerator)',
+                    'Cost replaced fuel: Unit (Denominator)',
+                    'Adjusted Cost_replaced fuel',
+                    'Adjusted Cost replaced fuel: Unit (Denominator)',
+                    'Adjusted Cost replaced fuel: Unit (Numerator)',
+                    'MAC_calculated',
+                    'MAC_calculated: Unit (numerator)',
+                    'MAC_calculated: Unit (denominator)'
+                    ]]
+            
+            sheet_1 = wb.sheets['LCA_itemized']
+            sheet_1.range(str(4) + ':1048576').api.Delete(DeleteShiftDirection.xlShiftUp)
+            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+                LCA_items[['Case/Scenario', 
+                           'Parameter', 
+                           'Item', 
+                           'Stream_Flow', 
+                           'Stream_LCA',
+                           'Flow: Unit (numerator)', 
+                           'Flow: Unit (denominator)', 
+                           'Flow',
+                           'Operating Time: Unit', 
+                           'Operating Time', 
+                           'Operating Time (%)',
+                           'Total Flow: Unit (numerator)', 
+                           'Total Flow: Unit (denominator)',
+                           'Total Flow', 
+                           'Production Year',
+                           #'Year', 
+                           #'GREET1 sheet',
+                           #'Coproduct allocation method', 
+                           #'GREET classification of coproduct',
+                           'LCA: Unit (numerator)',
+                           'LCA: Unit (denominator)',
+                           'LCA_value',
+                           'LCA_metric',
+                           'Total LCA',
+                           'Total LCA: Unit (numerator)',
+                           'Total LCA: Unit (denominator)',
+                           #'Biofuel Flow: Unit (numerator)',
+                           #'Biofuel Flow: Unit (denominator)',
+                           #'Biofuel Flow'
+                           ]]
+                
+            sheet_1 = wb.sheets['MFSP_itemized']
+            sheet_1.range(str(4) + ':1048576').api.Delete(DeleteShiftDirection.xlShiftUp)
+            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+                 cost_items[['Case/Scenario', 
+                             'Parameter', 
+                             'Item', 
+                             'Stream_Flow',
+                             'Stream_LCA',
+                             'Flow: Unit (numerator)',
+                             'Flow: Unit (denominator)',
+                             'Flow',
+                             'Cost Item',
+                             'Cost: Unit (numerator)', 
+                             'Cost: Unit (denominator)',
+                             'Unit Cost',
+                             'Operating Time: Unit',
+                             'Operating Time',
+                             'Operating Time (%)', 
+                             'Total Cost: Unit (numerator)',
+                             'Total Cost: Unit (denominator)',
+                             'Total Cost',
+                             'Total Flow: Unit (numerator)',
+                             'Total Flow: Unit (denominator)',
+                             'Total Flow', 
+                             'Cost Year',
+                             # 'Feedstock Stream_Flow',
+                             # 'Feedstock',
+                             # 'Feedstock Flow: Unit (numerator)',
+                             # 'Feedstock Flow: Unit (denominator)', 
+                             # 'Feedstock Flow',
+                             # 'Biofuel Flow: Unit (numerator)',
+                             # 'Biofuel Flow: Unit (denominator)',
+                             # 'Biofuel Flow',
+                             'Adjusted Total Cost', 
+                             'Adjusted Cost Year',
+                             'Production Year', 
+                             'Itemized MFSP', 
+                             'Itemized MFSP: Unit (numerator)',
+                             'Itemized MFSP: Unit (denominator)'
+                             ]]
+        wb.save()
+        
+        
 #%%
