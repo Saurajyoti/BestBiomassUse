@@ -14,7 +14,7 @@ save output files. This version of main implements itemized LCA assessment of bi
 #%%
 # Declare data input and other parameters
 
-code_path_prefix = 'C:/Users/skar/repos/BestBiomassUse' # psth to the Github local repository
+code_path_prefix = 'C:/Users/skar/repos/BestBiomassUse' # path to the Github local repository
 
 input_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Best use of biomass/data'
 output_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Best use of biomass/data/interim'
@@ -26,7 +26,7 @@ input_path_EIA_price = input_path_prefix + '/EIA'
 input_path_corr = input_path_prefix + '/correspondence_files'
 input_path_units = input_path_prefix + '/Units'
 
-f_TEA = 'TEA Database_add_pathways_04_04_2023.xlsx'
+f_TEA = 'MCCAM_04_12_2023_working.xlsx'
 sheet_TEA = 'Db'
 sheet_param_variability = 'var_p'
 
@@ -141,8 +141,8 @@ def mult_numeric(a,b,c):
 
 # Function to add header rows to LCA metric rows, select subset of LCA metrices, and calculate CO2e
 def fmt_GREET_LCI(df):
-    #df = corr_itemized_LCA.copy()   
-    #df = df.loc[df['Stream_Flow'] == 'Manure Sludge (dry basis)', : ].reset_index(drop=True)
+    df = corr_itemized_LCA.copy()   
+    #df = df.loc[(df['Item'] == 'Coproducts') & (df['Stream_Flow'] == 'Renewable Gasoline'), : ].reset_index(drop=True)
     
     df = df.drop_duplicates().reset_index(drop=True)
     df.fillna('', inplace=True)    
@@ -254,6 +254,340 @@ def fmt_GREET_LCI(df):
     
     return df
 
+
+def fmt_GREET_LCI_2(df):
+    
+    harmonize_headers = {
+        
+        'Energy demand' : [
+            'Energy demand',
+            'Energy: mmBtu/ton',
+            'Energy Use: mmBtu/ton of product',
+            'Energy Use: mmBtu/ton',
+            'Energy: Btu/g of material throughput, except as noted',
+            'Energy Use: mmBtu per ton',
+            'Energy Consumption: Btu/mmBtu of fuel transported',
+            'Energy use: Btu/gal treated',
+            'Total energy, Btu'
+            ],
+        
+        'Water consumption' : [
+            'Water consumption',
+            'Water consumption, gallons/ton',
+            'Water Consumption',
+            'Water consumption: gallons',
+            'Water consumption: gallons per ton',
+            'Water consumption',
+            'Water consumption: gallon/ton',
+            'Water consumption (gal/g)',
+            'Water consumption: gallons/mmBtu of fuel throughput',
+            'Water consumption: gallons/ton',
+            'Water consumption: gallons/mmBtu of fuel transported',
+            'Water consumption, gallons/gal treated',
+            'Water consumption, gallons/mmBtu of fuel throughput'
+                               ],
+        'Total emissions' : [
+            'Total emissions',
+            'Total Emissions: grams/ton',
+            'Total emissions: grams/mmBtu of fuel throughput, except as noted',
+            'Total emissions: grams/g of material throughput, except as noted',
+            'Total Emissions: grams per ton',
+            'Total Emissions: grams/mmBtu fuel transported',
+            'Total emissions: grams/gal treated',
+            'Total Emissions: grams/mmBtu of fuel throughput, except as noted',
+            'Total emissions: grams'
+            ],
+        
+        'Urban emissions' : [
+            'Urban emissions',
+            'Urban emissions: grams/ton',
+            'Urban Emissions: grams/ton',
+            'Urban emissions: grams/g of material throughput, except as noted',
+            '5.2) Urban Emissions: Grams per mmBtu of Fuel Throughput at Each Stage',
+            '4.2) Urban Emissions: Grams per mmBtu of Fuel Throughput at Each Stage',
+            'Urban Emissions: grams/mmBtu of fuel transported',
+            'Urban emissions: grams/gal treated',
+            'Urban emissions: grams',
+            'Urban emissions: grams/mmBtu of fuel throughput, except as noted',
+            'Urban Emissions: grams per ton'
+            ],                
+        }
+    
+    harmonize_metric = {
+        
+        'Total energy' : [
+            'Total Energy',
+            'Total energy',
+            ],
+        
+        'Fossil fuels' : [
+            'Fossil fuels',
+            'Fossil Fuels',
+            'Fossil energy',
+            'Fossil fuels, Btu',
+            'Fossi lfuels',
+            ],
+        
+        'Coal' : [
+            'Coal',
+            'Coal, Btu',
+            ],
+        
+        'Natural gas' : [
+            'Natural gas',
+            'Natural Gas',
+            'Natural gas, Btu',
+            ],
+       
+        'Petroleum' : [
+            'Petroleum',
+            'Petroleum, Btu',
+            ],
+        
+        'VOC' : [
+            'VOC',
+            'Urban VOC',
+            'VOC from bulk terminal',
+            'VOC from ref. Station',
+            'VOC from refueling station',
+            'VOC: Total',
+            'VOC: Urban',
+            ],
+       
+        'CO' : [
+            'CO',
+            'Urban CO',
+            'CO: Total',
+            'CO: Urban',
+            ],
+        
+        'NOx' : [
+            'NOx',
+            'Urban NOx',
+            'NOx: Total',
+            'NOx: Urban',
+            ],
+        
+        'PM10' : [
+            'PM10',
+            'Urban PM10',
+            'PM10: Total',
+            'PM10: Urban',
+            ],
+        
+        'PM2.5' : [
+            'PM2.5',
+            'Urban PM2.5',
+            'PM2.5: Total',
+            'PM2.5: Urban',
+            ],
+        
+        'SOx' : [
+            'SOx',
+            'Urban SOx',
+            'SOx: Total',
+            'SOx: Urban',
+                ],
+        
+        'BC' : [
+            'BC',
+            'Urban BC',
+            'BC Total',
+            'BC: Urban',
+            'BC, Total'
+            ],
+        
+        'OC' : [
+            'OC',
+            'Urban OC',
+            'OC Total',
+            'OC: Urban',
+            'OC, Total',
+            ],
+        
+        'CH4' : [
+            'CH4',
+            'CH4: combustion',
+            ],
+       
+        'N2O' : [
+            'N2O',
+            ],
+        
+        'CO2' : [
+            'CO2',
+            'Misc. CO2',
+            ],
+        
+        'CO2 (w/ C in VOC & CO)' : [
+            'CO2 (w/ C in VOC & CO)',
+            ],
+        
+        'GHGs' : [
+            'GHGs (grams/ton)',
+            'GHGs',
+            ],
+        
+        'Other GHG Emissions' : [
+            'Other GHG Emissions',
+            ],
+        
+        'Biogenic CH4' : [
+            'Biogenic CH4',
+            ],
+        
+        'Biogenic CO2' : [
+            'Biogenic CO2',
+            ],
+
+        }
+    
+    
+    harmonize_headers_long = {}
+    for k, v in harmonize_headers.items():
+        for v1 in v:
+            harmonize_headers_long[v1] = k
+    harmonize_metric_long = {}
+    for k, v in harmonize_metric.items():
+        for v1 in v:
+            harmonize_metric_long[v1] = k
+    
+    
+    df = corr_itemized_LCA.copy()   
+    #df = df.loc[(df['Item'] == 'Coproducts') & (df['Stream_Flow'] == 'Acetone'), : ].reset_index(drop=True)
+    
+    
+    #df = df.drop_duplicates().reset_index(drop=True)
+    df.fillna('', inplace=True)    
+         
+    df.rename(columns={'GREET row names_level1' : 'LCA_metric_GREET',
+                       'values_level1' : 'LCA_value'}, inplace=True)
+    
+    # drop rows with loss factor
+    df = df.loc[~(df['LCA_metric_GREET'] == 'Loss factor'), :].reset_index(drop=True)
+    
+    df[['LCA: Unit (numerator)', 'LCA: Unit (denominator)']] = df['Unit'].str.split('/', expand=True)
+    
+    df = df[['Item',
+             'Stream_Flow',
+             'Stream_LCA',
+             'GREET1 sheet',
+             'Coproduct allocation method',
+             'GREET classification of coproduct',
+             'LCA_metric_GREET',
+             'LCA_value',
+             'LCA: Unit (numerator)',
+             'LCA: Unit (denominator)',
+             'Year']]              
+    
+    # strip white spaces before and after metric names
+    for row in range(df.shape[0]):
+        df.loc[row,'LCA_metric_GREET'] = df.loc[row, 'LCA_metric_GREET'].strip()
+    
+    # identify unique headers
+    #tmp_lci_metric = df['LCA_metric'].unique()
+    
+    # replace with harmonized headers and metrices names
+    df.loc[df['LCA_metric_GREET'].isin(harmonize_headers_long.keys()), 'LCA_metric'] =\
+        df.loc[df['LCA_metric_GREET'].isin(harmonize_headers_long.keys()), 'LCA_metric_GREET'].map(harmonize_headers_long, na_action='ignore')
+    
+    df.loc[df['LCA_metric_GREET'].isin(harmonize_metric_long.keys()), 'LCA_metric'] =\
+        df.loc[df['LCA_metric_GREET'].isin(harmonize_metric_long.keys()), 'LCA_metric_GREET'].map(harmonize_metric_long, na_action='ignore')
+    df['LCA_metric'].fillna('-', inplace=True) 
+    
+    # Join header to LCI metric    
+    for row in range(df.shape[0]):
+        if df.loc[row,'LCA_metric'] in harmonize_headers.keys():
+            header_val = df.loc[row,'LCA_metric']
+        else:
+            # concatenating with header 
+            df.loc[row,'LCA_metric'] = header_val + '__' + df.loc[row, 'LCA_metric'].strip()
+    
+    # remove the header rows except water consumption
+    df = df.loc[~(df['LCA_metric'].isin(harmonize_headers.keys()-['Water consumption'])), : ]
+    
+    # select a subset of LCA metrices
+    df = df.loc[(df['LCA_metric'].str.contains('CO2', regex=False)) | 
+                (df['LCA_metric'].str.contains('N2O', regex=False)) |
+                (df['LCA_metric'].str.contains('CH4', regex=False)) |
+                (df['LCA_metric'].str.contains('CO2 (w/ C in VOC & CO)', regex=False)) |
+                (df['LCA_metric'].str.contains('GHGs (grams/ton)', regex=False)) |
+                (df['LCA_metric'].str.contains('GHGs', regex=False)), : ]    
+    
+    # If CO2, CH4, N2O are available, ignore GHG or CO2 w/ VOC mertics
+    df['count_m'] = (((df['LCA_metric'].str.contains('CO2', regex=False)) &\
+                     ~(df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))).replace({True:1, False:0})) +\
+                    (((df['LCA_metric'].str.contains('CO2', regex=False)) &\
+                    (df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))).replace({True:1, False:0})) +\
+                    (df['LCA_metric'].str.contains('N2O', regex=False).replace({True:1, False:0})) +\
+                    (((df['LCA_metric'].str.contains('CH4', regex=False)) &\
+                     ~(df['LCA_metric'].str.contains('Biogenic CH4', regex=False))).replace({True:1, False:0}))
+    df_sub = df.groupby(['Item', 'Stream_Flow', 'Stream_LCA', 
+                         'Year','GREET1 sheet','Coproduct allocation method',
+                         'GREET classification of coproduct'], dropna=False).agg({'count_m' : 'sum'}).reset_index()
+    df = pd.merge(df, df_sub, how='left', on=['Item', 'Stream_Flow', 'Stream_LCA',
+                                              'Year', 'GREET1 sheet', 'Coproduct allocation method',
+                                              'GREET classification of coproduct']).reset_index(drop=True)
+    
+    # if CO2 and CO2 (w/C ..) both are present the count becomes 4
+    df_sub = df.loc[(df['count_m_y'] == 4), :]    
+    df_sub = df_sub.loc[((df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
+                        ~(df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))) |                         
+                        (df_sub['LCA_metric'].str.contains('N2O', regex=False)) |
+                        (df_sub['LCA_metric'].str.contains('CH4', regex=False)), :]     
+    df = df.loc[df['count_m_y']!=4, : ].copy()
+    df = pd.concat([df,df_sub]).reset_index(drop=True)
+    
+    # if CO2 or CO2 (w/C ..) one is present the count becomes 3
+    df_sub = df.loc[(df['count_m_y'] == 3), :]
+    df_sub = df_sub.loc[((df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
+                        ~(df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))) | 
+                        ((df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
+                        (df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))) |
+                        (df_sub['LCA_metric'].str.contains('N2O', regex=False)) |
+                        (df_sub['LCA_metric'].str.contains('CH4', regex=False)), :]     
+    df = df.loc[df['count_m_y']!=3, : ].copy()
+    df = pd.concat([df,df_sub]).reset_index(drop=True)
+    
+    df_sub = df['LCA_metric'].str.split('__', expand=True)
+    if df_sub.shape[1] == 2:        
+        df[['dummy_metric', 'LCA_metric']] = df['LCA_metric'].str.split('__', expand=True)
+        df.loc[df['LCA_metric'].isna(), 'LCA_metric'] = df.loc[df['LCA_metric'].isna(), 'dummy_metric'] 
+        df.drop(columns=['count_m_x', 'count_m_y', 'dummy_metric'], inplace=True)
+    else:
+        df.drop(columns=['count_m_x', 'count_m_y'], inplace=True)
+    
+    # Avoid biogenic stream flow
+    df = df.loc[~((df['Stream_Flow'].isin(biogenic_lci)) &
+                (df['LCA_metric'].isin(['CO2']))), : ]
+    # Avoid biogenic emissions
+    df = df.loc[~(df['LCA_metric'].isin(biogenic_emissions)), : ]
+    
+    # calculate CO2e
+    df['mult'] = df['LCA_metric'].map(dict_gco2e)
+    df['LCA_value'] = pd.to_numeric(df['LCA_value'])
+    df['LCA_value'] = df['LCA_value'] * df['mult']    
+    df = df.groupby(['Item', 'Stream_Flow', 'Stream_LCA', 
+                     'Year','GREET1 sheet','Coproduct allocation method',
+                     'GREET classification of coproduct',
+                     'LCA: Unit (numerator)', 'LCA: Unit (denominator)']).agg({'LCA_value' : 'sum'}).reset_index()
+    df['LCA_metric'] = 'CO2e'
+    
+    # harmonize units
+    # GREET tonnes represent Short Ton
+    df['LCA: Unit (denominator)'] = ['Short Tons' if val == 'ton' else val for val in df['LCA: Unit (denominator)'] ]
+        
+    # convert LCA unit of flow to model standard unit
+    df.loc[:, ['LCA: Unit (denominator)', 'LCA_value']] = \
+        ob_units.unit_convert_df(df.loc[:, ['LCA: Unit (denominator)', 'LCA_value']],
+         Unit = 'LCA: Unit (denominator)', Value = 'LCA_value',
+         if_unit_numerator = False, if_given_category=False)   
+    
+    return df
+
+
+
+
 def ef_calc_co2e(df):
     # calculate CO2e
     df['mult'] = df['Formula'].map(dict_gco2e)
@@ -288,17 +622,73 @@ df_econ = df_econ[['Case/Scenario', 'Parameter',
 
 # Select pathways to consider
 pathways_to_consider=[
+        
+        ###
+        '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+        ###
+        
+        # Tan et al., 2016 pathways
+        ###
+        # 'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+        # 'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+        # 'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+        # 'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+        # 'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+        ###
+        
+        # Decarb 2b pathways
+        # 'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
+        # 'Cellulosic Ethanol',
+        ###
+         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
+         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
+         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
+         
+         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels_jet',
+         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2_jet',
+         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2_jet',
+         
+         # 'Decarb 2b: Fischer-Tropsch SPK',
+         # 'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
+         # 'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
+         # 'Decarb 2b: Ex-Situ CFP',
+         # 'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
+        ###
+        # 'Gasification to Methanol',
+        # 'Gasoline from upgraded bio-oil from pyrolysis'
+        
+        # 2021 SOT pathways
+        ###
+        # '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
+        # '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
+        # '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
+        # '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
+        # '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
+        
+        # '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
+        ###
+        
+        # Marine pathways
+        ###
+        # '2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+        # '2022, Marine biocrude via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+        # '2022, Partially upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+        # '2022, Partially upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+        # '2022, Fully upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+        # '2022, Fully upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+        # '2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass',
+        # '2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass',
+        ###
+        
+        
+        
         # '2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel',
         # '2015 Biochemical Catalysis Design Report',
         # '2018 Biochemical Design Case: BDO Pathway',
         # '2018 Biochemical Design Case: Organic Acids Pathway',
         # '2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
         # '2018, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-        
-        ###
-        '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-        ###
-        
+                
         # '2020, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
         # 'Biochemical 2019 SOT: Acids Pathway (Burn Lignin Case)',
         # 'Biochemical 2019 SOT: Acids Pathway (Convert Lignin - "Base" Case)',
@@ -313,55 +703,8 @@ pathways_to_consider=[
         # 'Ex-Situ CFP 2019 SOT',
         # 'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
         # 'Ex-Situ Fixed Bed 2022 Projection',
-        # 'In-Situ CFP 2022 Target Case',
+        # 'In-Situ CFP 2022 Target Case',      
         
-        # Tan et al., 2016 pathways
-        ###
-        'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-        'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-        'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-        'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-        'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
-        ###
-        
-        # Decarb 2b pathways
-        # 'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
-        # 'Cellulosic Ethanol',
-        ###
-         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
-         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
-         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
-         'Decarb 2b: Fischer-Tropsch SPK',
-         'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
-         'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
-         'Decarb 2b: Ex-Situ CFP',
-         'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
-        ###
-        # 'Gasification to Methanol',
-        # 'Gasoline from upgraded bio-oil from pyrolysis'
-        
-        # 2021 SOT pathways
-        ###
-        '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
-        '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
-        '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
-        '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
-        '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
-        
-        '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
-        ###
-        
-        # Marine pathways
-        ###
-        # '2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-        # '2022, Marine biocrude via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-        # '2022, Partially upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-        # '2022, Partially upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-        # '2022, Fully upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-        # '2022, Fully upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-        # '2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass',
-        # '2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass',
-        ###
         ]
 df_econ = df_econ.loc[df_econ['Case/Scenario'].isin(pathways_to_consider)].reset_index(drop=True)
 
