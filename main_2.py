@@ -78,7 +78,21 @@ dict_gco2e = { # Table 2, AR6/GWP100, GREET1 2022
     'CO2 (w/ C in VOC & CO)' : 1,
     'N2O' : 273,
     'CH4' : 29.8,
-    'Biogenic CH4' : 29.8}
+    #'Biogenic CH4' : 29.8,
+    'VOC' : 0,
+    'CO' : 0,
+    'NOx' : 0,
+    'BC' : 0,
+    'OC' : 0
+    }
+
+dict_frac_C = {
+    'Carbon ratio of VOC' : 0.85,
+    'Carbon ratio of CO' : 0.43,
+    'Carbon ratio of CH4' : 0.75,
+    'Carbon ratio of CO2' : 0.27,
+    'Sulfur ratio of SO2' : 0.50
+    }
 
 # List of Stream_Flows that have biogenic C and their CO2 is not excluded
 biogenic_lci = ['Biochar',
@@ -140,7 +154,7 @@ def mult_numeric(a,b,c):
          return 
 
 # Function to add header rows to LCA metric rows, select subset of LCA metrices, and calculate CO2e
-def fmt_GREET_LCI(df):
+def fmt_GREET_LCI_old(df):
     df = corr_itemized_LCA.copy()   
     #df = df.loc[(df['Item'] == 'Coproducts') & (df['Stream_Flow'] == 'Renewable Gasoline'), : ].reset_index(drop=True)
     
@@ -255,7 +269,7 @@ def fmt_GREET_LCI(df):
     return df
 
 
-def fmt_GREET_LCI_2(df):
+def fmt_GREET_LCI(df):
     
     harmonize_headers = {
         
@@ -457,8 +471,7 @@ def fmt_GREET_LCI_2(df):
     #df = df.loc[(df['Item'] == 'Coproducts') & (df['Stream_Flow'] == 'Acetone'), : ].reset_index(drop=True)
     
     
-    #df = df.drop_duplicates().reset_index(drop=True)
-    df.fillna('', inplace=True)    
+    #df = df.drop_duplicates().reset_index(drop=True)        
          
     df.rename(columns={'GREET row names_level1' : 'LCA_metric_GREET',
                        'values_level1' : 'LCA_value'}, inplace=True)
@@ -487,7 +500,7 @@ def fmt_GREET_LCI_2(df):
     # identify unique headers
     #tmp_lci_metric = df['LCA_metric'].unique()
     
-    # replace with harmonized headers and metrices names
+    # replace with harmonized headers and metrices
     df.loc[df['LCA_metric_GREET'].isin(harmonize_headers_long.keys()), 'LCA_metric'] =\
         df.loc[df['LCA_metric_GREET'].isin(harmonize_headers_long.keys()), 'LCA_metric_GREET'].map(harmonize_headers_long, na_action='ignore')
     
@@ -506,72 +519,38 @@ def fmt_GREET_LCI_2(df):
     # remove the header rows except water consumption
     df = df.loc[~(df['LCA_metric'].isin(harmonize_headers.keys()-['Water consumption'])), : ]
     
-    # select a subset of LCA metrices
-    df = df.loc[(df['LCA_metric'].str.contains('CO2', regex=False)) | 
-                (df['LCA_metric'].str.contains('N2O', regex=False)) |
-                (df['LCA_metric'].str.contains('CH4', regex=False)) |
-                (df['LCA_metric'].str.contains('CO2 (w/ C in VOC & CO)', regex=False)) |
-                (df['LCA_metric'].str.contains('GHGs (grams/ton)', regex=False)) |
-                (df['LCA_metric'].str.contains('GHGs', regex=False)), : ]    
+    # select a subset of LCA metrices for GHG calculation
+    select_GHG_metrices = [
+        'Total emissions__VOC',
+        'Total emissions__CO',
+        'Total emissions__NOx',
+        #'Total emissions__PM10',
+        #'Total emissions__PM2.5',
+        #'Total emissions__SOx',
+        'Total emissions__BC',
+        'Total emissions__OC',
+        'Total emissions__CH4',
+        'Total emissions__N2O',
+        'Total emissions__CO2',
+        'Total emissions__CO2 (w/ C in VOC & CO)',
+        #'Total emissions__GHGs',
+        'Total emissions__Biogenic CH4',
+        #'Total emissions__Biogenic CO2'
+        ]
     
-    # If CO2, CH4, N2O are available, ignore GHG or CO2 w/ VOC mertics
-    df['count_m'] = (((df['LCA_metric'].str.contains('CO2', regex=False)) &\
-                     ~(df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))).replace({True:1, False:0})) +\
-                    (((df['LCA_metric'].str.contains('CO2', regex=False)) &\
-                    (df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))).replace({True:1, False:0})) +\
-                    (df['LCA_metric'].str.contains('N2O', regex=False).replace({True:1, False:0})) +\
-                    (((df['LCA_metric'].str.contains('CH4', regex=False)) &\
-                     ~(df['LCA_metric'].str.contains('Biogenic CH4', regex=False))).replace({True:1, False:0}))
-    df_sub = df.groupby(['Item', 'Stream_Flow', 'Stream_LCA', 
-                         'Year','GREET1 sheet','Coproduct allocation method',
-                         'GREET classification of coproduct'], dropna=False).agg({'count_m' : 'sum'}).reset_index()
-    df = pd.merge(df, df_sub, how='left', on=['Item', 'Stream_Flow', 'Stream_LCA',
-                                              'Year', 'GREET1 sheet', 'Coproduct allocation method',
-                                              'GREET classification of coproduct']).reset_index(drop=True)
+    col_indices = ['Item', 'Stream_Flow', 'Stream_LCA', 'GREET1 sheet',
+                   'Coproduct allocation method', 'GREET classification of coproduct',
+                   'LCA_metric', 'LCA: Unit (numerator)', 'LCA: Unit (denominator)', 'Year']
     
-    # if CO2 and CO2 (w/C ..) both are present the count becomes 4
-    df_sub = df.loc[(df['count_m_y'] == 4), :]    
-    df_sub = df_sub.loc[((df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
-                        ~(df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))) |                         
-                        (df_sub['LCA_metric'].str.contains('N2O', regex=False)) |
-                        (df_sub['LCA_metric'].str.contains('CH4', regex=False)), :]     
-    df = df.loc[df['count_m_y']!=4, : ].copy()
-    df = pd.concat([df,df_sub]).reset_index(drop=True)
+    df = df.loc[df['LCA_metric'].isin(select_GHG_metrices), : ]
+            
+    df.drop(columns=['LCA_metric_GREET'], inplace=True) 
     
-    # if CO2 or CO2 (w/C ..) one is present the count becomes 3
-    df_sub = df.loc[(df['count_m_y'] == 3), :]
-    df_sub = df_sub.loc[((df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
-                        ~(df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))) | 
-                        ((df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
-                        (df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))) |
-                        (df_sub['LCA_metric'].str.contains('N2O', regex=False)) |
-                        (df_sub['LCA_metric'].str.contains('CH4', regex=False)), :]     
-    df = df.loc[df['count_m_y']!=3, : ].copy()
-    df = pd.concat([df,df_sub]).reset_index(drop=True)
+    df = df.loc[~df['LCA_value'].isna(), : ]
     
-    df_sub = df['LCA_metric'].str.split('__', expand=True)
-    if df_sub.shape[1] == 2:        
-        df[['dummy_metric', 'LCA_metric']] = df['LCA_metric'].str.split('__', expand=True)
-        df.loc[df['LCA_metric'].isna(), 'LCA_metric'] = df.loc[df['LCA_metric'].isna(), 'dummy_metric'] 
-        df.drop(columns=['count_m_x', 'count_m_y', 'dummy_metric'], inplace=True)
-    else:
-        df.drop(columns=['count_m_x', 'count_m_y'], inplace=True)
+    df['LCA_value'] = df['LCA_value'].astype('float')
     
-    # Avoid biogenic stream flow
-    df = df.loc[~((df['Stream_Flow'].isin(biogenic_lci)) &
-                (df['LCA_metric'].isin(['CO2']))), : ]
-    # Avoid biogenic emissions
-    df = df.loc[~(df['LCA_metric'].isin(biogenic_emissions)), : ]
-    
-    # calculate CO2e
-    df['mult'] = df['LCA_metric'].map(dict_gco2e)
-    df['LCA_value'] = pd.to_numeric(df['LCA_value'])
-    df['LCA_value'] = df['LCA_value'] * df['mult']    
-    df = df.groupby(['Item', 'Stream_Flow', 'Stream_LCA', 
-                     'Year','GREET1 sheet','Coproduct allocation method',
-                     'GREET classification of coproduct',
-                     'LCA: Unit (numerator)', 'LCA: Unit (denominator)']).agg({'LCA_value' : 'sum'}).reset_index()
-    df['LCA_metric'] = 'CO2e'
+    df['LCA: Unit (denominator)'] = df['LCA: Unit (denominator)'].fillna('-', inplace=False)
     
     # harmonize units
     # GREET tonnes represent Short Ton
@@ -581,7 +560,67 @@ def fmt_GREET_LCI_2(df):
     df.loc[:, ['LCA: Unit (denominator)', 'LCA_value']] = \
         ob_units.unit_convert_df(df.loc[:, ['LCA: Unit (denominator)', 'LCA_value']],
          Unit = 'LCA: Unit (denominator)', Value = 'LCA_value',
-         if_unit_numerator = False, if_given_category=False)   
+         if_unit_numerator = False, if_given_category=False)
+    
+    # identify duplicate rows    
+    df_duplicates = df.loc[df[col_indices].duplicated(), :]
+    if df_duplicates.shape[0] > 0:
+        print("Warning: The following LCA metrices need attention as there are duplicates and metrices will be aggregrated by summation..")
+        print(df_duplicates)
+    df = df.groupby(col_indices, dropna=False, sort=False).agg({'LCA_value' : 'sum'}).reset_index()
+    
+    df =  df.pivot(index=['Item', 'Stream_Flow', 'Stream_LCA', 'GREET1 sheet',
+                        'Coproduct allocation method', 'GREET classification of coproduct',
+                        'LCA: Unit (numerator)', 'LCA: Unit (denominator)', 'Year'], 
+                   columns='LCA_metric', 
+                   values='LCA_value').reset_index()
+    df[select_GHG_metrices] = df[select_GHG_metrices].fillna(0)
+    df[df.columns.difference(select_GHG_metrices)] = df[df.columns.difference(select_GHG_metrices)].fillna('-')
+    
+    # Check and calculate CO2 (w/C in VOC & CO)
+    for idx, r in df.iterrows():
+        if r['Total emissions__CO2 (w/ C in VOC & CO)'] == 0:
+            df.loc[idx, 'Total emissions__CO2 (w/ C in VOC & CO)'] =\
+                r['Total emissions__CO2'] +\
+                r['Total emissions__VOC'] / dict_frac_C['Carbon ratio of VOC'] * dict_frac_C['Carbon ratio of CO2'] +\
+                r['Total emissions__CO'] / dict_frac_C['Carbon ratio of CO'] * dict_frac_C['Carbon ratio of CO2']
+    
+    # Calculate GHG metric
+    df['GHG'] = df['Total emissions__CO2 (w/ C in VOC & CO)'] +\
+                df['Total emissions__CH4'] * dict_gco2e['CH4'] +\
+                df['Total emissions__N2O'] * dict_gco2e['N2O'] +\
+                df['Total emissions__VOC']* dict_gco2e['VOC'] +\
+                df['Total emissions__CO'] * dict_gco2e['CO'] +\
+                df['Total emissions__NOx'] * dict_gco2e['NOx'] +\
+                df['Total emissions__BC'] * dict_gco2e['BC'] +\
+                df['Total emissions__OC'] * dict_gco2e['OC'] -\
+                df['Total emissions__Biogenic CH4'] / dict_frac_C['Carbon ratio of CO2'] * dict_frac_C['Carbon ratio of CH4']       
+    
+    df = df[[
+               'Item', 
+               'Stream_Flow', 
+               'Stream_LCA', 
+               'GREET1 sheet',
+               'Coproduct allocation method', 
+               'GREET classification of coproduct',
+               'LCA: Unit (numerator)', 
+               'LCA: Unit (denominator)', 
+               'Year',
+               # 'Total emissions__BC', 
+               # 'Total emissions__Biogenic CH4',
+               # 'Total emissions__CH4', 
+               # 'Total emissions__CO', 
+               # 'Total emissions__CO2',
+               # 'Total emissions__CO2 (w/ C in VOC & CO)',
+               # 'Total emissions__N2O',
+               # 'Total emissions__NOx', 
+               # 'Total emissions__OC', 
+               # 'Total emissions__VOC',
+               'GHG',
+               ]]
+    
+    df.rename(columns={'GHG' : 'LCA_value'}, inplace=True)
+    df['LCA_metric'] = 'CO2e'
     
     return df
 

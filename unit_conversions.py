@@ -137,7 +137,8 @@ class model_units:
                          if_given_category = False, unit_category = 'None'):
         
         df = df.copy()
-        df[Unit] = self.conv_to_lower_list(df[Unit])
+        #df[Unit] = self.conv_to_lower_list(df[Unit])
+        df[Unit] = df[Unit].str.lower()
         
         if if_given_unit:
             df['unit_to'] = given_unit.lower()
