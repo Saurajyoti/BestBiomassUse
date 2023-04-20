@@ -52,10 +52,13 @@ f_corr_replaced_EIA_mfsp = 'corr_replaced_EIA_mfsp.csv'
 #f_corr_params_variability = 'corr_params_variability.xlsx'
 #sheet_corr_params_variability = 'input_table'
 
-# Year of pathway production 
-production_year = 2022
+# Year(s) of production defined as a list:
+# If single year: [year]
+# If multiple year: [first year, last year], inclusive of both the bounds
+production_year = [2022]
+#production_year = [2022, 2023]
 
-# cost adjust year to which inflation will be adjusted
+# cost adjustment year, to which inflation will be adjusted
 cost_year = 2016
 
 # Toggle cost credit for coproducts while calculating aggregrated MFSP
@@ -67,11 +70,11 @@ consider_coproduct_env_credit = True
 # Toggle variability study
 consider_variability_study = False
 
-# Toggle write output to the dashboard workbook
-write_to_dashboard = True
-
-
+# Toggle writing output to interim files
 save_interim_files = True
+
+# Toggle write output to the dashboard workbook
+write_to_dashboard = False
 
 dict_gco2e = { # Table 2, AR6/GWP100, GREET1 2022
     'CO2' : 1,
@@ -154,121 +157,6 @@ def mult_numeric(a,b,c):
          return 
 
 # Function to add header rows to LCA metric rows, select subset of LCA metrices, and calculate CO2e
-def fmt_GREET_LCI_old(df):
-    df = corr_itemized_LCA.copy()   
-    #df = df.loc[(df['Item'] == 'Coproducts') & (df['Stream_Flow'] == 'Renewable Gasoline'), : ].reset_index(drop=True)
-    
-    df = df.drop_duplicates().reset_index(drop=True)
-    df.fillna('', inplace=True)    
-    
-    # add header to LCI metrices rows    
-    df[['Unit (numerator)', 'Unit (denominator)']] = df['Unit'].str.split('/', expand=True)
-
-    df.rename(columns={'GREET row names_level1' : 'LCA_metric',
-                       'values_level1' : 'LCA_value',
-                       'Unit (numerator)' : 'LCA: Unit (numerator)',
-                       'Unit (denominator)' : 'LCA: Unit (denominator)'}, inplace=True)
-    df = df[['Item',
-             'Stream_Flow',
-             'Stream_LCA',
-             'GREET1 sheet',
-             'Coproduct allocation method',
-             'GREET classification of coproduct',
-             'LCA_metric',
-             'LCA_value',
-             'LCA: Unit (numerator)',
-             'LCA: Unit (denominator)',
-             'Year']]
-    for row in range(df.shape[0]):
-        if df.loc[row,'LCA_metric'] == df.loc[row, 'LCA_metric'].strip():
-            header_val = df.loc[row,'LCA_metric']
-        else:
-            # concatenatig with header 
-            df.loc[row,'LCA_metric'] = header_val + '__' + df.loc[row, 'LCA_metric'].strip()
-    
-    # remove the header rows without values
-    df = df.loc[~(df['LCA: Unit (numerator)'].isna()), : ]
-    
-    # select a subset of LCA metrices
-    df = df.loc[(df['LCA_metric'].str.contains('CO2', regex=False)) | 
-                (df['LCA_metric'].str.contains('N2O', regex=False)) |
-                (df['LCA_metric'].str.contains('CH4', regex=False)) |
-                (df['LCA_metric'].str.contains('CO2 (w/ C in VOC & CO)', regex=False)) |
-                (df['LCA_metric'].str.contains('GHGs (grams/ton)', regex=False)) |
-                (df['LCA_metric'].str.contains('GHGs', regex=False)), : ]    
-    
-    # If CO2, CH4, N2O are available, ignore GHG or CO2 w/ VOC mertics
-    df['count_m'] = (((df['LCA_metric'].str.contains('CO2', regex=False)) &\
-                     ~(df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))).replace({True:1, False:0})) +\
-                    (((df['LCA_metric'].str.contains('CO2', regex=False)) &\
-                    (df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))).replace({True:1, False:0})) +\
-                    (df['LCA_metric'].str.contains('N2O', regex=False).replace({True:1, False:0})) +\
-                    (((df['LCA_metric'].str.contains('CH4', regex=False)) &\
-                     ~(df['LCA_metric'].str.contains('Biogenic CH4', regex=False))).replace({True:1, False:0}))
-    df_sub = df.groupby(['Item', 'Stream_Flow', 'Stream_LCA', 
-                         'Year','GREET1 sheet','Coproduct allocation method',
-                         'GREET classification of coproduct'], dropna=False).agg({'count_m' : 'sum'}).reset_index()
-    df = pd.merge(df, df_sub, how='left', on=['Item', 'Stream_Flow', 'Stream_LCA',
-                                              'Year', 'GREET1 sheet', 'Coproduct allocation method',
-                                              'GREET classification of coproduct']).reset_index(drop=True)
-    
-    # if CO2 and CO2 (w/C ..) both are present the count becomes 4
-    df_sub = df.loc[(df['count_m_y'] == 4), :]    
-    df_sub = df_sub.loc[((df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
-                        ~(df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))) |                         
-                        (df_sub['LCA_metric'].str.contains('N2O', regex=False)) |
-                        (df_sub['LCA_metric'].str.contains('CH4', regex=False)), :]     
-    df = df.loc[df['count_m_y']!=4, : ].copy()
-    df = pd.concat([df,df_sub]).reset_index(drop=True)
-    
-    # if CO2 or CO2 (w/C ..) one is present the count becomes 3
-    df_sub = df.loc[(df['count_m_y'] == 3), :]
-    df_sub = df_sub.loc[((df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
-                        ~(df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))) | 
-                        ((df_sub['LCA_metric'].str.contains('CO2', regex=False)) &\
-                        (df['LCA_metric'].str.contains('CO2 (w/ C', regex=False))) |
-                        (df_sub['LCA_metric'].str.contains('N2O', regex=False)) |
-                        (df_sub['LCA_metric'].str.contains('CH4', regex=False)), :]     
-    df = df.loc[df['count_m_y']!=3, : ].copy()
-    df = pd.concat([df,df_sub]).reset_index(drop=True)
-    
-    df_sub = df['LCA_metric'].str.split('__', expand=True)
-    if df_sub.shape[1] == 2:        
-        df[['dummy_metric', 'LCA_metric']] = df['LCA_metric'].str.split('__', expand=True)
-        df.loc[df['LCA_metric'].isna(), 'LCA_metric'] = df.loc[df['LCA_metric'].isna(), 'dummy_metric'] 
-        df.drop(columns=['count_m_x', 'count_m_y', 'dummy_metric'], inplace=True)
-    else:
-        df.drop(columns=['count_m_x', 'count_m_y'], inplace=True)
-    
-    # Avoid biogenic stream flow
-    df = df.loc[~((df['Stream_Flow'].isin(biogenic_lci)) &
-                (df['LCA_metric'].isin(['CO2']))), : ]
-    # Avoid biogenic emissions
-    df = df.loc[~(df['LCA_metric'].isin(biogenic_emissions)), : ]
-    
-    # calculate CO2e
-    df['mult'] = df['LCA_metric'].map(dict_gco2e)
-    df['LCA_value'] = pd.to_numeric(df['LCA_value'])
-    df['LCA_value'] = df['LCA_value'] * df['mult']    
-    df = df.groupby(['Item', 'Stream_Flow', 'Stream_LCA', 
-                     'Year','GREET1 sheet','Coproduct allocation method',
-                     'GREET classification of coproduct',
-                     'LCA: Unit (numerator)', 'LCA: Unit (denominator)']).agg({'LCA_value' : 'sum'}).reset_index()
-    df['LCA_metric'] = 'CO2e'
-    
-    # harmonize units
-    # GREET tonnes represent Short Ton
-    df['LCA: Unit (denominator)'] = ['Short Tons' if val == 'ton' else val for val in df['LCA: Unit (denominator)'] ]
-        
-    # convert LCA unit of flow to model standard unit
-    df.loc[:, ['LCA: Unit (denominator)', 'LCA_value']] = \
-        ob_units.unit_convert_df(df.loc[:, ['LCA: Unit (denominator)', 'LCA_value']],
-         Unit = 'LCA: Unit (denominator)', Value = 'LCA_value',
-         if_unit_numerator = False, if_given_category=False)   
-    
-    return df
-
-
 def fmt_GREET_LCI(df):
     
     harmonize_headers = {
@@ -625,8 +513,6 @@ def fmt_GREET_LCI(df):
     return df
 
 
-
-
 def ef_calc_co2e(df):
     # calculate CO2e
     df['mult'] = df['Formula'].map(dict_gco2e)
@@ -668,59 +554,58 @@ pathways_to_consider=[
         
         # Tan et al., 2016 pathways
         ###
-        # 'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-        # 'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-        # 'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-        # 'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-        # 'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+        'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+        'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+        'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+        'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+        'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
         ###
         
         # Decarb 2b pathways
         # 'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
         # 'Cellulosic Ethanol',
         ###
-         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
-         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
-         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
-         
-         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels_jet',
-         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2_jet',
-         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2_jet',
-         
-         # 'Decarb 2b: Fischer-Tropsch SPK',
-         # 'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
-         # 'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
-         # 'Decarb 2b: Ex-Situ CFP',
-         # 'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
+        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
+        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
+        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
+        
+        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels_jet',
+        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2_jet',
+        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2_jet',
+        
+        'Decarb 2b: Fischer-Tropsch SPK',
+        'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
+        'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
+        'Decarb 2b: Ex-Situ CFP',
+        'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
         ###
         # 'Gasification to Methanol',
         # 'Gasoline from upgraded bio-oil from pyrolysis'
         
         # 2021 SOT pathways
         ###
-        # '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
-        # '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
-        # '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
-        # '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
-        # '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
+        '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
+        '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
+        '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
+        '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
+        '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
         
-        # '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
+        '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
         ###
         
         # Marine pathways
         ###
-        # '2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-        # '2022, Marine biocrude via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-        # '2022, Partially upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-        # '2022, Partially upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-        # '2022, Fully upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-        # '2022, Fully upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-        # '2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass',
-        # '2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass',
+        '2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+        '2022, Marine biocrude via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+        '2022, Partially upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+        '2022, Partially upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+        '2022, Fully upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+        '2022, Fully upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+        '2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass',
+        '2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass',
         ###
         
-        
-        
+                
         # '2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel',
         # '2015 Biochemical Catalysis Design Report',
         # '2018 Biochemical Design Case: BDO Pathway',
@@ -836,8 +721,7 @@ cost_items = pd.merge(cost_items, biofuel_yield2, how='left', on='Case/Scenario'
 # drop blanks
 cost_items = cost_items.loc[~(cost_items['Total Cost'].isin(['-']) | cost_items['Total Cost'].isna()), : ]
 
-if consider_variability_study:
-    
+if consider_variability_study:    
 
     # unit check
     check_units = (cost_items['Flow: Unit (numerator)'] != cost_items['Cost: Unit (denominator)']) |\
@@ -896,8 +780,16 @@ cost_items['Cost Year'] = cost_items['Cost Year'].astype(int)
 cost_items['Adjusted Total Cost'] = cost_items.apply(lambda x: cpi.inflate(x['Total Cost'], x['Cost Year'], to=cost_year), axis=1)
 cost_items['Adjusted Cost Year'] = cost_year
 
-# accounting calculations for one production year only for now
-cost_items['Production Year'] = production_year
+# Set or expand LCI based on production year
+if len(production_year) == 1:
+    cost_items['Production Year'] = production_year[0]
+else :
+    cost_items['Production Year'] = 0
+    tempdf = cost_items.copy()    
+    cost_items = cost_items[0:0]
+    for yr in production_year:
+        tempdf['Production Year'] = yr
+        cost_items = pd.concat([cost_items, tempdf], ignore_index=True).reset_index().copy()
    
 # Calculate itemized MFSP
 cost_items['Itemized MFSP'] = cost_items['Adjusted Total Cost'].astype(float) / cost_items['Biofuel Flow'].astype(float)
@@ -1002,7 +894,7 @@ LCA_items = df_econ.loc[df_econ['Item'].isin(['Feedstock',
                                               'Final Product',
                                               'CCS Stream',
                                               'Waste Disposal',
-                                              ]), : ].copy()
+                                              ]), : ].reset_index().copy()
 LCA_items = LCA_items[['Case/Scenario', 
                        'Parameter', 
                        'Item', 
@@ -1018,10 +910,16 @@ LCA_items = LCA_items[['Case/Scenario',
                        'Total Flow: Unit (denominator)',
                        'Total Flow']]
 
-
-
-# temporary value for production year
-LCA_items['Production Year'] = production_year
+# Set or expand LCI based on production year
+if len(production_year) == 1:
+    LCA_items['Production Year'] = production_year[0]
+else :
+    LCA_items['Production Year'] = 0
+    tempdf = LCA_items.copy()    
+    LCA_items = LCA_items[0:0]
+    for yr in production_year:
+        tempdf['Production Year'] = yr
+        LCA_items = pd.concat([LCA_items, tempdf], ignore_index=True).reset_index().copy()
 
 # format LCI
 corr_itemized_LCA = fmt_GREET_LCI(corr_itemized_LCA)
@@ -1051,18 +949,6 @@ LCA_items = LCA_items.loc[~(LCA_items['Total Flow: Unit (numerator)'] != LCA_ite
 #%%
 
 # Step: Itemized and aggregrated LCA metric per pathway
-
-"""
-# Some LCA mappings are unconfirmed or have marginal impact on CI estimation, hence ignored
-LCA_items = LCA_items.loc[~LCA_items['Stream_LCA'].isin(['Makeup Water',
-                                                        'Makeup water',
-                                                        'Water make-up',
-                                                        'Cooling Tower Makeup',
-                                                        'Cooling Tower Make-up',
-                                                        'Cooling tower water makeup',
-                                                        'Cooling tower chemicals',
-                                                        'Cooling Water Makeup']), :].reset_index(drop=True)
-"""
 
 # Calculate itemized LCA metric per year
 LCA_items['Total LCA'] = LCA_items['LCA_value'] * LCA_items['Total Flow']
@@ -1199,12 +1085,12 @@ MAC_df = MAC_df.loc[~MAC_df['Cost_replaced fuel'].isna(), :]
 """
 #%%
 
-# Step: Correct for inflation to the year of study
+# Step: Correct inflation of replacing fuel cost
 
+MAC_df['Adjusted Cost Year'] = cost_year
 MAC_df['Year_Cost_replaced fuel'] = pd.to_numeric(MAC_df['Year_Cost_replaced fuel'])
 MAC_df['Adjusted Cost_replaced fuel'] = \
-    MAC_df.apply(lambda x: cpi.inflate(x['Cost_replaced fuel'], x['Year_Cost_replaced fuel'], to=production_year), axis=1)
-MAC_df['Adjusted Cost Year'] = production_year
+    MAC_df.apply(lambda x: cpi.inflate(x['Cost_replaced fuel'], x['Year_Cost_replaced fuel'], to=x['Adjusted Cost Year']), axis=1)
     
 #%%
 
