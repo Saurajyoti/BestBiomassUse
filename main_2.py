@@ -17,16 +17,17 @@ save output files. This version of main implements itemized LCA assessment of bi
 code_path_prefix = 'C:/Users/skar/repos/BestBiomassUse' # path to the Github local repository
 
 input_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Best use of biomass/data'
+input_path_decarb_model = 'C:/Users/skar/Box/EERE SA Decarbonization/1. Tool/EERE Tool/Dashboard'
+
 output_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Best use of biomass/data/interim'
 
-input_path_TEA = input_path_prefix + '/TEA'
-input_path_LCA = input_path_prefix + '/LCA'
+input_path_model = input_path_prefix + '/model'
 input_path_GREET = input_path_prefix + '/GREET'
 input_path_EIA_price = input_path_prefix + '/EIA'
 input_path_corr = input_path_prefix + '/correspondence_files'
 input_path_units = input_path_prefix + '/Units'
 
-f_TEA = 'MCCAM_04_12_2023_working.xlsx'
+f_model = 'MCCAM_04_25_2023_working.xlsx'
 sheet_TEA = 'Db'
 sheet_param_variability = 'var_p'
 
@@ -49,6 +50,8 @@ f_corr_GGE_GREET_fuel_replacing = 'corr_GGE_GREET_fuel_replacing.csv'
 f_corr_itemized_LCI = 'corr_LCI_GREET_temporal_03_24_2023.csv'
 f_corr_replaced_EIA_mfsp = 'corr_replaced_EIA_mfsp.csv'
 
+f_Decarb_Model = 'US Decarbonization Model - Dashboard.xlsx'
+
 #f_corr_params_variability = 'corr_params_variability.xlsx'
 #sheet_corr_params_variability = 'input_table'
 
@@ -56,7 +59,7 @@ f_corr_replaced_EIA_mfsp = 'corr_replaced_EIA_mfsp.csv'
 # If single year: [year]
 # If multiple year: [first year, last year], inclusive of both the bounds
 production_year = [2022]
-#production_year = [2022, 2023]
+#production_year = [2022, 2050]
 
 # cost adjustment year, to which inflation will be adjusted
 cost_year = 2016
@@ -74,7 +77,10 @@ consider_variability_study = False
 save_interim_files = True
 
 # Toggle write output to the dashboard workbook
-write_to_dashboard = False
+write_to_dashboard = True
+
+# Toggle implementing Decarb Model electric grid carbon intensity 
+decarb_electric_grid = False
 
 dict_gco2e = { # Table 2, AR6/GWP100, GREET1 2022
     'CO2' : 1,
@@ -115,6 +121,7 @@ import cpi
 import xlwings as xw
 from xlwings.constants import DeleteShiftDirection
 from xlwings.constants import AutoFillType
+from collections import Counter
 
 #cpi.update()
 
@@ -534,7 +541,7 @@ def ef_calc_co2e(df):
 
 init_time = datetime.now()
 
-df_econ = pd.read_excel(input_path_TEA + '/' + f_TEA, sheet_name = sheet_TEA, header = 3, index_col=None)
+df_econ = pd.read_excel(input_path_model + '/' + f_model, sheet_name = sheet_TEA, header = 3, index_col=None)
 
 df_econ = df_econ[['Case/Scenario', 'Parameter',
        'Item', 'Stream_Flow', 'Stream_LCA', 'Flow: Unit (numerator)',
@@ -660,7 +667,7 @@ corr_GGE_GREET_fuel_replacing = pd.read_csv(input_path_corr + '/' + f_corr_GGE_G
 corr_itemized_LCA = pd.read_csv(input_path_corr + '/' + f_corr_itemized_LCI, header=0, index_col=0)
 corr_replaced_EIA_mfsp = pd.read_csv(input_path_corr + '/' + f_corr_replaced_EIA_mfsp, header=3, index_col=None) 
 if consider_variability_study:
-    corr_params_variability =  pd.read_excel(input_path_TEA + '/' + f_TEA, sheet_name=sheet_param_variability, header=3, index_col=None)
+    corr_params_variability =  pd.read_excel(input_path_model + '/' + f_model, sheet_name=sheet_param_variability, header=3, index_col=None)
 
 #%%
 
@@ -787,10 +794,12 @@ else :
     cost_items['Production Year'] = 0
     tempdf = cost_items.copy()    
     cost_items = cost_items[0:0]
-    for yr in production_year:
+    for yr in range(production_year[0], production_year[1]+1):
+    #for yr in production_year: 
         tempdf['Production Year'] = yr
-        cost_items = pd.concat([cost_items, tempdf], ignore_index=True).reset_index().copy()
-   
+        cost_items = pd.concat([cost_items, tempdf], ignore_index=True).copy()
+    cost_items.reset_index(inplace=True)
+    
 # Calculate itemized MFSP
 cost_items['Itemized MFSP'] = cost_items['Adjusted Total Cost'].astype(float) / cost_items['Biofuel Flow'].astype(float)
 cost_items['Itemized MFSP: Unit (numerator)'] = cost_items['Total Cost: Unit (numerator)']
@@ -917,13 +926,59 @@ else :
     LCA_items['Production Year'] = 0
     tempdf = LCA_items.copy()    
     LCA_items = LCA_items[0:0]
-    for yr in production_year:
+    for yr in range(production_year[0], production_year[1]+1):
+    #for yr in production_year:
         tempdf['Production Year'] = yr
-        LCA_items = pd.concat([LCA_items, tempdf], ignore_index=True).reset_index().copy()
+        LCA_items = pd.concat([LCA_items, tempdf], ignore_index=True).copy()
+    cost_items.reset_index(inplace=True)
 
 # format LCI
 corr_itemized_LCA = fmt_GREET_LCI(corr_itemized_LCA)
 
+#%%
+
+# Update carbon intensities as per scope of study
+
+# implementing carbon intensities of decarbonized electric grid
+if decarb_electric_grid:
+    decarb_elec_CI = pd.read_excel(input_path_decarb_model + '/' + f_Decarb_Model,
+                                   sheet_name='EPS - CI', header=3)
+    
+    decarb_elec_CI = decarb_elec_CI.loc[(decarb_elec_CI['Case'] == 'Mitigation') &
+                                        (decarb_elec_CI['Mitigation Case'] == 'NREL Electric Power Decarb') &
+                                        (decarb_elec_CI['LCIA Method'] == 'AR4') &                                        
+                                        (decarb_elec_CI['timeframe_years'] == 100), : ]
+    
+    decarb_elec_CI = decarb_elec_CI.groupby(['Year', 'Emissions Unit', 'Energy Unit'
+                                             ]).agg({'LCIA_estimate' :'sum'}).reset_index()
+    
+    # Filling mapping columns
+    decarb_elec_CI[['Item', 'Stream_Flow', 'Stream_LCA']] = ['Purchased Inputs', 'Electricity', 'Stationary Use: U.S. Mix']
+    tempdf = decarb_elec_CI.copy()
+    tempdf['Item'] = 'Coproducts'
+    decarb_elec_CI = pd.concat([decarb_elec_CI, tempdf], ignore_index=True)
+    
+    # replace CIs in LCA data frame
+    decarb_elec_CI.rename(columns={
+        'Emissions Unit' : 'LCA: Unit (numerator)',
+        'Energy Unit' : 'LCA: Unit (denominator)',
+        'LCIA_estimate' : 'LCA_value',
+        }, inplace=True)
+    decarb_elec_CI['LCA_metric'] = 'CO2e'
+    decarb_elec_CI [ list(( Counter(corr_itemized_LCA.columns) - Counter(decarb_elec_CI.columns )).elements()) ] = '-'
+    decarb_elec_CI = decarb_elec_CI.loc[decarb_elec_CI['Year'].isin(corr_itemized_LCA['Year'].unique()), : ]
+    
+    # convert LCA unit of flow to model standard unit
+    decarb_elec_CI.loc[:, ['LCA: Unit (denominator)', 'LCA_value']] = \
+        ob_units.unit_convert_df(decarb_elec_CI.loc[:, ['LCA: Unit (denominator)', 'LCA_value']],
+         Unit = 'LCA: Unit (denominator)', Value = 'LCA_value',
+         if_unit_numerator = False, if_given_category=False)
+    
+    corr_itemized_LCA = corr_itemized_LCA.loc[~ ((corr_itemized_LCA['Stream_Flow'] == 'Electricity')&
+                                                 (corr_itemized_LCA['Stream_LCA'] == 'Stationary Use: U.S. Mix')), : ]
+    corr_itemized_LCA = pd.concat([corr_itemized_LCA, decarb_elec_CI], ignore_index=True)
+
+#%%
 # Merge itemized LCAs to LCIs
 LCA_items = pd.merge(LCA_items, corr_itemized_LCA, how='left', 
                      left_on=['Item', 'Stream_Flow', 'Stream_LCA', 'Production Year'],
@@ -1229,7 +1284,6 @@ MAC_df['Cost of replaced fuel higher'] = MAC_df['Adjusted Cost_replaced fuel'] >
 if save_interim_files == True:
     MAC_df.to_csv(output_path_prefix + '/' + f_out_MAC)
     
-    
 print( '    Elapsed time: ' + str(datetime.now() - init_time)) 
     
 #%%
@@ -1239,7 +1293,7 @@ if write_to_dashboard:
     
     with xw.App(visible=False) as app: 
         
-        wb = xw.Book(input_path_TEA + '/' + f_TEA)
+        wb = xw.Book(input_path_model + '/' + f_model)
         
         if consider_variability_study:
             
