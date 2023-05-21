@@ -617,8 +617,10 @@ pathways_to_consider=[
         ###
         'Baseline for Biopower with coal, w/o BECCS',
         'Biopower: cofiring with coal, at 49%, w/o BECCS',
+        'Biopower: 100% biomass, w/o BECCS',
         'Baseline for Biopower with coal, w/ BECCS',
         'Biopower: cofiring with coal, at 49%, w/ BECCS',
+        'Biopower: 100% biomass, w/ BECCS',
         
         ###
                 
