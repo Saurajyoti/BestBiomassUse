@@ -85,7 +85,7 @@ if __name__ == '__main__':
     file_save_sim = 'corr_LCI_GREET_temporal_03_24_2023.csv'   
     
     start_year = 2022
-    end_year = 2050
+    end_year = 2023
     increment = 1
     
     obj = GREET_LCI_import(model_path_prefix, file_model, sheet_input, 

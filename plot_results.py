@@ -119,3 +119,8 @@ g.figure.savefig(fig_path_prefix+'\\'+'plot_LCA_MFSP.jpg', dpi=400)
 
 fig_pathway_prcCI_vs_MAC = 'pathway_prcCI_vs_MAC'
 
+
+#%%
+
+# carbon intensity variability analysis
+

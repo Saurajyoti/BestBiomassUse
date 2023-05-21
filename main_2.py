@@ -44,7 +44,7 @@ f_GREET_efs = 'GREET_EF_EERE.csv'
 # declare correspondence files
 f_corr_replaced_replacing_fuel = 'corr_replaced_replacing_fuel.csv'
 f_corr_fuel_replaced_GREET_pathway = 'corr_fuel_replaced_GREET_pathway.csv'
-f_corr_fuel_replacing_GREET_pathway = 'corr_fuel_replacing_GREET_pathway.csv'
+#f_corr_fuel_replacing_GREET_pathway = 'corr_fuel_replacing_GREET_pathway.csv'
 f_corr_GGE_GREET_fuel_replaced = 'corr_GGE_GREET_fuel_replaced.csv'
 f_corr_GGE_GREET_fuel_replacing = 'corr_GGE_GREET_fuel_replacing.csv'
 f_corr_itemized_LCI = 'corr_LCI_GREET_temporal_03_24_2023.csv'
@@ -362,7 +362,8 @@ def fmt_GREET_LCI(df):
             harmonize_metric_long[v1] = k
     
     
-    df = corr_itemized_LCA.copy()   
+    # testing only
+    #df = corr_itemized_LCA.copy()   
     #df = df.loc[(df['Item'] == 'Coproducts') & (df['Stream_Flow'] == 'Acetone'), : ].reset_index(drop=True)
     
     
@@ -556,62 +557,70 @@ df_econ = df_econ[['Case/Scenario', 'Parameter',
 pathways_to_consider=[
         
         ###
-        '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+        # '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
         ###
         
         # Tan et al., 2016 pathways
         ###
-        'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-        'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-        'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-        'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-        'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+        # 'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+        # 'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+        # 'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+        # 'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+        # 'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
         ###
         
         # Decarb 2b pathways
         # 'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
         # 'Cellulosic Ethanol',
         ###
-        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
-        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
-        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
+        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
+        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
+        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
         
-        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels_jet',
-        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2_jet',
-        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2_jet',
+        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels_jet',
+        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2_jet',
+        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2_jet',
         
-        'Decarb 2b: Fischer-Tropsch SPK',
-        'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
-        'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
-        'Decarb 2b: Ex-Situ CFP',
-        'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
+        # 'Decarb 2b: Fischer-Tropsch SPK',
+        # 'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
+        # 'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
+        # 'Decarb 2b: Ex-Situ CFP',
+        # 'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
         ###
         # 'Gasification to Methanol',
         # 'Gasoline from upgraded bio-oil from pyrolysis'
         
         # 2021 SOT pathways
         ###
-        '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
-        '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
-        '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
-        '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
-        '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
+        # '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
+        # '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
+        # '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
+        # '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
+        # '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
         
-        '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
+        #'2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
         ###
         
         # Marine pathways
         ###
-        '2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-        '2022, Marine biocrude via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-        '2022, Partially upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-        '2022, Partially upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-        '2022, Fully upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
-        '2022, Fully upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
-        '2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass',
-        '2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass',
+        # '2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+        # '2022, Marine biocrude via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+        # '2022, Partially upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+        # '2022, Partially upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+        # '2022, Fully upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
+        # '2022, Fully upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+        # '2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass',
+        # '2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass',
         ###
         
+        # Biopower pathways
+        ###
+        'Baseline for Biopower with coal, w/o BECCS',
+        'Biopower: cofiring with coal, at 49%, w/o BECCS',
+        'Baseline for Biopower with coal, w/ BECCS',
+        'Biopower: cofiring with coal, at 49%, w/ BECCS',
+        
+        ###
                 
         # '2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel',
         # '2015 Biochemical Catalysis Design Report',
@@ -661,7 +670,7 @@ ob_units = model_units(input_path_units, input_path_GREET, input_path_corr)
 # load correspondence files
 corr_replaced_replacing_fuel = pd.read_csv(input_path_corr + '/' + f_corr_replaced_replacing_fuel, header=3, index_col=None)
 corr_fuel_replaced_GREET_pathway = pd.read_csv(input_path_corr + '/' + f_corr_fuel_replaced_GREET_pathway, header=3, index_col=None)
-corr_fuel_replacing_GREET_pathway = pd.read_csv(input_path_corr + '/' + f_corr_fuel_replacing_GREET_pathway, header=3, index_col=None)
+#corr_fuel_replacing_GREET_pathway = pd.read_csv(input_path_corr + '/' + f_corr_fuel_replacing_GREET_pathway, header=3, index_col=None)
 corr_GGE_GREET_fuel_replaced = pd.read_csv(input_path_corr + '/' + f_corr_GGE_GREET_fuel_replaced, header=3, index_col=None)
 corr_GGE_GREET_fuel_replacing = pd.read_csv(input_path_corr + '/' + f_corr_GGE_GREET_fuel_replacing, header=3, index_col=None)
 corr_itemized_LCA = pd.read_csv(input_path_corr + '/' + f_corr_itemized_LCI, header=0, index_col=0)
@@ -1153,7 +1162,11 @@ MAC_df['Adjusted Cost_replaced fuel'] = \
 
 # Unit check for Replaced Fuel
 
- # barrel to gallon
+# Unit convert for iquid fuels (fuels except unit of energy kWh)
+tmp_MAC_df = MAC_df.loc[MAC_df['Cost replaced fuel: Unit (Denominator)'].isin(['kWh']), :].copy()
+MAC_df = MAC_df.loc[~(MAC_df['Cost replaced fuel: Unit (Denominator)'].isin(['kWh'])), :]
+
+# barrel to gallon
 MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']] = \
      ob_units.unit_convert_df (
          MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']], 
@@ -1163,10 +1176,10 @@ MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']
          if_given_unit = True, 
          given_unit = 'gal').copy()
     
-# # Convert fuel cost $/gallon to $/GGE
-# # This conversion is done especially if certain calculations in future is required in GGE
+# Convert fuel cost $/gallon to $/GGE
+# This conversion is done especially if certain calculations in future is required in GGE
 
-# # Map Replaced fuel to 'GREET_Fuel', 'GREET_Fuel type' for GGE conversion
+# Map Replaced fuel to 'GREET_Fuel', 'GREET_Fuel type' for GGE conversion
 MAC_df = pd.merge(MAC_df, corr_GGE_GREET_fuel_replaced, how='left', 
                   left_on=['Replaced Fuel'], 
                   right_on=['B2B fuel name']).reset_index(drop=True)
@@ -1204,6 +1217,19 @@ MAC_df['Adjusted Cost replaced fuel: Unit (Denominator)'] = MAC_df['unit_numerat
 MAC_df['Adjusted Cost replaced fuel: Unit (Numerator)'] = 'USD'
 MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
 
+# convert kWh to MJ
+tmp_MAC_df[['Adjusted Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']] = \
+     ob_units.unit_convert_df (
+         tmp_MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']], 
+         Unit='Cost replaced fuel: Unit (Denominator)', 
+         Value='Adjusted Cost_replaced fuel', 
+         if_unit_numerator = False,
+         if_given_unit = True, 
+         given_unit = 'MJ').copy()
+tmp_MAC_df['Adjusted Cost replaced fuel: Unit (Numerator)'] = 'USD'
+
+# Concatenate the data frames
+MAC_df = pd.concat([tmp_MAC_df, MAC_df]).reset_index(drop=True).copy()
 
 # Unit check for Replacing Fuel
 
