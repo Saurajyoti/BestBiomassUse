@@ -27,7 +27,7 @@ input_path_EIA_price = input_path_prefix + '/EIA'
 input_path_corr = input_path_prefix + '/correspondence_files'
 input_path_units = input_path_prefix + '/Units'
 
-f_model = 'MCCAM_04_25_2023_working.xlsx'
+f_model = 'MCCAM_06_02_2023_working.xlsx'
 sheet_TEA = 'Db'
 sheet_param_variability = 'var_p'
 
@@ -174,6 +174,7 @@ def fmt_GREET_LCI(df):
             'Energy Use: mmBtu/ton of product',
             'Energy Use: mmBtu/ton',
             'Energy: Btu/g of material throughput, except as noted',
+            'Energy use: Btu/mmBtu of fuel throughput (except as noted)',
             'Energy Use: mmBtu per ton',
             'Energy Consumption: Btu/mmBtu of fuel transported',
             'Energy use: Btu/gal treated',
@@ -204,7 +205,8 @@ def fmt_GREET_LCI(df):
             'Total Emissions: grams/mmBtu fuel transported',
             'Total emissions: grams/gal treated',
             'Total Emissions: grams/mmBtu of fuel throughput, except as noted',
-            'Total emissions: grams'
+            'Total emissions: grams',
+            'Total emissions: grams/mmBtu of fuel throughput'
             ],
         
         'Urban emissions' : [
@@ -218,7 +220,8 @@ def fmt_GREET_LCI(df):
             'Urban emissions: grams/gal treated',
             'Urban emissions: grams',
             'Urban emissions: grams/mmBtu of fuel throughput, except as noted',
-            'Urban Emissions: grams per ton'
+            'Urban Emissions: grams per ton',
+            'Urban emissions: grams/mmBtu of fuel throughput'
             ],                
         }
     
@@ -557,7 +560,7 @@ df_econ = df_econ[['Case/Scenario', 'Parameter',
 pathways_to_consider=[
         
         ###
-        # '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+        #'2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
         ###
         
         # Tan et al., 2016 pathways
@@ -598,7 +601,7 @@ pathways_to_consider=[
         # '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
         # '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
         
-        #'2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
+        # '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
         ###
         
         # Marine pathways
@@ -615,13 +618,21 @@ pathways_to_consider=[
         
         # Biopower pathways
         ###
-        'Baseline for Biopower with coal, w/o BECCS',
-        'Biopower: cofiring with coal, at 49%, w/o BECCS',
-        'Biopower: 100% biomass, w/o BECCS',
-        'Baseline for Biopower with coal, w/ BECCS',
-        'Biopower: cofiring with coal, at 49%, w/ BECCS',
-        'Biopower: 100% biomass, w/ BECCS',
+        'Baseline for Biopower, 100% coal, w/o CCS, 650 MWe',
+        'Biopower: 51% coal, w/o BECCS, 650 MWe',
+        'Biopower: 80% coal, w/o BECCS, 650 MWe',
+        'Baseline for Biopower, 100% coal, w/ CCS, 650 MWe',
+        'Biopower: 80% coal, w/ BECCS, 650 MWe',
+        'Biopower: 51% coal, w/ BECCS, 650 MWe',
+        'Biopower: 100% biomass, w/o BECCS, 650 MWe',
+        'Biopower: 100% biomass, w/ BECCS, 650 MWe',
+        'Biopower: 100% biomass, w/o BECCS, 130 MWe',
+        'Biopower: 100% biomass, w/ BECCS, 130 MWe',
+        ###
         
+        # Biomass to Hydrogen
+        ###
+        'Biomass to Hydrogen',
         ###
                 
         # '2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel',
@@ -1165,8 +1176,10 @@ MAC_df['Adjusted Cost_replaced fuel'] = \
 # Unit check for Replaced Fuel
 
 # Unit convert for iquid fuels (fuels except unit of energy kWh)
-tmp_MAC_df = MAC_df.loc[MAC_df['Cost replaced fuel: Unit (Denominator)'].isin(['kWh']), :].copy()
-MAC_df = MAC_df.loc[~(MAC_df['Cost replaced fuel: Unit (Denominator)'].isin(['kWh'])), :]
+tmp_MAC_df = MAC_df.loc[(MAC_df['Cost replaced fuel: Unit (Denominator)'].isin(['kWh'])) |
+                        (MAC_df['Biofuel Stream_LCA'].isin(['Hydrogen'])), :].copy()
+MAC_df = MAC_df.loc[~((MAC_df['Cost replaced fuel: Unit (Denominator)'].isin(['kWh'])) |
+                        (MAC_df['Biofuel Stream_LCA'].isin(['Hydrogen']))), :]
 
 # barrel to gallon
 MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']] = \
