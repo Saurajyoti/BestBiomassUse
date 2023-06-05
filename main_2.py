@@ -560,48 +560,56 @@ df_econ = df_econ[['Case/Scenario', 'Parameter',
 pathways_to_consider=[
         
         ###
+<<<<<<< Updated upstream
         #'2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+=======
+        '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+>>>>>>> Stashed changes
         ###
         
         # Tan et al., 2016 pathways
         ###
-        # 'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-        # 'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-        # 'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-        # 'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-        # 'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+        'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+        'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+        'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+        'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+        'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
         ###
         
         # Decarb 2b pathways
         # 'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
         # 'Cellulosic Ethanol',
         ###
-        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
-        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
-        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
+        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
+        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
+        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
         
         # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels_jet',
         # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2_jet',
         # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2_jet',
         
-        # 'Decarb 2b: Fischer-Tropsch SPK',
-        # 'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
-        # 'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
-        # 'Decarb 2b: Ex-Situ CFP',
-        # 'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
+        'Decarb 2b: Fischer-Tropsch SPK',
+        'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
+        'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
+        'Decarb 2b: Ex-Situ CFP',
+        'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
         ###
         # 'Gasification to Methanol',
         # 'Gasoline from upgraded bio-oil from pyrolysis'
         
         # 2021 SOT pathways
         ###
-        # '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
-        # '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
-        # '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
-        # '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
-        # '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
+        '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
+        '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
+        '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
+        '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
+        '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
         
+<<<<<<< Updated upstream
         # '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
+=======
+        '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
+>>>>>>> Stashed changes
         ###
         
         # Marine pathways
@@ -654,7 +662,13 @@ pathways_to_consider=[
         # 'Dry Mill (Corn) ETJ',
         # 'Ex Situ CFP 2022 Target Case', 
         # 'Ex-Situ CFP 2019 SOT',
-        # 'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
+        
+        ###
+        
+        'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
+        
+        ###
+        
         # 'Ex-Situ Fixed Bed 2022 Projection',
         # 'In-Situ CFP 2022 Target Case',      
         
