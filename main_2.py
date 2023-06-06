@@ -560,11 +560,7 @@ df_econ = df_econ[['Case/Scenario', 'Parameter',
 pathways_to_consider=[
         
         ###
-<<<<<<< Updated upstream
-        #'2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
-=======
         '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
->>>>>>> Stashed changes
         ###
         
         # Tan et al., 2016 pathways
@@ -605,12 +601,10 @@ pathways_to_consider=[
         '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
         '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
         
-<<<<<<< Updated upstream
-        # '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
-=======
         '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
->>>>>>> Stashed changes
+
         ###
+        
         
         # Marine pathways
         ###
@@ -624,19 +618,23 @@ pathways_to_consider=[
         # '2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass',
         ###
         
-        # Biopower pathways
+        
+        # Biopower pathways        
         ###
         'Baseline for Biopower, 100% coal, w/o CCS, 650 MWe',
-        'Biopower: 51% coal, w/o BECCS, 650 MWe',
-        'Biopower: 80% coal, w/o BECCS, 650 MWe',
         'Baseline for Biopower, 100% coal, w/ CCS, 650 MWe',
+        
+        'Biopower: 80% coal, w/o BECCS, 650 MWe',        
         'Biopower: 80% coal, w/ BECCS, 650 MWe',
-        'Biopower: 51% coal, w/ BECCS, 650 MWe',
-        'Biopower: 100% biomass, w/o BECCS, 650 MWe',
-        'Biopower: 100% biomass, w/ BECCS, 650 MWe',
+        
         'Biopower: 100% biomass, w/o BECCS, 130 MWe',
         'Biopower: 100% biomass, w/ BECCS, 130 MWe',
         ###
+        #'Biopower: 51% coal, w/ BECCS, 650 MWe',
+        #'Biopower: 100% biomass, w/o BECCS, 650 MWe',
+        #'Biopower: 100% biomass, w/ BECCS, 650 MWe',
+        #'Biopower: 51% coal, w/o BECCS, 650 MWe',
+        
         
         # Biomass to Hydrogen
         ###
@@ -664,9 +662,7 @@ pathways_to_consider=[
         # 'Ex-Situ CFP 2019 SOT',
         
         ###
-        
         'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
-        
         ###
         
         # 'Ex-Situ Fixed Bed 2022 Projection',
