@@ -27,7 +27,7 @@ input_path_EIA_price = input_path_prefix + '/EIA'
 input_path_corr = input_path_prefix + '/correspondence_files'
 input_path_units = input_path_prefix + '/Units'
 
-f_model = 'MCCAM_06_02_2023_working.xlsx'
+f_model = 'MCCAM_06_13_2023_working.xlsx'
 sheet_TEA = 'Db'
 sheet_param_variability = 'var_p'
 
@@ -575,21 +575,25 @@ pathways_to_consider=[
         # Decarb 2b pathways
         # 'Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates',
         # 'Cellulosic Ethanol',
+        
         ###
         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
         'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
+        ###
         
         # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels_jet',
         # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2_jet',
         # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2_jet',
         
+        ###
         'Decarb 2b: Fischer-Tropsch SPK',
         'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
         'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
         'Decarb 2b: Ex-Situ CFP',
         'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
         ###
+        
         # 'Gasification to Methanol',
         # 'Gasoline from upgraded bio-oil from pyrolysis'
         
@@ -699,7 +703,10 @@ corr_GGE_GREET_fuel_replacing = pd.read_csv(input_path_corr + '/' + f_corr_GGE_G
 corr_itemized_LCA = pd.read_csv(input_path_corr + '/' + f_corr_itemized_LCI, header=0, index_col=0)
 corr_replaced_EIA_mfsp = pd.read_csv(input_path_corr + '/' + f_corr_replaced_EIA_mfsp, header=3, index_col=None) 
 if consider_variability_study:
-    corr_params_variability =  pd.read_excel(input_path_model + '/' + f_model, sheet_name=sheet_param_variability, header=3, index_col=None)
+    corr_params_variability =  pd.read_excel(input_path_model + '/' + f_model, 
+                                             sheet_name=sheet_param_variability, 
+                                             header=3, index_col=None,
+                                             usecols="A:G")
 
 #%%
 
@@ -722,17 +729,17 @@ cost_items = df_econ.loc[df_econ['Item'].isin(['Feedstock',
 cost_items.drop_duplicates(inplace=True)
 
 # Separate feedstock demand yearly flows
-cost_feedstocks = df_econ.loc[df_econ['Item'] == 'Feedstock', 
-                             ['Case/Scenario', 'Stream_Flow', 'Stream_LCA', 
-                              'Flow: Unit (numerator)', 'Flow: Unit (denominator)', 'Flow']].copy()
-cost_feedstocks.rename(columns={'Stream_Flow' : 'Feedstock Stream_Flow',
-                                'Stream_LCA' : 'Feedstock',
-                                'Flow: Unit (numerator)' : 'Feedstock Flow: Unit (numerator)', 
-                                'Flow: Unit (denominator)' : 'Feedstock Flow: Unit (denominator)',
-                                'Flow' : 'Feedstock Flow'}, inplace=True)
+# cost_feedstocks = df_econ.loc[df_econ['Item'] == 'Feedstock', 
+#                              ['Case/Scenario', 'Stream_Flow', 'Stream_LCA', 
+#                               'Flow: Unit (numerator)', 'Flow: Unit (denominator)', 'Flow']].copy()
+# cost_feedstocks.rename(columns={'Stream_Flow' : 'Feedstock Stream_Flow',
+#                                 'Stream_LCA' : 'Feedstock',
+#                                 'Flow: Unit (numerator)' : 'Feedstock Flow: Unit (numerator)', 
+#                                 'Flow: Unit (denominator)' : 'Feedstock Flow: Unit (denominator)',
+#                                 'Flow' : 'Feedstock Flow'}, inplace=True)
 
-# Merge with the cost items df
-cost_items = pd.merge(cost_items, cost_feedstocks, how='left', on='Case/Scenario').reset_index(drop=True)
+# # Merge with the cost items df
+# cost_items = pd.merge(cost_items, cost_feedstocks, how='left', on='Case/Scenario').reset_index(drop=True)
 
 #%%
 
@@ -785,7 +792,7 @@ if consider_variability_study:
             cost_items_temp[var_params_tbl.loc[r, 'col_param']].isin([var_params_tbl.loc[r, 'param_name']]), 
             var_params_tbl.loc[r, 'col_val']] = var_params_tbl.loc[r, 'param_value']
         cost_items_temp['variability_id'] = var_params_tbl.loc[r, 'variability_id']
-        cost_items = pd.concat([cost_items, cost_items_temp])
+        cost_items = pd.concat([cost_items, cost_items_temp]).copy()
     
     cost_items = cost_items.merge(var_params_tbl, how='left', on='variability_id').reset_index(drop=True)
     
@@ -896,7 +903,7 @@ if consider_variability_study:
                                  'param_value']).agg({'Itemized MFSP' : 'sum'}).reset_index()
 else:
     MFSP_agg = MFSP_agg[['Case/Scenario',
-                         'Feedstock',
+                         #'Feedstock',
                          'Production Year',
                          'Itemized MFSP: Unit (numerator)', 
                          'Itemized MFSP: Unit (denominator)',
@@ -905,7 +912,7 @@ else:
     MFSP_agg = MFSP_agg[MFSP_agg['Itemized MFSP'].notna()]
         
     MFSP_agg = MFSP_agg.groupby(['Case/Scenario',
-                                 'Feedstock',
+                                 #'Feedstock',
                                  'Production Year',
                                  'Itemized MFSP: Unit (numerator)', 
                                  'Itemized MFSP: Unit (denominator)',
@@ -1081,7 +1088,7 @@ MAC_df = pd.merge(MFSP_agg, LCA_items_agg, on=['Case/Scenario', 'Production Year
 
 # map replaced fuels with replacing fuels
 MAC_df = pd.merge(MAC_df, corr_replaced_replacing_fuel, how = 'left', 
-               on=['Case/Scenario', 'Biofuel Stream_LCA', 'Feedstock']).reset_index(drop=True) 
+               on=['Case/Scenario', 'Biofuel Stream_LCA']).reset_index(drop=True) 
 
 # map replaced fuels with GREET pathways
 MAC_df = pd.merge(MAC_df, corr_fuel_replaced_GREET_pathway, how='left', on=['Replaced Fuel']).reset_index(drop=True)
@@ -1392,7 +1399,7 @@ if write_to_dashboard:
                     'param_value',
                     'Case/Scenario',
                     'Biofuel Stream_LCA',
-                    'Feedstock',
+                    #'Feedstock',
                     'Production Year',
                     'MFSP replacing fuel: Unit (numerator)',
                     'MFSP replacing fuel: Unit (denominator)',
@@ -1536,7 +1543,7 @@ if write_to_dashboard:
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
             MAC_df[['Case/Scenario',
                     'Biofuel Stream_LCA',
-                    'Feedstock',
+                    #'Feedstock',
                     'Production Year',
                     'MFSP replacing fuel: Unit (numerator)',
                     'MFSP replacing fuel: Unit (denominator)',
@@ -1645,3 +1652,22 @@ if write_to_dashboard:
         wb.close()
         
 #%%
+
+# Calculating percentage sensitivity when 'write_to_dashboard'=True and 'consider_variability_study'=True
+
+#if write_to_dashboard:
+    
+    #with xw.App(visible=False) as app: 
+        
+        #wb = xw.Book(input_path_model + '/' + f_model)
+        
+        #if consider_variability_study:
+            
+            # read mfsp
+            
+            # read mfsp_var
+        
+            # merge mfsp to mfsp_var
+        
+        #wb.save()
+        #wb.close()    
