@@ -82,6 +82,9 @@ write_to_dashboard = True
 # Toggle implementing Decarb Model electric grid carbon intensity 
 decarb_electric_grid = False
 
+# Toggle biopower scenarios baseline to report baseline, rather grid LCA
+adjust_biopower_baseline = True
+
 dict_gco2e = { # Table 2, AR6/GWP100, GREET1 2022
     'CO2' : 1,
     'CO2 (w/ C in VOC & CO)' : 1,
@@ -560,16 +563,16 @@ df_econ = df_econ[['Case/Scenario', 'Parameter',
 pathways_to_consider=[
         
         ###
-        '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+        # '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
         ###
         
         # Tan et al., 2016 pathways
         ###
-        'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-        'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-        'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-        'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-        'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+        # 'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+        # 'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+        # 'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+        # 'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+        # 'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
         ###
         
         # Decarb 2b pathways
@@ -577,9 +580,9 @@ pathways_to_consider=[
         # 'Cellulosic Ethanol',
         
         ###
-        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
-        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
-        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
+        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
+        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
+        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
         ###
         
         # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels_jet',
@@ -587,11 +590,11 @@ pathways_to_consider=[
         # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2_jet',
         
         ###
-        'Decarb 2b: Fischer-Tropsch SPK',
-        'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
-        'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
-        'Decarb 2b: Ex-Situ CFP',
-        'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
+        # 'Decarb 2b: Fischer-Tropsch SPK',
+        # 'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
+        # 'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
+        # 'Decarb 2b: Ex-Situ CFP',
+        # 'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
         ###
         
         # 'Gasification to Methanol',
@@ -599,13 +602,13 @@ pathways_to_consider=[
         
         # 2021 SOT pathways
         ###
-        '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
-        '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
-        '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
-        '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
-        '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
+        # '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
+        # '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
+        # '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
+        # '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
+        # '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
         
-        '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
+        # '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
 
         ###
         
@@ -666,7 +669,7 @@ pathways_to_consider=[
         # 'Ex-Situ CFP 2019 SOT',
         
         ###
-        'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
+        # 'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
         ###
         
         # 'Ex-Situ Fixed Bed 2022 Projection',
@@ -853,6 +856,23 @@ ignored_cost_items = ignored_cost_items[['Case/Scenario', 'Parameter', 'Item',
                                          'Stream_Flow', 'Stream_LCA',
                                          'Total Flow: Unit (numerator)', 'Cost: Unit (denominator)']]
 
+
+# Harmonize energy units, unit convert for power
+tmp_cost_items = cost_items.loc[cost_items['Itemized MFSP: Unit (denominator)'].isin(['kWh']), :].copy()
+cost_items = cost_items.loc[~(cost_items['Itemized MFSP: Unit (denominator)'].isin(['kWh'])), :]
+
+# convert kWh to MJ
+tmp_cost_items[['Itemized MFSP: Unit (denominator)', 'Itemized MFSP']] = \
+     ob_units.unit_convert_df (
+         tmp_cost_items[['Itemized MFSP: Unit (denominator)', 'Itemized MFSP']], 
+         Unit='Itemized MFSP: Unit (denominator)', 
+         Value='Itemized MFSP', 
+         if_unit_numerator = False,
+         if_given_unit = True, 
+         given_unit = 'MJ').copy()
+
+# Concatenate the data frames
+cost_items = pd.concat([tmp_cost_items, cost_items]).reset_index(drop=True).copy()
 
 # For co-products we consider their cost as credit to the MFSP [co-product credit by displacement]
 cost_items.loc[cost_items['Item'] == 'Coproducts', 'Itemized MFSP'] = \
@@ -1062,6 +1082,23 @@ LCA_items['Total LCA: Unit (denominator)'] = LCA_items['Biofuel Flow: Unit (nume
 
 #LCA_items['LCA_metric'] = ['CO2' if val in ['CO2', 'CO2 (w/ C in VOC & CO)'] else val for val in LCA_items['LCA_metric']]
 
+# Harmonize energy units, unit convert for power
+tmp_LCA_items = LCA_items.loc[LCA_items['Total LCA: Unit (denominator)'].isin(['kWh']), :].copy()
+LCA_items = LCA_items.loc[~(LCA_items['Total LCA: Unit (denominator)'].isin(['kWh'])), :]
+
+# convert kWh to MJ
+tmp_LCA_items[['Total LCA: Unit (denominator)', 'Total LCA']] = \
+     ob_units.unit_convert_df (
+         tmp_LCA_items[['Total LCA: Unit (denominator)', 'Total LCA']], 
+         Unit='Total LCA: Unit (denominator)', 
+         Value='Total LCA', 
+         if_unit_numerator = False,
+         if_given_unit = True, 
+         given_unit = 'MJ').copy()
+
+# Concatenate the data frames
+LCA_items = pd.concat([tmp_LCA_items, LCA_items]).reset_index(drop=True).copy()
+
 LCA_items_agg = LCA_items.copy()
 
 if consider_coproduct_env_credit == False:
@@ -1250,6 +1287,7 @@ MAC_df['Adjusted Cost replaced fuel: Unit (Numerator)'] = 'USD'
 MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
 
 # convert kWh to MJ
+tmp_MAC_df['Adjusted Cost replaced fuel: Unit (Denominator)'] = tmp_MAC_df['Cost replaced fuel: Unit (Denominator)']
 tmp_MAC_df[['Adjusted Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']] = \
      ob_units.unit_convert_df (
          tmp_MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']], 
@@ -1322,6 +1360,41 @@ MAC_df[['CI replaced fuel: Unit (Denominator)', 'CI replaced fuel']] = \
         if_unit_numerator=False,
         if_given_unit=True,
         given_unit='MJ').copy()
+
+#%%
+# Step: baseline check for MAC calculations
+
+# For biopower scenarios, the 'Baseline for Biopower, 100% coal, w/o CCS, 650 MWe' Case/Scenario is considered
+# for baseline MFSP and LCA
+if adjust_biopower_baseline:
+    biopower_baseline = MAC_df.loc[MAC_df['Case/Scenario'].isin(['Baseline for Biopower, 100% coal, w/o CCS, 650 MWe',
+                                                             'Baseline for Biopower, 100% coal, w/ CCS, 650 MWe']), :]
+    MAC_df = MAC_df.loc[~(MAC_df['Case/Scenario'].isin(['Baseline for Biopower, 100% coal, w/o CCS, 650 MWe',
+                                                    'Baseline for Biopower, 100% coal, w/ CCS, 650 MWe'])), :]
+    
+    MAC_df['baseline Case/Scenario'] = ''
+    MAC_df.loc[MAC_df['Case/Scenario'].isin(['Biopower: 80% coal, w/o BECCS, 650 MWe',
+                                         'Biopower: 100% biomass, w/o BECCS, 130 MWe']), 'baseline Case/Scenario'] =\
+        'Baseline for Biopower, 100% coal, w/o CCS, 650 MWe'
+    MAC_df.loc[MAC_df['Case/Scenario'].isin(['Biopower: 80% coal, w/ BECCS, 650 MWe',
+                                         'Biopower: 100% biomass, w/ BECCS, 130 MWe']), 'baseline Case/Scenario'] =\
+        'Baseline for Biopower, 100% coal, w/ CCS, 650 MWe'
+    
+    biopower_baseline = biopower_baseline[['Case/Scenario', 'Production Year', 'Year', 'MFSP replacing fuel', 'Total LCA']]
+    biopower_baseline.rename(columns={'Case/Scenario' : 'baseline Case/Scenario',
+                                      'MFSP replacing fuel' : 'Adjusted Cost_replaced fuel_baseline',
+                                      'Total LCA' : 'CI replaced fuel_baseline'}, inplace=True)
+    
+    MAC_df = MAC_df.merge(biopower_baseline, how = 'left', 
+                          on=['baseline Case/Scenario', 'Production Year', 'Year']).reset_index(drop=True)
+    
+    MAC_df.loc[~(MAC_df['baseline Case/Scenario'].isin([''])), 'Adjusted Cost_replaced fuel' ] =\
+        MAC_df.loc[~(MAC_df['baseline Case/Scenario'].isin([''])), 'Adjusted Cost_replaced fuel_baseline' ]
+        
+    MAC_df.loc[~(MAC_df['baseline Case/Scenario'].isin([''])), 'CI replaced fuel' ] =\
+            MAC_df.loc[~(MAC_df['baseline Case/Scenario'].isin([''])), 'CI replaced fuel_baseline' ]
+            
+    MAC_df.drop(columns=['baseline Case/Scenario', 'Adjusted Cost_replaced fuel_baseline', 'CI replaced fuel_baseline'], inplace=True)
 
 #%%
 # Step: Calculate MAC by Cost Items
