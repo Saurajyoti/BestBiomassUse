@@ -27,7 +27,7 @@ input_path_EIA_price = input_path_prefix + '/EIA'
 input_path_corr = input_path_prefix + '/correspondence_files'
 input_path_units = input_path_prefix + '/Units'
 
-f_model = 'MCCAM_06_13_2023_working.xlsx'
+f_model = 'MCCAM_06_28_2023_working.xlsx'
 sheet_TEA = 'Db'
 sheet_param_variability = 'var_p'
 
@@ -82,8 +82,15 @@ write_to_dashboard = True
 # Toggle implementing Decarb Model electric grid carbon intensity 
 decarb_electric_grid = False
 
-# Toggle biopower scenarios baseline to report baseline, rather grid LCA
-adjust_biopower_baseline = True
+# Toggle biopower scenarios baseline to report baseline, rather grid LCA [QA purpose only]
+adjust_biopower_baseline = False
+
+# This controls if CO2 w/ C from VOC and CO gets calculated even if such value 
+# is present in emission factor table. Some instances of EF table may not have
+# it already calculated accurate, so please keep it always True, until its 
+# noticed otherwise to be wrong.
+always_calc_CO2_w_VOC_CO = True
+
 
 dict_gco2e = { # Table 2, AR6/GWP100, GREET1 2022
     'CO2' : 1,
@@ -370,7 +377,8 @@ def fmt_GREET_LCI(df):
     
     # testing only
     #df = corr_itemized_LCA.copy()   
-    #df = df.loc[(df['Item'] == 'Coproducts') & (df['Stream_Flow'] == 'Acetone'), : ].reset_index(drop=True)
+    #df = df.loc[(df['Item'] == 'Coproducts') & (df['Stream_Flow'] == 'Coal'), : ].reset_index(drop=True)
+    #df = df.loc[(df['Stream_Flow'] == 'Coal') & (df['Stream_LCA'] == 'Coal to Power Plants, IGCC turbine'), : ].reset_index(drop=True)
     
     
     #df = df.drop_duplicates().reset_index(drop=True)        
@@ -476,12 +484,20 @@ def fmt_GREET_LCI(df):
                         'LCA: Unit (numerator)', 'LCA: Unit (denominator)', 'Year'], 
                    columns='LCA_metric', 
                    values='LCA_value').reset_index()
-    df[select_GHG_metrices] = df[select_GHG_metrices].fillna(0)
+    if sum(df.columns.isin(['Total emissions__Biogenic CH4'])):
+        df[select_GHG_metrices] = df[select_GHG_metrices].fillna(0)
+    else:
+        select_GHG_metrices.remove('Total emissions__Biogenic CH4')
+        df[select_GHG_metrices] = df[select_GHG_metrices].fillna(0)
+        
     df[df.columns.difference(select_GHG_metrices)] = df[df.columns.difference(select_GHG_metrices)].fillna('-')
     
     # Check and calculate CO2 (w/C in VOC & CO)
+    # if co2 == 0: don't re-calculate CO2 w/C. 
     for idx, r in df.iterrows():
-        if r['Total emissions__CO2 (w/ C in VOC & CO)'] == 0:
+        #if ( ((r['Total emissions__CO2 (w/ C in VOC & CO)'] == 0) &
+        #     r['CO2'] != 0) | always_calc_CO2_w_VOC_CO ) :
+        if (r['Total emissions__CO2'] != 0) & always_calc_CO2_w_VOC_CO :
             df.loc[idx, 'Total emissions__CO2 (w/ C in VOC & CO)'] =\
                 r['Total emissions__CO2'] +\
                 r['Total emissions__VOC'] / dict_frac_C['Carbon ratio of VOC'] * dict_frac_C['Carbon ratio of CO2'] +\
@@ -563,16 +579,16 @@ df_econ = df_econ[['Case/Scenario', 'Parameter',
 pathways_to_consider=[
         
         ###
-        # '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
+        '2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates',
         ###
         
         # Tan et al., 2016 pathways
         ###
-        # 'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-        # 'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
-        # 'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-        # 'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
-        # 'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
+        'Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+        'Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation',
+        'Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+        'Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation',
+        'Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons',
         ###
         
         # Decarb 2b pathways
@@ -580,9 +596,9 @@ pathways_to_consider=[
         # 'Cellulosic Ethanol',
         
         ###
-        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
-        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
-        # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
+        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels',
+        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2',
+        'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2',
         ###
         
         # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels_jet',
@@ -590,11 +606,11 @@ pathways_to_consider=[
         # 'Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2_jet',
         
         ###
-        # 'Decarb 2b: Fischer-Tropsch SPK',
-        # 'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
-        # 'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
-        # 'Decarb 2b: Ex-Situ CFP',
-        # 'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
+        'Decarb 2b: Fischer-Tropsch SPK',
+        'Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2',
+        'Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2',
+        'Decarb 2b: Ex-Situ CFP',
+        'Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2',
         ###
         
         # 'Gasification to Methanol',
@@ -602,13 +618,13 @@ pathways_to_consider=[
         
         # 2021 SOT pathways
         ###
-        # '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
-        # '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
-        # '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
-        # '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
-        # '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
+        '2021 SOT: Biochemical design case, Acids pathway with burn lignin',
+        '2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA',
+        '2021 SOT: Biochemical design case, BDO pathway with burn lignin',
+        '2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA',
+        '2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates',
         
-        # '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
+        '2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels',
 
         ###
         
@@ -669,7 +685,7 @@ pathways_to_consider=[
         # 'Ex-Situ CFP 2019 SOT',
         
         ###
-        # 'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
+        'Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst)',
         ###
         
         # 'Ex-Situ Fixed Bed 2022 Projection',
@@ -1410,6 +1426,7 @@ MAC_df['MAC_calculated: Unit (denominator)']  = 'MT'
 
 MAC_df['CI of replaced fuel higher'] = MAC_df['CI replaced fuel'] > MAC_df['Total LCA']
 MAC_df['Cost of replaced fuel higher'] = MAC_df['Adjusted Cost_replaced fuel'] > MAC_df['MFSP replacing fuel']
+MAC_df['Percent CI reduciton'] = ((MAC_df['CI replaced fuel'] - MAC_df['Total LCA']) / MAC_df['CI replaced fuel'] ) * 100
 
 # Save interim data tables
 if save_interim_files == True:
@@ -1500,7 +1517,10 @@ if write_to_dashboard:
                     'Adjusted Cost replaced fuel: Unit (Numerator)',
                     'MAC_calculated',
                     'MAC_calculated: Unit (numerator)',
-                    'MAC_calculated: Unit (denominator)'
+                    'MAC_calculated: Unit (denominator)',
+                    'CI of replaced fuel higher',
+                    'Cost of replaced fuel higher',
+                    'Percent CI reduciton'
                     
                     ]]
             
@@ -1644,7 +1664,11 @@ if write_to_dashboard:
                     'Adjusted Cost replaced fuel: Unit (Numerator)',
                     'MAC_calculated',
                     'MAC_calculated: Unit (numerator)',
-                    'MAC_calculated: Unit (denominator)'
+                    'MAC_calculated: Unit (denominator)',
+                    'CI of replaced fuel higher',
+                    'Cost of replaced fuel higher',
+                    'Percent CI reduciton'
+                    
                     ]]
             
             sheet_1 = wb.sheets['lca_itm']
