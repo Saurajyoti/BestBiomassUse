@@ -59,7 +59,7 @@ f_Decarb_Model = 'US Decarbonization Model - Dashboard.xlsx'
 # If single year: [year]
 # If multiple year: [first year, last year], inclusive of both the bounds
 production_year = [2022]
-#production_year = [2022, 2050]
+production_year = [2022, 2050]
 
 # cost adjustment year, to which inflation will be adjusted
 cost_year = 2016
@@ -80,15 +80,19 @@ save_interim_files = True
 write_to_dashboard = True
 
 # Toggle implementing Decarb Model electric grid carbon intensity 
-decarb_electric_grid = False
+decarb_electric_grid = True
 
-# Toggle biopower scenarios baseline to report baseline, rather grid LCA [QA purpose only]
+# Scenario of decarb electric grid CI, when different from Decarb Model
+decarb_grid_scenario1 = True
+decarb_grid_scenario1_values = [1E-20, 140000] # [min, max], g per mmBtu
+
+# Toggle True to calibrate biopower scenarios baseline (CI and Marginal Cost) for MAC calculations
+# to the baseline scenario from the data source report in place of the grid [True for QA purpose only]
 adjust_biopower_baseline = False
 
 # This controls if CO2 w/ C from VOC and CO gets calculated even if such value 
 # is present in emission factor table. Some instances of EF table may not have
-# it already calculated accurate, so please keep it always True, until its 
-# noticed otherwise to be wrong.
+# it already calculated accurate, so please keep it always True, unless for QA
 always_calc_CO2_w_VOC_CO = True
 
 
@@ -575,6 +579,26 @@ df_econ = df_econ[['Case/Scenario', 'Parameter',
        'Total Cost', 'Total Flow: Unit (numerator)',
        'Total Flow: Unit (denominator)', 'Total Flow', 'Cost Year']]
 
+# Biopower pathways
+biopower_scenarios=[
+            
+    ###
+    'Baseline for Biopower, 100% coal, w/o CCS, 650 MWe',
+    'Baseline for Biopower, 100% coal, w/ CCS, 650 MWe',
+    
+    'Biopower: 80% coal, w/o BECCS, 650 MWe',        
+    'Biopower: 80% coal, w/ BECCS, 650 MWe',
+    
+    'Biopower: 100% biomass, w/o BECCS, 130 MWe',
+    'Biopower: 100% biomass, w/ BECCS, 130 MWe',
+    ###
+    #'Biopower: 51% coal, w/ BECCS, 650 MWe',
+    #'Biopower: 100% biomass, w/o BECCS, 650 MWe',
+    #'Biopower: 100% biomass, w/ BECCS, 650 MWe',
+    #'Biopower: 51% coal, w/o BECCS, 650 MWe',
+    
+    ]
+
 # Select pathways to consider
 pathways_to_consider=[
         
@@ -642,23 +666,6 @@ pathways_to_consider=[
         ###
         
         
-        # Biopower pathways        
-        ###
-        'Baseline for Biopower, 100% coal, w/o CCS, 650 MWe',
-        'Baseline for Biopower, 100% coal, w/ CCS, 650 MWe',
-        
-        'Biopower: 80% coal, w/o BECCS, 650 MWe',        
-        'Biopower: 80% coal, w/ BECCS, 650 MWe',
-        
-        'Biopower: 100% biomass, w/o BECCS, 130 MWe',
-        'Biopower: 100% biomass, w/ BECCS, 130 MWe',
-        ###
-        #'Biopower: 51% coal, w/ BECCS, 650 MWe',
-        #'Biopower: 100% biomass, w/o BECCS, 650 MWe',
-        #'Biopower: 100% biomass, w/ BECCS, 650 MWe',
-        #'Biopower: 51% coal, w/o BECCS, 650 MWe',
-        
-        
         # Biomass to Hydrogen
         ###
         'Biomass to Hydrogen',
@@ -692,6 +699,8 @@ pathways_to_consider=[
         # 'In-Situ CFP 2022 Target Case',      
         
         ]
+pathways_to_consider = pathways_to_consider + biopower_scenarios
+
 df_econ = df_econ.loc[df_econ['Case/Scenario'].isin(pathways_to_consider)].reset_index(drop=True)
 
 # When studying variability of unit cost on MFSP and MAC,
@@ -1027,7 +1036,17 @@ if decarb_electric_grid:
     decarb_elec_CI = decarb_elec_CI.groupby(['Year', 'Emissions Unit', 'Energy Unit'
                                              ]).agg({'LCIA_estimate' :'sum'}).reset_index()
     
-    # Filling mapping columns
+    decarb_elec_CI = decarb_elec_CI.loc[decarb_elec_CI['Year'].isin(LCA_items['Production Year'].unique())].copy()
+    
+    # if artificial scaling of CI is enabled for sensitivity analysis
+    if decarb_grid_scenario1:
+        tempdf = pd.DataFrame({'Year' : np.linspace(max(decarb_elec_CI['Year']), min(decarb_elec_CI['Year']), max(decarb_elec_CI['Year']) - min(decarb_elec_CI['Year'])+1),
+                               'LCA_value_replace' : np.linspace(decarb_grid_scenario1_values[0], decarb_grid_scenario1_values[1], max(decarb_elec_CI['Year']) - min(decarb_elec_CI['Year'])+1)})
+        decarb_elec_CI = pd.merge(decarb_elec_CI, tempdf, how='left', on=['Year']).reset_index(drop=True)
+        decarb_elec_CI.drop(columns=['LCIA_estimate'], inplace=True)
+        decarb_elec_CI.rename(columns={'LCA_value_replace' : 'LCIA_estimate'}, inplace=True)
+    
+    # Creating mapping columns
     decarb_elec_CI[['Item', 'Stream_Flow', 'Stream_LCA']] = ['Purchased Inputs', 'Electricity', 'Stationary Use: U.S. Mix']
     tempdf = decarb_elec_CI.copy()
     tempdf['Item'] = 'Coproducts'
@@ -1412,6 +1431,13 @@ if adjust_biopower_baseline:
             
     MAC_df.drop(columns=['baseline Case/Scenario', 'Adjusted Cost_replaced fuel_baseline', 'CI replaced fuel_baseline'], inplace=True)
 
+
+# When decarbonized electric grid is considered, baseline LCA is updated
+#if decarb_electric_grid:
+#    biopower_sc = MAC_df.loc[MAC_df['Case/Scenario'].isin(biopower_scenarios), :]
+#    MAC_df = MAC_df.loc[~(MAC_df['Case/Scenario'].isin(biopower_scenarios)), :]
+#    biopower_sc = biopower_sc.merge(decarb_elec_CI[['Year', ]], on=[])
+
 #%%
 # Step: Calculate MAC by Cost Items
 
@@ -1745,6 +1771,18 @@ if write_to_dashboard:
                              'Itemized MFSP: Unit (numerator)',
                              'Itemized MFSP: Unit (denominator)'
                              ]]
+        
+        if decarb_electric_grid:
+            sheet_1 = wb.sheets['EPS_CI']
+            sheet_1.range(str(4) + ':1048576').clear_contents()
+            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+                 decarb_elec_CI[[
+                     'Year',
+                     'LCA: Unit (numerator)',
+                     'LCA: Unit (denominator)',
+                     'LCA_value',
+                     'Item',
+                     'LCA_metric']]
         wb.save()
         wb.close()
         
