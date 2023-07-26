@@ -117,26 +117,26 @@ if __name__ == '__main__':
     init_time = datetime.now()
     
     model_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Algae/data/model'
-    fmodel = 'GREET_2022 Algae harmonization project_HTL_paper_1.xlsm'
+    fmodel = 'GREET_2022 Algae harmonization project_HTL_paper_whey_final_report.xlsm'
     
     corr_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Algae/data/correspondence_files'
-    fcorr_LCI = 'corr_LCI_GREET_pathway_Algae_v1_run.xlsx'
-    sheet_input = 'PC'   
+    fcorr_LCI = 'corr_LCI_GREET_pathway_Algae_urea_07_24_2023.xlsx'
+    sheet_input = 'PC_disp'   
     
-    fsave_sim = 'GREET_Algae_sims_'+sheet_input+'.csv'
+    fsave_sim = 'GREET_Algae_sims_' + sheet_input + '_07_24_2023' + '.csv'
     
     # Global parameter declarations
     sheet_gparam = ['Algae', 'Algae'] # the sheets in fmodel that has the parameters
     cell_gparam = ['AI556', 'AF555'] # the cells in fmodel sheet_gparam where parameters are located
     gparam = [[1,1],  # value set of global parameters
-              [2,1],
-              [3,1],
-              [1,2],
-              [2,2],
-              [3,2],
-              [1,3],
-              [2,3],
-              [3,3]
+              #[2,1],
+              #[3,1],
+              #[1,2],
+              #[2,2],
+              #[3,2],
+              #[1,3],
+              #[2,3],
+              #[3,3]
               ]        
     
     obj = GREET_LCI_import(model_path_prefix, fmodel,
