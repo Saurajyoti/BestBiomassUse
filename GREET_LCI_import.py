@@ -52,7 +52,7 @@ class GREET_LCI_import:
         
         # read parameter value sets
         self.sim_params = pd.read_excel(self.corr_path_prefix + '/' + self.fcorr_LCI, 
-                                        self.sheet_input, header=3, index_col=None)
+                                        self.sheet_input, header=0, index_col=None)
         
     
     def save_sim_to_file(self, mode, header):
@@ -80,7 +80,7 @@ class GREET_LCI_import:
                     
                     df_params = self.sim_params.iloc[:,[1,2,param_set+3]]
                     
-                    print(f'Executing global parameter set: {gparam_val} and parameter set {param_set+1} out of {n_param_sets}') 
+                    print(f'Executing for sheet {self.sheet_input}, global parameter set: {gparam_val} and parameter set {param_set+1} out of {n_param_sets}') 
                     print( '    Elapsed time: ' + str(datetime.now() - init_time))
                     
                     # modify model with global parameters
@@ -100,12 +100,13 @@ class GREET_LCI_import:
                     sheet = wb.sheets['Algae_results']
                     self.sim_df = sheet['A1:E25'].options(pd.DataFrame).value 
                     
-                    self.sim_df['gparam_val'] = '-'.join(map(str,gparam_val))
-                    self.sim_df['param_set'] = param_set + 1                              
+                    self.sim_df['gparam_val'] = '_'.join(map(str,gparam_val))
+                    self.sim_df['sim_index'] = self.sim_params.columns[param_set+3]
+                    self.sim_df['iter'] = param_set + 1                              
                                 
                     check_time = datetime.now()
                     if write_header:
-                        self.save_sim_to_file(mode='a', header=write_header) # append output to file
+                        self.save_sim_to_file(mode='w', header=write_header) # append output to file
                         write_header = False
                     else:
                         self.save_sim_to_file(mode='a', header=write_header) # append output to file
@@ -119,12 +120,6 @@ if __name__ == '__main__':
     model_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Algae/data/model'
     fmodel = 'GREET_2022 Algae harmonization project_HTL_paper_whey_final_report.xlsm'
     
-    corr_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Algae/data/correspondence_files'
-    fcorr_LCI = 'corr_LCI_GREET_pathway_Algae_urea_07_24_2023.xlsx'
-    sheet_input = 'PC_disp'   
-    
-    fsave_sim = 'GREET_Algae_sims_' + sheet_input + '_07_24_2023' + '.csv'
-    
     # Global parameter declarations
     sheet_gparam = ['Algae', 'Algae'] # the sheets in fmodel that has the parameters
     cell_gparam = ['AI556', 'AF555'] # the cells in fmodel sheet_gparam where parameters are located
@@ -137,13 +132,25 @@ if __name__ == '__main__':
               #[1,3],
               #[2,3],
               #[3,3]
-              ]        
+              ]    
+   
+    corr_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Algae/data/correspondence_files'
+    fcorr_LCI = 'corr_LCI_GREET_pathway_Algae_urea_07_24_2023.xlsx'
+    sheets_input = ['PC_disp', 
+                    'PC_mass_alloc',
+                    'PC_proc_alloc',
+                    'Fuel'
+                    ]   
     
-    obj = GREET_LCI_import(model_path_prefix, fmodel,
-                           corr_path_prefix, fcorr_LCI, sheet_input,
-                           gparam, sheet_gparam, cell_gparam,
-                           fsave_sim)
-    
-    obj.sim_model()
+    for sheet_1 in sheets_input:
+        
+        fsave_sim = 'GREET_Algae_sims_' + sheet_1 + '_07_24_2023' + '.csv'         
+        
+        obj = GREET_LCI_import(model_path_prefix, fmodel,
+                               corr_path_prefix, fcorr_LCI, sheet_1,
+                               gparam, sheet_gparam, cell_gparam,
+                               fsave_sim)
+        
+        obj.sim_model()
     
     print( '    Total run time: ' + str(datetime.now() - init_time)) 
