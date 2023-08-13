@@ -27,7 +27,7 @@ input_path_EIA_price = input_path_prefix + '/EIA'
 input_path_corr = input_path_prefix + '/correspondence_files'
 input_path_units = input_path_prefix + '/Units'
 
-f_model = 'MCCAM_07_25_2023_working.xlsx' 
+f_model = 'MCCAM_08_10_2023_working.xlsx' 
 sheet_TEA = 'Db'
 sheet_param_variability = 'var_p'
 
@@ -95,6 +95,8 @@ adjust_biopower_baseline = False
 # it already calculated accurate, so please keep it always True, unless for QA
 always_calc_CO2_w_VOC_CO = True
 
+# Toggle on/off to harmonize CCS, fossil and combustion emissions, Fossil
+harmonize_CCS_fossil = True
 
 dict_gco2e = { # Table 2, AR6/GWP100, GREET1 2022
     'CO2' : 1,
@@ -143,6 +145,17 @@ from collections import Counter
 os.chdir(code_path_prefix)
 
 from unit_conversions import model_units
+
+
+# %% Customize the Excel Instance
+
+class ExcelApp(xw.App):
+    """override xw.App default properties"""
+    calculation = 'manual'
+    display_alerts = False
+    enable_events = False
+    screen_updating = False
+    visible = False
 
 #%%
 # User defined function definitions
@@ -661,6 +674,7 @@ pathways_to_consider=[
         '2022, Partially upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
         '2022, Fully upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge',
         '2022, Fully upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure',
+        '2022, Marine fuel through Fast Pyrolysis of blended woody biomass',
         '2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass',
         '2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass',
         ###
@@ -728,7 +742,9 @@ corr_fuel_replaced_GREET_pathway = pd.read_csv(input_path_corr + '/' + f_corr_fu
 #corr_fuel_replacing_GREET_pathway = pd.read_csv(input_path_corr + '/' + f_corr_fuel_replacing_GREET_pathway, header=3, index_col=None)
 corr_GGE_GREET_fuel_replaced = pd.read_csv(input_path_corr + '/' + f_corr_GGE_GREET_fuel_replaced, header=3, index_col=None)
 corr_GGE_GREET_fuel_replacing = pd.read_csv(input_path_corr + '/' + f_corr_GGE_GREET_fuel_replacing, header=3, index_col=None)
-corr_itemized_LCA = pd.read_csv(input_path_corr + '/' + f_corr_itemized_LCI, header=0, index_col=0)
+
+corr_itemized_LCA = pd.read_csv(input_path_corr + '/' + f_corr_itemized_LCI, dtype={8:'str'}, header=0, index_col=0)
+
 corr_replaced_EIA_mfsp = pd.read_csv(input_path_corr + '/' + f_corr_replaced_EIA_mfsp, header=3, index_col=None) 
 if consider_variability_study:
     corr_params_variability =  pd.read_excel(input_path_model + '/' + f_model, 
@@ -992,9 +1008,14 @@ if save_interim_files == True:
     
 LCA_items = df_econ.loc[df_econ['Parameter_B'].isin([
                                                     'Input Supply Chains',
+                                                    'Combustion Emissions, Fossil',
+                                                    'Combustion Emissions, Biogenic',
+                                                    'Process Emissions, Fossil',
+                                                    'Process Emissions, Biogenic',
                                                     'Coproducts',
                                                     'End Use',
-                                                    'CCS Stream'
+                                                    'CCS Stream, Fossil',
+                                                    'CCS Stream, Biogenic'
                                                     ]), : ].reset_index().copy()
 LCA_items = LCA_items[['Case/Scenario', 
                        'Parameter_A', 
@@ -1090,6 +1111,8 @@ LCA_items = pd.merge(LCA_items, corr_itemized_LCA, how='left',
 # converting material flow units to model standard units
 LCA_items['Total Flow'] = ['0' if val == '-' else val for val in LCA_items['Total Flow'] ]
 LCA_items['Total Flow'] = pd.to_numeric(LCA_items['Total Flow'])
+LCA_items['Total Flow: Unit (numerator)'] = LCA_items['Total Flow: Unit (numerator)'].fillna('-')
+
 LCA_items.loc[~(LCA_items['Total Flow: Unit (numerator)'].isin(['-'])), 
               ['Total Flow: Unit (numerator)', 'Total Flow']] = \
     ob_units.unit_convert_df(LCA_items.loc[~(LCA_items['Total Flow: Unit (numerator)'].isin(['-'])), ['Total Flow: Unit (numerator)', 'Total Flow']],
@@ -1105,7 +1128,7 @@ LCA_items = LCA_items.loc[~(LCA_items['Total Flow: Unit (numerator)'] != LCA_ite
 
 #%%
 
-# Step: Itemized and aggregrated LCA metric per pathway
+# Step: Itemized LCA and CCS implementation
 
 # Calculate itemized LCA metric per year
 LCA_items['Total LCA'] = LCA_items['LCA_value'] * LCA_items['Total Flow']
@@ -1118,6 +1141,103 @@ LCA_items.loc[LCA_items['Parameter_B'].isin(['Coproducts']), 'Total LCA'] = \
 
 # Merge biofuel yield data by Case/Scenario
 LCA_items = pd.merge(LCA_items, biofuel_yield2, how='left', on='Case/Scenario').reset_index(drop=True)
+
+#%%
+
+# Step: Checks for CCS, Fossil net calculation
+
+# If CCS_fossil_CO2 > combustion_fossil_CO2 show warning to users, to investigate source of the residual CO2 for CCS. 
+# [combustion_fossil_CO2 - CCS_CO2] net emission of combustion_fossil_CO2 is accounted.
+# CCS_biogenic_CO2 is credited
+if harmonize_CCS_fossil:
+    
+    # Select Case/Scenario with CCS flow
+    CCS_cases = LCA_items.loc[LCA_items['Parameter_B'].isin(['CCS Stream, Fossil']) &
+                                  LCA_items['Stream_Flow'].isin(['Carbon Dioxide']), 'Case/Scenario'].drop_duplicates()
+    
+    # Select rows with selected cases and Parameter_B in ['CCS Stream', 'Combustion, Fossil']
+    tmp_LCA_items = LCA_items.loc[LCA_items['Case/Scenario'].isin(CCS_cases) &
+                                  LCA_items['Parameter_B'].isin(['CCS Stream, Fossil', 'Combustion Emissions, Fossil']), :]
+    
+    # Remove selected rows from LCA_items
+    LCA_items = LCA_items.loc[~(LCA_items['Case/Scenario'].isin(CCS_cases) &
+                                  LCA_items['Parameter_B'].isin(['CCS Stream, Fossil', 'Combustion Emissions, Fossil'])), :].copy()
+    
+    tmp_LCA_items_CCS_Stream = tmp_LCA_items.loc[tmp_LCA_items['Parameter_B'].isin(['CCS Stream, Fossil']), : ]
+    tmp_LCA_items_Combust = tmp_LCA_items.loc[tmp_LCA_items['Parameter_B'].isin(['Combustion Emissions, Fossil']), :]
+    
+    # Merge combustion emissions if-any to CCS flows
+    tmp_LCA_items_CCS_Stream = pd.merge(
+        tmp_LCA_items_CCS_Stream[['Case/Scenario', 'Parameter_B', 'Production Year', 'Year', 'Total LCA','Total LCA: Unit (numerator)', 'Total LCA: Unit (denominator)']],
+        tmp_LCA_items_Combust[['Case/Scenario', 'Parameter_B', 'Production Year', 'Year', 'Total LCA', 'Total LCA: Unit (numerator)', 'Total LCA: Unit (denominator)']],
+        how='left',
+        on=['Case/Scenario', 'Production Year', 'Year']
+        ).reset_index(drop=True).copy()
+    tmp_LCA_items_CCS_Stream.rename(columns={'Total LCA_x' : 'Total LCA_CCS, fossil',
+                                             'Total LCA_y' : 'Total LCA_combustion, fossil',
+                                             'Parameter_B_x' : 'Parameter_B_CCS, fossil',
+                                             'Parameter_B_y' : 'Parameter_B_combustion, fossil'}, inplace=True)
+    
+    # Check unit homogeneity
+    check_units_temp_LCA_items_CCS_Stream = (tmp_LCA_items_CCS_Stream['Total LCA: Unit (numerator)_x'] != tmp_LCA_items_CCS_Stream['Total LCA: Unit (numerator)_y']) |\
+        (tmp_LCA_items_CCS_Stream['Total LCA: Unit (denominator)_x'] != tmp_LCA_items_CCS_Stream['Total LCA: Unit (denominator)_y'])
+    tmp_LCA_items_CCS_Stream = tmp_LCA_items_CCS_Stream.loc[~check_units_temp_LCA_items_CCS_Stream]
+    check_units_temp_LCA_items_CCS_Stream = tmp_LCA_items_CCS_Stream.loc[check_units_temp_LCA_items_CCS_Stream, : ]
+    if check_units_temp_LCA_items_CCS_Stream.shape[0] > 0:
+        print("Warning: The following CCS LCA harmonization rows need attention as the units are not harmonized ..")
+        print(check_units_temp_LCA_items_CCS_Stream)
+    
+    # Calculate net CCS stream, CCS_net: 'Combustion, Fossil' + 'CCS Stream credit'
+    tmp_LCA_items_CCS_Stream['Total LCA_combustion, fossil_net'] =\
+        tmp_LCA_items_CCS_Stream['Total LCA_combustion, fossil'] + tmp_LCA_items_CCS_Stream['Total LCA_CCS, fossil']
+        
+    # zero CCS, fossil
+    tmp_LCA_items_CCS_Stream['Total LCA_CCS, fossil_net'] = 0
+    
+    # If -ve, show warning
+    check_combustion_em_margin = tmp_LCA_items_CCS_Stream.loc[tmp_LCA_items_CCS_Stream['Total LCA_combustion, fossil_net'] < 0, : ]
+    if check_combustion_em_margin.shape[0] > 0:
+        print("Warning: The following rows show more fossil_CCS emissions than estimated fossil_combustion emissions, please check data for accuracy. These rows are not ignored from next calculation steps.")
+        print(check_combustion_em_margin)
+    
+    # merge and update
+    tmp_LCA_items = tmp_LCA_items.merge(tmp_LCA_items_CCS_Stream[['Case/Scenario', 'Parameter_B_combustion, fossil', 'Production Year', 'Year', 'Total LCA_combustion, fossil_net']], 
+                                        how='left',
+                                        left_on = ['Case/Scenario', 'Parameter_B', 'Production Year', 'Year'],
+                                        right_on = ['Case/Scenario', 'Parameter_B_combustion, fossil', 'Production Year', 'Year']).reset_index(drop=True)
+    
+    tmp_LCA_items.loc[tmp_LCA_items['Parameter_B_combustion, fossil'].isin(['Combustion Emissions, Fossil']), 'Total LCA'] =\
+        tmp_LCA_items.loc[tmp_LCA_items['Parameter_B_combustion, fossil'].isin(['Combustion Emissions, Fossil']), 'Total LCA_combustion, fossil_net']
+    
+    tmp_LCA_items = tmp_LCA_items.merge(tmp_LCA_items_CCS_Stream[['Case/Scenario', 'Parameter_B_CCS, fossil', 'Production Year', 'Year', 'Total LCA_CCS, fossil_net']], 
+                                        how='left',
+                                        left_on = ['Case/Scenario', 'Parameter_B', 'Production Year', 'Year'],
+                                        right_on = ['Case/Scenario', 'Parameter_B_CCS, fossil', 'Production Year', 'Year']).reset_index(drop=True)
+    
+    tmp_LCA_items.loc[tmp_LCA_items['Parameter_B_CCS, fossil'].isin(['CCS Stream, Fossil']), 'Total LCA'] =\
+        tmp_LCA_items.loc[tmp_LCA_items['Parameter_B_CCS, fossil'].isin(['CCS Stream, Fossil']), 'Total LCA_CCS, fossil_net']
+    
+    tmp_LCA_items = tmp_LCA_items[['Case/Scenario', 'Parameter_A', 'Parameter_B', 'Stream_Flow',
+           'Stream_LCA', 'Flow: Unit (numerator)', 'Flow: Unit (denominator)',
+           'Flow', 'Operating Time: Unit', 'Operating Time', 'Operating Time (%)',
+           'Total Flow: Unit (numerator)', 'Total Flow: Unit (denominator)',
+           'Total Flow', 'Production Year', 'GREET1 sheet',
+           'Coproduct allocation method', 'GREET classification of coproduct',
+           'LCA: Unit (numerator)', 'LCA: Unit (denominator)', 'Year', 'LCA_value',
+           'LCA_metric', 'Total LCA', 'Total LCA: Unit (numerator)',
+           'Total LCA: Unit (denominator)', 'Biofuel Flow: Unit (numerator)',
+           'Biofuel Flow: Unit (denominator)', 'Biofuel Flow']].copy()
+    
+    # Concatenate the data frames
+    LCA_items = pd.concat([LCA_items, tmp_LCA_items]).reset_index(drop=True).copy()
+    
+    # Sort LCA_item for readability
+    
+    # delete temporary data frames and free memory
+
+#%%
+
+# Step: LCA Metric calculation, itemized and aggregrated
 
 # Calculate LCA metric per unit biofuel yield
 LCA_items['Total LCA'] = LCA_items['Total LCA'] / LCA_items['Biofuel Flow']
@@ -1502,8 +1622,10 @@ print( '    Elapsed time: ' + str(datetime.now() - init_time))
 # write data to the model dashboard tabs
 
 if write_to_dashboard:
+    print('Writing to Dashboard ..')
     
-    with xw.App(visible=False) as app: 
+    with ExcelApp() as app: 
+    #with xw.App(visible=False) as app: 
         
         wb = xw.Book(input_path_model + '/' + f_model)
         
@@ -1821,9 +1943,12 @@ if write_to_dashboard:
                      'LCA_value',
                      'Parameter_B',
                      'LCA_metric']]
+        wb.app.calculate()
         wb.save()
         wb.close()
         
+print( '    Elapsed time: ' + str(datetime.now() - init_time)) 
+
 #%%
 
 # Calculating percentage sensitivity when 'write_to_dashboard'=True and 'consider_variability_study'=True
