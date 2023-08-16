@@ -80,7 +80,7 @@ save_interim_files = True
 write_to_dashboard = True
 
 # Toggle implementing Decarb Model electric grid carbon intensity 
-decarb_electric_grid = True
+decarb_electric_grid = False
 
 # Scenario of decarb electric grid CI, when different from Decarb Model
 decarb_grid_scenario1 = True
@@ -762,6 +762,7 @@ df_econ.loc[df_econ['Stream_Flow'].isna(), 'Stream_Flow'] = ''
 cost_items = df_econ.loc[df_econ['Parameter_B'].isin([
                                                'Input Supply Chains',
                                                'Coproducts', 
+                                               'Counterfactual Credit',
                                                
                                                'Fixed Costs',                                               
                                                'Capital Depreciation',
@@ -1007,16 +1008,17 @@ if save_interim_files == True:
 # Step: Merge Itemized LCAs to TEA-pathway LCIs    
     
 LCA_items = df_econ.loc[df_econ['Parameter_B'].isin([
-                                                    'Input Supply Chains',
-                                                    'Combustion Emissions, Fossil',
-                                                    'Combustion Emissions, Biogenic',
-                                                    'Process Emissions, Fossil',
-                                                    'Process Emissions, Biogenic',
-                                                    'Coproducts',
-                                                    'End Use',
-                                                    'CCS Stream, Fossil',
-                                                    'CCS Stream, Biogenic'
-                                                    ]), : ].reset_index().copy()
+                         'Input Supply Chains',
+                         'Counterfactual Credit',
+                         'Combustion Emissions, Fossil',
+                         'Combustion Emissions, Biogenic',
+                         'Process Emissions, Fossil',
+                         'Process Emissions, Biogenic',
+                         'Coproducts',
+                         'End Use',
+                         'CCS Stream, Fossil',
+                         'CCS Stream, Biogenic'
+                         ]), : ].reset_index().copy()
 LCA_items = LCA_items[['Case/Scenario', 
                        'Parameter_A', 
                        'Parameter_B', 
@@ -1943,7 +1945,7 @@ if write_to_dashboard:
                      'LCA_value',
                      'Parameter_B',
                      'LCA_metric']]
-        wb.app.calculate()
+        #wb.app.calculate()
         wb.save()
         wb.close()
         
