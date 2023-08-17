@@ -68,6 +68,7 @@ class GREET_LCI_import:
                 self.temp_corr_LCI['Year'] = y           
                 self.sim_df = pd.concat([self.sim_df, self.temp_corr_LCI], ignore_index=True)
             wb.close()
+            wb2.close()
        
         self.sim_df.to_csv(self.corr_path_prefix + '/' + self.file_save_sim)      
         

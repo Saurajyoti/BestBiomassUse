@@ -1626,10 +1626,13 @@ print( '    Elapsed time: ' + str(datetime.now() - init_time))
 if write_to_dashboard:
     print('Writing to Dashboard ..')
     
-    with ExcelApp() as app: 
-    #with xw.App(visible=False) as app: 
+    #with ExcelApp() as app: 
+    with xw.App(visible=False) as app: 
         
         wb = xw.Book(input_path_model + '/' + f_model)
+        wb.app.calculation = 'manual'
+        wb.app.screen_updating = False
+        #wb.app.raw_value = True
         
         if consider_variability_study:
             
@@ -1798,9 +1801,9 @@ if write_to_dashboard:
                 
         else:
             
-            sheet_1 = wb.sheets['lca']            
-            sheet_1.range(str(4) + ':1048576').clear_contents()
-            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+            #sheet_1 = wb.sheets['lca']            
+            wb.sheets['lca'].range(str(4) + ':1048576').clear_contents()
+            wb.sheets['lca']['A4'].options(index=False, chunksize=10000).value =\
                 LCA_items_agg[['Case/Scenario',
                                'LCA_metric',
                                'Total LCA: Unit (numerator)',
@@ -1808,9 +1811,9 @@ if write_to_dashboard:
                                'Production Year',
                                'Total LCA']]
             
-            sheet_1 = wb.sheets['mfsp']
-            sheet_1.range(str(4) + ':1048576').clear_contents()
-            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+            #sheet_1 = wb.sheets['mfsp']
+            wb.sheets['mfsp'].range(str(4) + ':1048576').clear_contents()
+            wb.sheets['mfsp']['A4'].options(index=False, chunksize=10000).value =\
             MFSP_agg[['Case/Scenario',	
                       'Production Year', 
                       'MFSP replacing fuel: Unit (numerator)',
@@ -1819,9 +1822,9 @@ if write_to_dashboard:
                       'Adjusted Cost Year'
                       ]]
             
-            sheet_1 = wb.sheets['mac']
-            sheet_1.range(str(4) + ':1048576').clear_contents()
-            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+            #sheet_1 = wb.sheets['mac']
+            wb.sheets['mac'].range(str(4) + ':1048576').clear_contents()
+            wb.sheets['mac']['A4'].options(index=False, chunksize=10000).value =\
             MAC_df[['Case/Scenario',
                     'Biofuel Stream_LCA',
                     #'Feedstock',
@@ -1859,9 +1862,9 @@ if write_to_dashboard:
                     
                     ]]
             
-            sheet_1 = wb.sheets['lca_itm']
-            sheet_1.range(str(4) + ':1048576').clear_contents()
-            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+            #sheet_1 = wb.sheets['lca_itm']
+            wb.sheets['lca_itm'].range(str(4) + ':1048576').clear_contents()
+            wb.sheets['lca_itm']['A4'].options(index=False, chunksize=10000).value =\
                 LCA_items[['Case/Scenario', 
                            'Parameter_A', 
                            'Parameter_B', 
@@ -1893,9 +1896,9 @@ if write_to_dashboard:
                            #'Biofuel Flow'
                            ]]
                 
-            sheet_1 = wb.sheets['mfsp_itm']
-            sheet_1.range(str(4) + ':1048576').clear_contents()
-            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+            #sheet_1 = wb.sheets['mfsp_itm']
+            wb.sheets['mfsp_itm'].range(str(4) + ':1048576').clear_contents()
+            wb.sheets['mfsp_itm']['A4'].options(index=False, chunksize=10000).value =\
                  cost_items[['Case/Scenario', 
                              'Parameter_A', 
                              'Parameter_B', 
@@ -1935,9 +1938,9 @@ if write_to_dashboard:
                              ]]
         
         if decarb_electric_grid:
-            sheet_1 = wb.sheets['EPS_CI']
-            sheet_1.range(str(4) + ':1048576').clear_contents()
-            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+            #sheet_1 = wb.sheets['EPS_CI']
+            wb.sheets['EPS_CI'].range(str(4) + ':1048576').clear_contents()
+            wb.sheets['EPS_CI']['A4'].options(index=False, chunksize=10000).value =\
                  decarb_elec_CI[[
                      'Year',
                      'LCA: Unit (numerator)',
@@ -1945,6 +1948,10 @@ if write_to_dashboard:
                      'LCA_value',
                      'Parameter_B',
                      'LCA_metric']]
+        
+        # resetting xlwings parameters before exiting
+        wb.app.screen_updating = True
+        
         #wb.app.calculate()
         wb.save()
         wb.close()
