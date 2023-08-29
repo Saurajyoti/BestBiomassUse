@@ -98,6 +98,12 @@ always_calc_CO2_w_VOC_CO = True
 # Toggle on/off to harmonize CCS, fossil and combustion emissions, Fossil
 harmonize_CCS_fossil = True
 
+# Define the type of allocation performed:
+# Pathway: all energy products 'End Use' are summed up as energy product and share the same pathway carbon intensity value
+# Energy: all energy products are considered, primary fuel energy fraction is considerd for allocation of GHG emissions and costs
+# Hybrid: 
+allocation_type = 'Hybrid' # Pathway, Hybrid, Energy
+
 dict_gco2e = { # Table 2, AR6/GWP100, GREET1 2022
     'CO2' : 1,
     'CO2 (w/ C in VOC & CO)' : 1,
@@ -138,6 +144,7 @@ import xlwings as xw
 from xlwings.constants import DeleteShiftDirection
 from xlwings.constants import AutoFillType
 from collections import Counter
+import numbers
 
 #cpi.update()
 
@@ -584,8 +591,8 @@ init_time = datetime.now()
 df_econ = pd.read_excel(input_path_model + '/' + f_model, sheet_name = sheet_TEA, header = 3, index_col=None)
 
 df_econ = df_econ[['Case/Scenario', 'Parameter_A',
-       'Parameter_B', 'Stream_Flow', 'Stream_LCA', 'Flow: Unit (numerator)',
-       'Flow: Unit (denominator)', 'Flow', 'Cost Item',
+       'Parameter_B', 'Stream_Flow', 'Stream_LCA', 'Energy_alloc_primary_fuel',
+       'Flow: Unit (numerator)', 'Flow: Unit (denominator)', 'Flow', 'Cost Item',
        'Cost: Unit (numerator)', 'Cost: Unit (denominator)', 'Unit Cost',
        'Operating Time: Unit', 'Operating Time', 'Operating Time (%)',
        'Total Cost: Unit (numerator)', 'Total Cost: Unit (denominator)',
@@ -679,6 +686,19 @@ pathways_to_consider=[
         '2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass',
         ###
         
+        # SAF, RD, RG via HTL of Sludge and Manure, and CFP of biomass (marine fuel comparison pathways)
+        ###
+        '2022 SOT: Sludge HTL to Biocrude upgraded to Hydrocarbons',
+        
+        ###
+        
+        # SAF, RD, RG via CFP of biomass (marine fuel comparison pathways)
+        ###
+        '2023: Catalytic Fast Pyrolysis of woody biomass to SAF, renewable diesel, and renewable gasoline, 17% oxygen content',
+        '2023: Catalytic Fast Pyrolysis of woody biomass to SAF, renewable diesel, and renewable gasoline, 20% oxygen content',
+        '2023: Catalytic Fast Pyrolysis of woody biomass to SAF, renewable diesel, and renewable gasoline, 22% oxygen content',        
+        ###
+        
         
         # Biomass to Hydrogen
         ###
@@ -764,6 +784,8 @@ cost_items = df_econ.loc[df_econ['Parameter_B'].isin([
                                                'Coproducts', 
                                                'Counterfactual Credit',
                                                
+                                               'End Use', # Co-produced fuels marked as End use are used to calculate displacement credit in Hybrid approach
+                                               
                                                'Fixed Costs',                                               
                                                'Capital Depreciation',
                                                'Average Income Tax',
@@ -797,23 +819,67 @@ if sum(tempdf):
 
 #%%
 
-# Step: Create Biofuel Yield table and merge with Cost Item table
+# Step: Create Biofuel Yield table
 
 # Separate biofuel yield flows
 biofuel_yield = df_econ.loc[df_econ['Parameter_B'] == 'End Use',
                             ['Case/Scenario', 'Stream_LCA', 'Total Flow: Unit (numerator)', 
-                             'Total Flow: Unit (denominator)', 'Total Flow']].reset_index(drop=True).copy()
+                             'Total Flow: Unit (denominator)', 'Total Flow', 'Energy_alloc_primary_fuel']].reset_index(drop=True).copy()
 biofuel_yield.rename(columns={'Stream_LCA' : 'Biofuel Stream_LCA',
                               'Total Flow: Unit (numerator)' : 'Biofuel Flow: Unit (numerator)', 
                               'Total Flow: Unit (denominator)' : 'Biofuel Flow: Unit (denominator)',
                               'Total Flow' : 'Biofuel Flow'}, inplace=True)
 
-# For co-produced flows, summarize the flow data to one output
-biofuel_yield2 = biofuel_yield.groupby(['Case/Scenario', 'Biofuel Flow: Unit (numerator)', 
-                                        'Biofuel Flow: Unit (denominator)']).agg({'Biofuel Flow' : 'sum'}).reset_index()
 
-# Merge with the cost items df
+# If energy allocation is to be implemented, filter by primary fuel flag
+# Pathway allocation is helpful for assessing CI of the production pathway
+
+if allocation_type == 'Pathway': # to be checked
+    # For co-produced fuels, summarize the flow data to net hydrocarbon flow
+    biofuel_yield2 = biofuel_yield.groupby(['Case/Scenario', 'Biofuel Flow: Unit (numerator)', 
+                                            'Biofuel Flow: Unit (denominator)']).agg({'Biofuel Flow' : 'sum'}).reset_index()
+    biofuel_yield['biofuel_yield_energy_alloc'] = 1
+
+elif allocation_type == 'Energy': # to be checked
+    # Calculate elergy allocation fraction per 'End Use' product
+    biofuel_yield['biofuel_yield_energy_alloc'] = biofuel_yield['Biofuel Flow']/biofuel_yield.groupby(['Case/Scenario', 'Biofuel Flow: Unit (numerator)', 
+                           'Biofuel Flow: Unit (denominator)'])['Biofuel Flow'].transform('sum')
+    
+    # filter and select primary fuel    
+    biofuel_yield2 = biofuel_yield.loc[biofuel_yield['Energy_alloc_primary_fuel'].isin(['Y']), : ]
+    # If two 'End Use' are identified as primary product, they are aggregrated at this stage
+    biofuel_yield2 = biofuel_yield2.groupby(['Case/Scenario', 'Biofuel Flow: Unit (numerator)', 
+                                        'Biofuel Flow: Unit (denominator)']).agg({'Biofuel Flow' : 'sum',
+                                                                                  'biofuel_yield_energy_alloc' : 'sum'}).reset_index()
+                                                                                  
+elif allocation_type == 'Hybrid':
+    # Calculate elergy allocation fraction per 'End Use' product
+    biofuel_yield['biofuel_yield_energy_alloc'] = biofuel_yield['Biofuel Flow']/biofuel_yield.groupby(['Case/Scenario', 'Biofuel Flow: Unit (numerator)', 
+                           'Biofuel Flow: Unit (denominator)'])['Biofuel Flow'].transform('sum')
+    
+    # filter and select primary fuel    
+    biofuel_yield2 = biofuel_yield.loc[biofuel_yield['Energy_alloc_primary_fuel'].isin(['Y']), : ]
+    # If two 'End Use' are identified as primary product, they are aggregrated at this stage
+    biofuel_yield2 = biofuel_yield2.groupby(['Case/Scenario', 'Biofuel Flow: Unit (numerator)', 
+                                        'Biofuel Flow: Unit (denominator)']).agg({'Biofuel Flow' : 'sum',
+                                                                                  'biofuel_yield_energy_alloc' : 'sum'}).reset_index()
+
+else:
+    print("Warning: unrecognized energy allocation type, please check parameter declaration.")
+
+
+#%%
+
+# Step: Merge biofuel flows with Cost Item table
+
 cost_items = pd.merge(cost_items, biofuel_yield2, how='left', on='Case/Scenario').reset_index(drop=True)
+
+# based on energy allocation choice, all components are allocated per 'End Use' product
+if allocation_type == 'Hybrid':    
+    for colm in ['Flow', 'Total Cost', 'Total Flow']:    
+        cost_items.loc[[isinstance(x, numbers.Number) for x in cost_items[colm]], colm] =\
+                       cost_items.loc[[isinstance(x, numbers.Number) for x in cost_items[colm]], colm].multiply(
+                       cost_items.loc[[isinstance(x, numbers.Number) for x in cost_items[colm]], 'biofuel_yield_energy_alloc'], axis='index')
 
 #%%
 # Step: calculate cost per variability of parameters
@@ -928,6 +994,13 @@ cost_items = pd.concat([tmp_cost_items, cost_items]).reset_index(drop=True).copy
 # For co-products we consider their cost as credit to the MFSP [co-product credit by displacement]
 cost_items.loc[cost_items['Parameter_B'] == 'Coproducts', 'Itemized MFSP'] = \
   cost_items.loc[cost_items['Parameter_B'] == 'Coproducts', 'Itemized MFSP'] * -1
+
+# For 'End Use' those are not marked as primary fuel are considered for displacement credit   
+if allocation_type == 'Hybrid':
+    cost_items.loc[(cost_items['Parameter_B'] == 'End Use') & 
+                   (cost_items['Energy_alloc_primary_fuel'] != 'Y'), 'Itemized MFSP'] = \
+      cost_items.loc[(cost_items['Parameter_B'] == 'End Use') & 
+                     (cost_items['Energy_alloc_primary_fuel'] != 'Y'), 'Itemized MFSP'] * -1      
 
 #%%
 # Step: Calculate aggregrated Marginal Fuel Selling Price (MFSP)
@@ -1143,6 +1216,14 @@ LCA_items.loc[LCA_items['Parameter_B'].isin(['Coproducts']), 'Total LCA'] = \
 
 # Merge biofuel yield data by Case/Scenario
 LCA_items = pd.merge(LCA_items, biofuel_yield2, how='left', on='Case/Scenario').reset_index(drop=True)
+
+# based on energy allocation choice, all components are allocated per 'End Use' product
+
+if allocation_type == 'Hybrid':    
+    for colm in ['Flow', 'Total Flow', 'Total LCA']:    
+        LCA_items.loc[[isinstance(x, numbers.Number) for x in LCA_items[colm]], colm] =\
+                       LCA_items.loc[[isinstance(x, numbers.Number) for x in LCA_items[colm]], colm].multiply(
+                       LCA_items.loc[[isinstance(x, numbers.Number) for x in LCA_items[colm]], 'biofuel_yield_energy_alloc'], axis='index')
 
 #%%
 
