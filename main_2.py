@@ -27,9 +27,10 @@ input_path_EIA_price = input_path_prefix + '/EIA'
 input_path_corr = input_path_prefix + '/correspondence_files'
 input_path_units = input_path_prefix + '/Units'
 
-f_model = 'MCCAM_08_10_2023_working.xlsx' 
+f_model = 'MCCAM_09_11_2023_working.xlsx' 
 sheet_TEA = 'Db'
 sheet_param_variability = 'var_p'
+sheet_name_lists = 'lists'
 
 f_out_itemized_mfsp = 'mfsp_itemized.csv'
 f_out_agg_mfsp = 'mfsp_agg.csv'
@@ -58,7 +59,7 @@ f_Decarb_Model = 'US Decarbonization Model - Dashboard.xlsx'
 # Year(s) of production defined as a list:
 # If single year: [year]
 # If multiple year: [first year, last year], inclusive of both the bounds
-production_year = [2022]
+#production_year = [2022]
 production_year = [2022, 2050]
 
 # cost adjustment year, to which inflation will be adjusted
@@ -99,10 +100,13 @@ always_calc_CO2_w_VOC_CO = True
 harmonize_CCS_fossil = True
 
 # Define the type of allocation performed:
-# Pathway: all energy products 'End Use' are summed up as energy product and share the same pathway carbon intensity value
+# Pathway: all energy products 'Fuel Use' are summed up as energy product and share the same pathway carbon intensity value
 # Energy: all energy products are considered, primary fuel energy fraction is considerd for allocation of GHG emissions and costs
-# Hybrid: 
-allocation_type = 'Hybrid' # Pathway, Hybrid, Energy
+"""
+Hybrid: One primary fuel is declared. Energy allocation of inputs flow rates, 
+coproduct flow rates are done accross all liquid fuel products. Non-primary fuel types contribute to cr"""
+
+allocation_type = 'Energy' # Pathway, Hybrid, Energy
 
 dict_gco2e = { # Table 2, AR6/GWP100, GREET1 2022
     'CO2' : 1,
@@ -152,7 +156,6 @@ import numbers
 os.chdir(code_path_prefix)
 
 from unit_conversions import model_units
-
 
 # %% Customize the Excel Instance
 
@@ -401,7 +404,7 @@ def fmt_GREET_LCI(df):
     
     # testing only
     #df = corr_itemized_LCA.copy()   
-    #df = df.loc[(df['Parameter_B'] == 'Coproducts') & (df['Stream_Flow'] == 'Coal'), : ].reset_index(drop=True)
+    #df = df.loc[(df['Parameter_B'] == 'Coproduct Credits') & (df['Stream_Flow'] == 'Coal'), : ].reset_index(drop=True)
     #df = df.loc[(df['Stream_Flow'] == 'Coal') & (df['Stream_LCA'] == 'Coal to Power Plants, IGCC turbine'), : ].reset_index(drop=True)
     
     
@@ -590,6 +593,8 @@ init_time = datetime.now()
 
 df_econ = pd.read_excel(input_path_model + '/' + f_model, sheet_name = sheet_TEA, header = 3, index_col=None)
 
+pathway_names = pd.read_excel(input_path_model + '/' + f_model, sheet_name = sheet_name_lists, header = 3, usecols = 'B:F')
+
 df_econ = df_econ[['Case/Scenario', 'Parameter_A',
        'Parameter_B', 'Stream_Flow', 'Stream_LCA', 'Energy_alloc_primary_fuel',
        'Flow: Unit (numerator)', 'Flow: Unit (denominator)', 'Flow', 'Cost Item',
@@ -739,11 +744,13 @@ df_econ = df_econ.loc[df_econ['Case/Scenario'].isin(pathways_to_consider)].reset
 
 # When studying variability of unit cost on MFSP and MAC,
 # following pathways are avoided because detailed LCI are not available yet
-cases_to_avoid = ['Cellulosic Ethanol',
-                  'Cellulosic Ethanol with Jet Upgrading',
-                  'Fischer-Tropsch SPK',
-                  'Gasification to Methanol',
-                  'Gasoline from upgraded bio-oil from pyrolysis']
+cases_to_avoid = [
+                  #'Cellulosic Ethanol',
+                  #'Cellulosic Ethanol with Jet Upgrading',
+                  #'Fischer-Tropsch SPK',
+                  #'Gasification to Methanol',
+                  #'Gasoline from upgraded bio-oil from pyrolysis'
+                  ]
 
 # Exclude cases to avoid if performing variability analysis
 if consider_variability_study:
@@ -780,11 +787,11 @@ df_econ.loc[df_econ['Stream_Flow'].isna(), 'Stream_Flow'] = ''
 
 # Subset cost items to use for itemized MFSP calculation
 cost_items = df_econ.loc[df_econ['Parameter_B'].isin([
-                                               'Input Supply Chains',
-                                               'Coproducts', 
-                                               'Counterfactual Credit',
+                                               'Conversion: Input Supply Chains',
+                                               'Coproduct Credits', 
+                                               'Avoided Ems Credits',
                                                
-                                               'End Use', # Co-produced fuels marked as End use are used to calculate displacement credit in Hybrid approach
+                                               'Fuel Use', # Co-produced fuels marked as Fuel Use are used to calculate displacement credit in Hybrid approach
                                                
                                                'Fixed Costs',                                               
                                                'Capital Depreciation',
@@ -822,7 +829,7 @@ if sum(tempdf):
 # Step: Create Biofuel Yield table
 
 # Separate biofuel yield flows
-biofuel_yield = df_econ.loc[df_econ['Parameter_B'] == 'End Use',
+biofuel_yield = df_econ.loc[df_econ['Parameter_B'] == 'Fuel Use',
                             ['Case/Scenario', 'Stream_LCA', 'Total Flow: Unit (numerator)', 
                              'Total Flow: Unit (denominator)', 'Total Flow', 'Energy_alloc_primary_fuel']].reset_index(drop=True).copy()
 biofuel_yield.rename(columns={'Stream_LCA' : 'Biofuel Stream_LCA',
@@ -834,32 +841,26 @@ biofuel_yield.rename(columns={'Stream_LCA' : 'Biofuel Stream_LCA',
 # If energy allocation is to be implemented, filter by primary fuel flag
 # Pathway allocation is helpful for assessing CI of the production pathway
 
-if allocation_type == 'Pathway': # to be checked
+if allocation_type == 'Pathway': # to be checked, may not be required as it is similar to energy allocation
     # For co-produced fuels, summarize the flow data to net hydrocarbon flow
     biofuel_yield2 = biofuel_yield.groupby(['Case/Scenario', 'Biofuel Flow: Unit (numerator)', 
                                             'Biofuel Flow: Unit (denominator)']).agg({'Biofuel Flow' : 'sum'}).reset_index()
-    biofuel_yield['biofuel_yield_energy_alloc'] = 1
+    biofuel_yield2['biofuel_yield_energy_alloc'] = 1
 
 elif allocation_type == 'Energy': # to be checked
-    # Calculate elergy allocation fraction per 'End Use' product
-    biofuel_yield['biofuel_yield_energy_alloc'] = biofuel_yield['Biofuel Flow']/biofuel_yield.groupby(['Case/Scenario', 'Biofuel Flow: Unit (numerator)', 
-                           'Biofuel Flow: Unit (denominator)'])['Biofuel Flow'].transform('sum')
-    
-    # filter and select primary fuel    
-    biofuel_yield2 = biofuel_yield.loc[biofuel_yield['Energy_alloc_primary_fuel'].isin(['Y']), : ]
-    # If two 'End Use' are identified as primary product, they are aggregrated at this stage
-    biofuel_yield2 = biofuel_yield2.groupby(['Case/Scenario', 'Biofuel Flow: Unit (numerator)', 
-                                        'Biofuel Flow: Unit (denominator)']).agg({'Biofuel Flow' : 'sum',
-                                                                                  'biofuel_yield_energy_alloc' : 'sum'}).reset_index()
+    ## For co-produced fuels, summarize the flow data to net hydrocarbon flow
+    biofuel_yield2 = biofuel_yield.groupby(['Case/Scenario', 'Biofuel Flow: Unit (numerator)', 
+                                            'Biofuel Flow: Unit (denominator)']).agg({'Biofuel Flow' : 'sum'}).reset_index()
+    biofuel_yield2['biofuel_yield_energy_alloc'] = 1
                                                                                   
 elif allocation_type == 'Hybrid':
-    # Calculate elergy allocation fraction per 'End Use' product
+    # Calculate energy allocation fraction per 'Fuel Use' product
     biofuel_yield['biofuel_yield_energy_alloc'] = biofuel_yield['Biofuel Flow']/biofuel_yield.groupby(['Case/Scenario', 'Biofuel Flow: Unit (numerator)', 
                            'Biofuel Flow: Unit (denominator)'])['Biofuel Flow'].transform('sum')
     
     # filter and select primary fuel    
     biofuel_yield2 = biofuel_yield.loc[biofuel_yield['Energy_alloc_primary_fuel'].isin(['Y']), : ]
-    # If two 'End Use' are identified as primary product, they are aggregrated at this stage
+    # If two 'Fuel Use' are identified as primary product, they are aggregrated at this stage
     biofuel_yield2 = biofuel_yield2.groupby(['Case/Scenario', 'Biofuel Flow: Unit (numerator)', 
                                         'Biofuel Flow: Unit (denominator)']).agg({'Biofuel Flow' : 'sum',
                                                                                   'biofuel_yield_energy_alloc' : 'sum'}).reset_index()
@@ -874,12 +875,15 @@ else:
 
 cost_items = pd.merge(cost_items, biofuel_yield2, how='left', on='Case/Scenario').reset_index(drop=True)
 
-# based on energy allocation choice, all components are allocated per 'End Use' product
-if allocation_type == 'Hybrid':    
+if allocation_type == 'Energy':
+    pass
+
+# based on energy allocation choice, all components are allocated per 'Fuel Use' product
+elif allocation_type == 'Hybrid':    
     for colm in ['Flow', 'Total Cost', 'Total Flow']:    
         cost_items.loc[[isinstance(x, numbers.Number) for x in cost_items[colm]], colm] =\
                        cost_items.loc[[isinstance(x, numbers.Number) for x in cost_items[colm]], colm].multiply(
-                       cost_items.loc[[isinstance(x, numbers.Number) for x in cost_items[colm]], 'biofuel_yield_energy_alloc'], axis='index')
+                       cost_items.loc[[isinstance(x, numbers.Number) for x in cost_items[colm]], 'biofuel_yield_energy_alloc'], axis='index') 
 
 #%%
 # Step: calculate cost per variability of parameters
@@ -957,7 +961,7 @@ else :
     #for yr in production_year: 
         tempdf['Production Year'] = yr
         cost_items = pd.concat([cost_items, tempdf], ignore_index=True).copy()
-    cost_items.reset_index(inplace=True)
+    cost_items.reset_index(drop=True, inplace=True)
     
 # Calculate itemized MFSP
 cost_items['Itemized MFSP'] = cost_items['Adjusted Total Cost'].astype(float) / cost_items['Biofuel Flow'].astype(float)
@@ -992,14 +996,18 @@ tmp_cost_items[['Itemized MFSP: Unit (denominator)', 'Itemized MFSP']] = \
 cost_items = pd.concat([tmp_cost_items, cost_items]).reset_index(drop=True).copy()
 
 # For co-products we consider their cost as credit to the MFSP [co-product credit by displacement]
-cost_items.loc[cost_items['Parameter_B'] == 'Coproducts', 'Itemized MFSP'] = \
-  cost_items.loc[cost_items['Parameter_B'] == 'Coproducts', 'Itemized MFSP'] * -1
+cost_items.loc[cost_items['Parameter_B'] == 'Coproduct Credits', 'Itemized MFSP'] = \
+  cost_items.loc[cost_items['Parameter_B'] == 'Coproduct Credits', 'Itemized MFSP'] * -1
 
-# For 'End Use' those are not marked as primary fuel are considered for displacement credit   
-if allocation_type == 'Hybrid':
-    cost_items.loc[(cost_items['Parameter_B'] == 'End Use') & 
+# For Energy allocation no cost credit is considered for produced fuel as calculations are per MJ of fuels produced
+if allocation_type == 'Energy':
+    cost_items.loc[cost_items['Parameter_B'] == 'Fuel Use', 'Itemized MFSP'] = 0
+
+# For 'Fuel Use' those are not marked as primary fuel are considered for displacement credit   
+elif allocation_type == 'Hybrid':
+    cost_items.loc[(cost_items['Parameter_B'] == 'Fuel Use') & 
                    (cost_items['Energy_alloc_primary_fuel'] != 'Y'), 'Itemized MFSP'] = \
-      cost_items.loc[(cost_items['Parameter_B'] == 'End Use') & 
+      cost_items.loc[(cost_items['Parameter_B'] == 'Fuel Use') & 
                      (cost_items['Energy_alloc_primary_fuel'] != 'Y'), 'Itemized MFSP'] * -1      
 
 #%%
@@ -1008,12 +1016,12 @@ if allocation_type == 'Hybrid':
 MFSP_agg = cost_items.copy()
 
 if consider_coproduct_cost_credit == False:
-    MFSP_agg = MFSP_agg.loc[~MFSP_agg['Parameter_B'].isin(['Coproducts']), :]
+    MFSP_agg = MFSP_agg.loc[~MFSP_agg['Parameter_B'].isin(['Coproduct Credits']), :]
 
 if consider_variability_study:
     
     MFSP_agg = MFSP_agg[['Case/Scenario',
-                         'Feedstock',
+                         #'Feedstock',
                          'Production Year',
                          'Itemized MFSP: Unit (numerator)', 
                          'Itemized MFSP: Unit (denominator)',
@@ -1031,7 +1039,7 @@ if consider_variability_study:
     MFSP_agg = MFSP_agg[MFSP_agg['Itemized MFSP'].notna()]
         
     MFSP_agg = MFSP_agg.groupby(['Case/Scenario',
-                                 'Feedstock',
+                                 #'Feedstock',
                                  'Production Year',
                                  'Itemized MFSP: Unit (numerator)', 
                                  'Itemized MFSP: Unit (denominator)',
@@ -1067,7 +1075,7 @@ MFSP_agg.rename(columns={'Itemized MFSP' : 'MFSP replacing fuel',
                          'Itemized MFSP: Unit (numerator)' : 'MFSP replacing fuel: Unit (numerator)',
                          'Itemized MFSP: Unit (denominator)' : 'MFSP replacing fuel: Unit (denominator)'}, inplace=True)
 
-# Getting back the End Use column
+# Getting back the Fuel Use column
 MFSP_agg = pd.merge(biofuel_yield[['Case/Scenario', 'Biofuel Stream_LCA']].drop_duplicates(), 
                     MFSP_agg, how='left', on='Case/Scenario').reset_index(drop=True)
 
@@ -1081,14 +1089,14 @@ if save_interim_files == True:
 # Step: Merge Itemized LCAs to TEA-pathway LCIs    
     
 LCA_items = df_econ.loc[df_econ['Parameter_B'].isin([
-                         'Input Supply Chains',
-                         'Counterfactual Credit',
-                         'Combustion Emissions, Fossil',
-                         'Combustion Emissions, Biogenic',
-                         'Process Emissions, Fossil',
-                         'Process Emissions, Biogenic',
-                         'Coproducts',
-                         'End Use',
+                         'Conversion: Input Supply Chains',
+                         'Avoided Ems Credits',
+                         'Conversion: Combustion Ems, Fossil',
+                         'Conversion: Combustion Ems, Biogenic',
+                         'Conversion: Non-Combustion Ems, Fossil',
+                         'Conversion: Non-Combustion Ems, Biogenic',
+                         'Coproduct Credits',
+                         'Fuel Use',
                          'CCS Stream, Fossil',
                          'CCS Stream, Biogenic'
                          ]), : ].reset_index().copy()
@@ -1118,7 +1126,7 @@ else :
     #for yr in production_year:
         tempdf['Production Year'] = yr
         LCA_items = pd.concat([LCA_items, tempdf], ignore_index=True).copy()
-    cost_items.reset_index(inplace=True)
+    LCA_items.reset_index(drop=True, inplace=True)
 
 # format LCI
 corr_itemized_LCA = fmt_GREET_LCI(corr_itemized_LCA)
@@ -1151,9 +1159,9 @@ if decarb_electric_grid:
         decarb_elec_CI.rename(columns={'LCA_value_replace' : 'LCIA_estimate'}, inplace=True)
     
     # Creating mapping columns
-    decarb_elec_CI[['Parameter_B', 'Stream_Flow', 'Stream_LCA']] = ['Input Supply Chains', 'Electricity', 'Stationary Use: U.S. Mix']
+    decarb_elec_CI[['Parameter_B', 'Stream_Flow', 'Stream_LCA']] = ['Conversion: Input Supply Chains', 'Electricity', 'Stationary Use: U.S. Mix']
     tempdf = decarb_elec_CI.copy()
-    tempdf['Parameter_B'] = 'Coproducts'
+    tempdf['Parameter_B'] = 'Coproduct Credits'
     decarb_elec_CI = pd.concat([decarb_elec_CI, tempdf], ignore_index=True)
     
     # replace CIs in LCA data frame
@@ -1211,15 +1219,20 @@ LCA_items['Total LCA: Unit (numerator)'] = LCA_items['LCA: Unit (numerator)']
 LCA_items['Total LCA: Unit (denominator)'] = LCA_items['Total Flow: Unit (denominator)']
 
 # If co-product, LCA is credited by displacement
-LCA_items.loc[LCA_items['Parameter_B'].isin(['Coproducts']), 'Total LCA'] = \
-    LCA_items.loc[LCA_items['Parameter_B'].isin(['Coproducts']), 'Total LCA'] * -1
+LCA_items.loc[LCA_items['Parameter_B'].isin(['Coproduct Credits']), 'Total LCA'] = \
+    LCA_items.loc[LCA_items['Parameter_B'].isin(['Coproduct Credits']), 'Total LCA'] * -1
 
 # Merge biofuel yield data by Case/Scenario
 LCA_items = pd.merge(LCA_items, biofuel_yield2, how='left', on='Case/Scenario').reset_index(drop=True)
 
-# based on energy allocation choice, all components are allocated per 'End Use' product
+# based on energy allocation choice, all components are allocated per 'Fuel Use' product
 
-if allocation_type == 'Hybrid':    
+LCA_items[['Flow', 'Total Flow', 'Total LCA']] = LCA_items[['Flow', 'Total Flow', 'Total LCA']].convert_dtypes()
+
+if allocation_type == 'Energy':
+    pass
+
+elif allocation_type == 'Hybrid':    
     for colm in ['Flow', 'Total Flow', 'Total LCA']:    
         LCA_items.loc[[isinstance(x, numbers.Number) for x in LCA_items[colm]], colm] =\
                        LCA_items.loc[[isinstance(x, numbers.Number) for x in LCA_items[colm]], colm].multiply(
@@ -1240,14 +1253,14 @@ if harmonize_CCS_fossil:
     
     # Select rows with selected cases and Parameter_B in ['CCS Stream', 'Combustion, Fossil']
     tmp_LCA_items = LCA_items.loc[LCA_items['Case/Scenario'].isin(CCS_cases) &
-                                  LCA_items['Parameter_B'].isin(['CCS Stream, Fossil', 'Combustion Emissions, Fossil']), :]
+                                  LCA_items['Parameter_B'].isin(['CCS Stream, Fossil', 'Conversion: Combustion Ems, Fossil']), :]
     
     # Remove selected rows from LCA_items
     LCA_items = LCA_items.loc[~(LCA_items['Case/Scenario'].isin(CCS_cases) &
-                                  LCA_items['Parameter_B'].isin(['CCS Stream, Fossil', 'Combustion Emissions, Fossil'])), :].copy()
+                                  LCA_items['Parameter_B'].isin(['CCS Stream, Fossil', 'Conversion: Combustion Ems, Fossil'])), :].copy()
     
     tmp_LCA_items_CCS_Stream = tmp_LCA_items.loc[tmp_LCA_items['Parameter_B'].isin(['CCS Stream, Fossil']), : ]
-    tmp_LCA_items_Combust = tmp_LCA_items.loc[tmp_LCA_items['Parameter_B'].isin(['Combustion Emissions, Fossil']), :]
+    tmp_LCA_items_Combust = tmp_LCA_items.loc[tmp_LCA_items['Parameter_B'].isin(['Conversion: Combustion Ems, Fossil']), :]
     
     # Merge combustion emissions if-any to CCS flows
     tmp_LCA_items_CCS_Stream = pd.merge(
@@ -1348,7 +1361,7 @@ LCA_items = pd.concat([tmp_LCA_items, LCA_items]).reset_index(drop=True).copy()
 LCA_items_agg = LCA_items.copy()
 
 if consider_coproduct_env_credit == False:
-    LCA_items_agg = LCA_items_agg.loc[~LCA_items_agg['Parameter_B'].isin(['Coproducts']), : ]
+    LCA_items_agg = LCA_items_agg.loc[~LCA_items_agg['Parameter_B'].isin(['Coproduct Credits']), : ]
 
 # Calculate net LCA metric per pathway
 LCA_items_agg = LCA_items_agg.groupby(['Case/Scenario', 'LCA_metric', 
@@ -1476,7 +1489,7 @@ MAC_df['Adjusted Cost_replaced fuel'] = \
 if decarb_electric_grid: 
     biopower_sc = MAC_df.loc[MAC_df['Case/Scenario'].isin(biopower_scenarios), :]
     MAC_df = MAC_df.loc[~(MAC_df['Case/Scenario'].isin(biopower_scenarios)), :]
-    tempdf = decarb_elec_CI.loc[decarb_elec_CI['Parameter_B'] == 'Coproducts',
+    tempdf = decarb_elec_CI.loc[decarb_elec_CI['Parameter_B'] == 'Coproduct Credits',
                                 ['Year',
                                  'LCA: Unit (numerator)',
                                  'LCA: Unit (denominator)',
@@ -1707,6 +1720,18 @@ print( '    Elapsed time: ' + str(datetime.now() - init_time))
 if write_to_dashboard:
     print('Writing to Dashboard ..')
     
+    pathway_names.rename(columns={'process|feedstock|product yield' : 'Pathway Short Form'}, inplace=True)
+    LCA_items = pd.merge(LCA_items, pathway_names[['Case/Scenario', 'Pathway Short Form']],
+                         how='left', on='Case/Scenario').reset_index(drop=True)
+    cost_items = pd.merge(cost_items, pathway_names[['Case/Scenario', 'Pathway Short Form']],
+                         how='left', on='Case/Scenario').reset_index(drop=True)
+    LCA_items_agg = pd.merge(LCA_items_agg, pathway_names[['Case/Scenario', 'Pathway Short Form']],
+                         how='left', on='Case/Scenario').reset_index(drop=True)
+    MFSP_agg = pd.merge(MFSP_agg, pathway_names[['Case/Scenario', 'Pathway Short Form']],
+                         how='left', on='Case/Scenario').reset_index(drop=True)
+    MAC_df = pd.merge(MAC_df, pathway_names[['Case/Scenario', 'Pathway Short Form']],
+                         how='left', on='Case/Scenario').reset_index(drop=True)
+    
     #with ExcelApp() as app: 
     with xw.App(visible=False) as app: 
         
@@ -1720,7 +1745,8 @@ if write_to_dashboard:
             sheet_1 = wb.sheets['lca']
             sheet_1.range(str(4) + ':1048576').clear_contents()
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
-                LCA_items_agg[['Case/Scenario',
+                LCA_items_agg[['Pathway Short Form',
+                               'Case/Scenario',
                                'LCA_metric',
                                'Total LCA: Unit (numerator)',
                                'Total LCA: Unit (denominator)',
@@ -1739,6 +1765,7 @@ if write_to_dashboard:
                       'param_dist',
                       'dist_option',
                       'param_value',
+                      'Pathway Short Form',
                       'Case/Scenario',	
                       'Production Year',                      
                       'MFSP replacing fuel: Unit (numerator)',
@@ -1759,6 +1786,7 @@ if write_to_dashboard:
                     'param_dist',
                     'dist_option',
                     'param_value',
+                    'Pathway Short Form',
                     'Case/Scenario',
                     'Biofuel Stream_LCA',
                     #'Feedstock',
@@ -1799,7 +1827,8 @@ if write_to_dashboard:
             sheet_1 = wb.sheets['lca_itm']
             sheet_1.range(str(4) + ':1048576').clear_contents()
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
-                LCA_items[['Case/Scenario', 
+                LCA_items[['Pathway Short Form',
+                           'Case/Scenario', 
                            'Parameter_A', 
                            'Parameter_B', 
                            'Stream_Flow', 
@@ -1842,6 +1871,7 @@ if write_to_dashboard:
                              'param_dist',
                              'dist_option',
                              'param_value',
+                             'Pathway Short Form',
                              'Case/Scenario', 
                              'Parameter_A', 
                              'Parameter_B', 
@@ -1885,7 +1915,8 @@ if write_to_dashboard:
             #sheet_1 = wb.sheets['lca']            
             wb.sheets['lca'].range(str(4) + ':1048576').clear_contents()
             wb.sheets['lca']['A4'].options(index=False, chunksize=10000).value =\
-                LCA_items_agg[['Case/Scenario',
+                LCA_items_agg[['Pathway Short Form',
+                               'Case/Scenario',
                                'LCA_metric',
                                'Total LCA: Unit (numerator)',
                                'Total LCA: Unit (denominator)',
@@ -1895,7 +1926,8 @@ if write_to_dashboard:
             #sheet_1 = wb.sheets['mfsp']
             wb.sheets['mfsp'].range(str(4) + ':1048576').clear_contents()
             wb.sheets['mfsp']['A4'].options(index=False, chunksize=10000).value =\
-            MFSP_agg[['Case/Scenario',	
+            MFSP_agg[['Pathway Short Form',
+                      'Case/Scenario',	
                       'Production Year', 
                       'MFSP replacing fuel: Unit (numerator)',
                       'MFSP replacing fuel: Unit (denominator)',
@@ -1906,7 +1938,8 @@ if write_to_dashboard:
             #sheet_1 = wb.sheets['mac']
             wb.sheets['mac'].range(str(4) + ':1048576').clear_contents()
             wb.sheets['mac']['A4'].options(index=False, chunksize=10000).value =\
-            MAC_df[['Case/Scenario',
+            MAC_df[['Pathway Short Form',
+                    'Case/Scenario',
                     'Biofuel Stream_LCA',
                     #'Feedstock',
                     'Production Year',
@@ -1946,7 +1979,8 @@ if write_to_dashboard:
             #sheet_1 = wb.sheets['lca_itm']
             wb.sheets['lca_itm'].range(str(4) + ':1048576').clear_contents()
             wb.sheets['lca_itm']['A4'].options(index=False, chunksize=10000).value =\
-                LCA_items[['Case/Scenario', 
+                LCA_items[['Pathway Short Form',
+                           'Case/Scenario', 
                            'Parameter_A', 
                            'Parameter_B', 
                            'Stream_Flow', 
@@ -1980,7 +2014,8 @@ if write_to_dashboard:
             #sheet_1 = wb.sheets['mfsp_itm']
             wb.sheets['mfsp_itm'].range(str(4) + ':1048576').clear_contents()
             wb.sheets['mfsp_itm']['A4'].options(index=False, chunksize=10000).value =\
-                 cost_items[['Case/Scenario', 
+                 cost_items[['Pathway Short Form',
+                             'Case/Scenario', 
                              'Parameter_A', 
                              'Parameter_B', 
                              'Stream_Flow',
@@ -2031,11 +2066,12 @@ if write_to_dashboard:
                      'LCA_metric']]
         
         # resetting xlwings parameters before exiting
-        wb.app.screen_updating = True
+        wb.app.screen_updating = True   
         
         #wb.app.calculate()
         wb.save()
-        wb.close()
+        wb.close()     
+          
         
 print( '    Elapsed time: ' + str(datetime.now() - init_time)) 
 
