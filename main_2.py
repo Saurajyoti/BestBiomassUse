@@ -1302,8 +1302,8 @@ if harmonize_CCS_fossil:
                                         left_on = ['Case/Scenario', 'Parameter_B', 'Production Year', 'Year'],
                                         right_on = ['Case/Scenario', 'Parameter_B_combustion, fossil', 'Production Year', 'Year']).reset_index(drop=True)
     
-    tmp_LCA_items.loc[tmp_LCA_items['Parameter_B_combustion, fossil'].isin(['Combustion Emissions, Fossil']), 'Total LCA'] =\
-        tmp_LCA_items.loc[tmp_LCA_items['Parameter_B_combustion, fossil'].isin(['Combustion Emissions, Fossil']), 'Total LCA_combustion, fossil_net']
+    tmp_LCA_items.loc[tmp_LCA_items['Parameter_B_combustion, fossil'].isin(['Conversion: Combustion Ems, Fossil']), 'Total LCA'] =\
+        tmp_LCA_items.loc[tmp_LCA_items['Parameter_B_combustion, fossil'].isin(['Conversion: Combustion Ems, Fossil']), 'Total LCA_combustion, fossil_net']
     
     tmp_LCA_items = tmp_LCA_items.merge(tmp_LCA_items_CCS_Stream[['Case/Scenario', 'Parameter_B_CCS, fossil', 'Production Year', 'Year', 'Total LCA_CCS, fossil_net']], 
                                         how='left',
