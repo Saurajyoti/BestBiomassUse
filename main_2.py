@@ -49,7 +49,7 @@ f_corr_fuel_replaced_GREET_pathway = 'corr_fuel_replaced_GREET_pathway.csv'
 f_corr_GGE_GREET_fuel_replaced = 'corr_GGE_GREET_fuel_replaced.csv'
 f_corr_GGE_GREET_fuel_replacing = 'corr_GGE_GREET_fuel_replacing.csv'
 f_corr_itemized_LCI = 'corr_LCI_GREET_temporal_03_24_2023.csv'
-f_corr_replaced_EIA_mfsp = 'corr_replaced_EIA_mfsp.csv'
+f_corr_replaced_EIA_mfsp = 'corr_replaced_mfsp.csv'
 
 f_Decarb_Model = 'US Decarbonization Model - Dashboard.xlsx'
 
@@ -59,8 +59,8 @@ f_Decarb_Model = 'US Decarbonization Model - Dashboard.xlsx'
 # Year(s) of production defined as a list:
 # If single year: [year]
 # If multiple year: [first year, last year], inclusive of both the bounds
-#production_year = [2022]
-production_year = [2022, 2050]
+production_year = [2022]
+#production_year = [2022, 2050]
 
 # cost adjustment year, to which inflation will be adjusted
 cost_year = 2016
@@ -404,7 +404,7 @@ def fmt_GREET_LCI(df):
     
     # testing only
     #df = corr_itemized_LCA.copy()   
-    #df = df.loc[(df['Parameter_B'] == 'Coproduct Credits') & (df['Stream_Flow'] == 'Coal'), : ].reset_index(drop=True)
+    #df = df.loc[(df['Parameter_B'] == 'Avoided Ems Credits') & (df['Stream_Flow'] == 'Sludge (dry basis), Counterfactual'), : ].reset_index(drop=True)
     #df = df.loc[(df['Stream_Flow'] == 'Coal') & (df['Stream_LCA'] == 'Coal to Power Plants, IGCC turbine'), : ].reset_index(drop=True)
     
     
@@ -470,7 +470,7 @@ def fmt_GREET_LCI(df):
         'Total emissions__CH4',
         'Total emissions__N2O',
         'Total emissions__CO2',
-        'Total emissions__CO2 (w/ C in VOC & CO)',
+        #'Total emissions__CO2 (w/ C in VOC & CO)',
         #'Total emissions__GHGs',
         'Total emissions__Biogenic CH4',
         #'Total emissions__Biogenic CO2'
@@ -528,8 +528,8 @@ def fmt_GREET_LCI(df):
         if (r['Total emissions__CO2'] != 0) & always_calc_CO2_w_VOC_CO :
             df.loc[idx, 'Total emissions__CO2 (w/ C in VOC & CO)'] =\
                 r['Total emissions__CO2'] +\
-                r['Total emissions__VOC'] / dict_frac_C['Carbon ratio of VOC'] * dict_frac_C['Carbon ratio of CO2'] +\
-                r['Total emissions__CO'] / dict_frac_C['Carbon ratio of CO'] * dict_frac_C['Carbon ratio of CO2']
+                r['Total emissions__VOC'] * dict_frac_C['Carbon ratio of VOC'] / dict_frac_C['Carbon ratio of CO2'] +\
+                r['Total emissions__CO'] * dict_frac_C['Carbon ratio of CO'] / dict_frac_C['Carbon ratio of CO2']
     
     # Calculate GHG metric
     df['GHG'] = df['Total emissions__CO2 (w/ C in VOC & CO)'] +\
@@ -540,7 +540,7 @@ def fmt_GREET_LCI(df):
                 df['Total emissions__NOx'] * dict_gco2e['NOx'] +\
                 df['Total emissions__BC'] * dict_gco2e['BC'] +\
                 df['Total emissions__OC'] * dict_gco2e['OC'] -\
-                df['Total emissions__Biogenic CH4'] / dict_frac_C['Carbon ratio of CO2'] * dict_frac_C['Carbon ratio of CH4']       
+                df['Total emissions__Biogenic CH4'] * dict_frac_C['Carbon ratio of CH4']  / dict_frac_C['Carbon ratio of CO2']      
     
     df = df[[  'Parameter_B', 
                'Stream_Flow', 
@@ -591,18 +591,57 @@ def ef_calc_co2e(df):
 
 init_time = datetime.now()
 
-df_econ = pd.read_excel(input_path_model + '/' + f_model, sheet_name = sheet_TEA, header = 3, index_col=None)
+df_econ = pd.read_excel(input_path_model + '/' + f_model, sheet_name = sheet_TEA, header = 3, index_col=None,
+                        dtype={'Case/Scenario' : str,
+                               'Parameter_A' : str,
+                               'Parameter_B' : str,
+                               'Stream_Flow' : str,
+                               'Stream_LCA' : str,
+                               'Energy_alloc_primary_fuel' : str,
+                               'Flow: Unit (numerator)' : str,
+                               'Flow: Unit (denominator)' : str,
+                               'Flow' : float,
+                               'Cost Item' : str,
+                               'Cost: Unit (numerator)' : str,
+                               'Cost: Unit (denominator)' : str,
+                               'Unit Cost' : float,
+                               'Operating Time: Unit' : str,
+                               'Operating Time' : float,
+                               'Operating Time (%)' : float,
+                               'Total Cost: Unit (numerator)' : str,
+                               'Total Cost: Unit (denominator)' : str,
+                               'Total Cost' : float,
+                               'Total Flow: Unit (numerator)' : str,
+                               'Total Flow: Unit (denominator)' : str,
+                               'Total Flow' : float,
+                               'Cost Year' : float},
+                        na_values=['-'])
 
 pathway_names = pd.read_excel(input_path_model + '/' + f_model, sheet_name = sheet_name_lists, header = 3, usecols = 'B:F')
 
-df_econ = df_econ[['Case/Scenario', 'Parameter_A',
-       'Parameter_B', 'Stream_Flow', 'Stream_LCA', 'Energy_alloc_primary_fuel',
-       'Flow: Unit (numerator)', 'Flow: Unit (denominator)', 'Flow', 'Cost Item',
-       'Cost: Unit (numerator)', 'Cost: Unit (denominator)', 'Unit Cost',
-       'Operating Time: Unit', 'Operating Time', 'Operating Time (%)',
-       'Total Cost: Unit (numerator)', 'Total Cost: Unit (denominator)',
-       'Total Cost', 'Total Flow: Unit (numerator)',
-       'Total Flow: Unit (denominator)', 'Total Flow', 'Cost Year']]
+df_econ = df_econ[['Case/Scenario',
+       'Parameter_A',
+       'Parameter_B',
+       'Stream_Flow',
+       'Stream_LCA',
+       'Energy_alloc_primary_fuel',
+       'Flow: Unit (numerator)',
+       'Flow: Unit (denominator)',
+       'Flow',
+       'Cost Item',
+       'Cost: Unit (numerator)',
+       'Cost: Unit (denominator)',
+       'Unit Cost',
+       'Operating Time: Unit',
+       'Operating Time',
+       'Operating Time (%)',
+       'Total Cost: Unit (numerator)',
+       'Total Cost: Unit (denominator)',
+       'Total Cost',
+       'Total Flow: Unit (numerator)',
+       'Total Flow: Unit (denominator)',
+       'Total Flow',
+       'Cost Year']]
 
 # Biopower pathways
 biopower_scenarios=[
@@ -772,7 +811,7 @@ corr_GGE_GREET_fuel_replacing = pd.read_csv(input_path_corr + '/' + f_corr_GGE_G
 
 corr_itemized_LCA = pd.read_csv(input_path_corr + '/' + f_corr_itemized_LCI, dtype={8:'str'}, header=0, index_col=0)
 
-corr_replaced_EIA_mfsp = pd.read_csv(input_path_corr + '/' + f_corr_replaced_EIA_mfsp, header=3, index_col=None) 
+corr_replaced_mfsp = pd.read_csv(input_path_corr + '/' + f_corr_replaced_EIA_mfsp, header=3, index_col=None) 
 if consider_variability_study:
     corr_params_variability =  pd.read_excel(input_path_model + '/' + f_model, 
                                              sheet_name=sheet_param_variability, 
@@ -1227,7 +1266,7 @@ LCA_items = pd.merge(LCA_items, biofuel_yield2, how='left', on='Case/Scenario').
 
 # based on energy allocation choice, all components are allocated per 'Fuel Use' product
 
-LCA_items[['Flow', 'Total Flow', 'Total LCA']] = LCA_items[['Flow', 'Total Flow', 'Total LCA']].convert_dtypes()
+#LCA_items[['Flow', 'Total Flow', 'Total LCA']] = LCA_items[['Flow', 'Total Flow', 'Total LCA']].convert_dtypes()
 
 if allocation_type == 'Energy':
     pass
@@ -1382,7 +1421,7 @@ if save_interim_files == True:
 # Merge aggregrated LCA metric to MFSP tables
 MAC_df = pd.merge(MFSP_agg, LCA_items_agg, on=['Case/Scenario', 'Production Year']).reset_index(drop=True)
 
-# map replaced fuels with replacing fuels
+# map replaced fuels to replacing fuels
 MAC_df = pd.merge(MAC_df, corr_replaced_replacing_fuel, how = 'left', 
                on=['Case/Scenario', 'Biofuel Stream_LCA']).reset_index(drop=True) 
 
@@ -1435,55 +1474,95 @@ MAC_df.drop(['GREET Pathway'], axis=1, inplace=True)
 
 # Map MFSP of replaced fuels
 MAC_df = pd.merge(MAC_df,
-                  corr_replaced_EIA_mfsp,
+                  corr_replaced_mfsp,
                   how='left',
                   on=['Replaced Fuel']).reset_index(drop=True)
 MAC_df = pd.merge(MAC_df, 
                   EIA_price[['Year', 'Value', 'Energy carrier', 'Cost basis', 'Unit']],
                   how='left', 
-                  left_on=['Production Year', 'EIA_fuel_mapping_for_price'], 
+                  left_on=['Production Year', 'Fuel_mapping_for_price'], 
                   right_on=['Year', 'Energy carrier']).reset_index(drop=True)
 MAC_df.rename(columns={'Value' : 'Cost_replaced fuel',
                        'Cost basis' : 'Cost basis_replaced fuel'}, inplace=True)
 
 MAC_df[['Year_Cost_replaced fuel', 'Unit Cost_replaced fuel (Numerator)']] = MAC_df['Unit'].str.split(' ', n=1, expand = True)
 
-MAC_df[['Unit Cost_replaced fuel (Numerator)', 
-        'Unit Cost_replaced fuel (Denominator)']] = \
+MAC_df[['Cost replaced fuel: Unit (Numerator)', 
+        'Cost replaced fuel: Unit (Denominator)']] = \
       MAC_df['Unit Cost_replaced fuel (Numerator)'].str.split('/', n=1, expand = True)
 
-MAC_df.rename(columns={'Unit Cost_replaced fuel (Numerator)' : 'Cost replaced fuel: Unit (Numerator)', 
-                       'Unit Cost_replaced fuel (Denominator)' : 'Cost replaced fuel: Unit (Denominator)'}, inplace=True)
+MAC_df.drop(columns=['Unit Cost_replaced fuel (Numerator)', 'Energy carrier', 'Unit', 'Cost basis_replaced fuel'], inplace=True)
 
-MAC_df.drop(['Energy carrier', 'Unit'], axis=1, inplace=True)
-
-"""
-# Drop off data for which GREET pathways are not mapped until now
-missing_GREET_mappings = MAC_df.loc[MAC_df['GREET Pathway for replaced fuel'].isna(), ['Case/Scenario', 'Biofuel Stream_LCA', 'Feedstock', 'Replaced Fuel']].drop_duplicates()
-if missing_GREET_mappings.shape[0] > 0:
-    print("Warning: The following pathways are currently dropped as their mappings to GREET CIs are not available as input ..")
-    print(missing_GREET_mappings)
-MAC_df = MAC_df.loc[~ MAC_df['GREET Pathway for replaced fuel'].isna(), :].copy()
-
-
-# Assumption: non-liquid final products are skipped and not credited at the moment
-# If classified as 'Coproducts', displacement based credit is considered for LCA and price credit is considered for MFSP 
-MAC_df = MAC_df.loc[~ MAC_df['MFSP replacing fuel: Unit (denominator)'].isin(['lb']), : ].copy()
-
-# dropping rows with no data on cost replaced fuel
-MAC_df = MAC_df.loc[~MAC_df['Cost_replaced fuel'].isna(), :]
-"""
 #%%
 
 # Step: Correct inflation of replacing fuel cost
 
-MAC_df['Adjusted Cost Year'] = cost_year
+#MAC_df['Adjusted Cost Year'] = cost_year
 MAC_df['Year_Cost_replaced fuel'] = pd.to_numeric(MAC_df['Year_Cost_replaced fuel'])
 MAC_df['Adjusted Cost_replaced fuel'] = \
     MAC_df.apply(lambda x: cpi.inflate(x['Cost_replaced fuel'], x['Year_Cost_replaced fuel'], to=x['Adjusted Cost Year']), axis=1)
     
 #%%
 
+# Step: Unit check and conversions
+
+# Unit check for Replaced Fuel
+
+# Unit convert for liquid fuels (fuels except unit of energy kWh)
+tmp_MAC_df = MAC_df.loc[(MAC_df['Cost replaced fuel: Unit (Denominator)'].isin(['kWh'])) |
+                        (MAC_df['Biofuel Stream_LCA'].isin(['Hydrogen'])), :].copy()
+MAC_df = MAC_df.loc[~((MAC_df['Cost replaced fuel: Unit (Denominator)'].isin(['kWh'])) |
+                        (MAC_df['Biofuel Stream_LCA'].isin(['Hydrogen']))), :]
+
+# Map Replaced fuel to 'GREET_Fuel', 'GREET_Fuel type' for conversion to unit of energy
+MAC_df = pd.merge(MAC_df, corr_GGE_GREET_fuel_replaced, how='left', 
+                  left_on=['Replaced Fuel'], 
+                  right_on=['B2B fuel name']).reset_index(drop=True)
+
+MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['GREET_Fuel', 'GREET_Fuel type', 'LHV', 'Unit']].drop_duplicates(), 
+                  how='left', 
+                  on=['GREET_Fuel', 'GREET_Fuel type']).reset_index(drop=True)
+MAC_df[['LHV_numerator', 'LHV_denominator']] = MAC_df['Unit'].str.split('/', n=1, expand=True)
+
+MAC_df.loc[MAC_df['Cost replaced fuel: Unit (Denominator)'] == MAC_df['LHV_denominator'], 'Adjusted Cost_replaced fuel'] =\
+    MAC_df.loc[MAC_df['Cost replaced fuel: Unit (Denominator)'] == MAC_df['LHV_denominator'], 'Adjusted Cost_replaced fuel'] /\
+    MAC_df.loc[MAC_df['Cost replaced fuel: Unit (Denominator)'] == MAC_df['LHV_denominator'], 'LHV']
+
+MAC_df.loc[MAC_df['Cost replaced fuel: Unit (Denominator)'] == MAC_df['LHV_denominator'], 'Cost replaced fuel: Unit (Denominator)'] =\
+    MAC_df.loc[MAC_df['Cost replaced fuel: Unit (Denominator)'] == MAC_df['LHV_denominator'], 'LHV_numerator']
+
+MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']] = \
+    ob_units.unit_convert_df (
+        MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']],
+        Unit='Cost replaced fuel: Unit (Denominator)',
+        Value='Adjusted Cost_replaced fuel',
+        if_unit_numerator=False,
+        if_given_unit=True,
+        given_unit='MJ').copy()
+MAC_df['Adjusted Cost replaced fuel: Unit (Denominator)'] = 'MJ'
+
+MAC_df.drop(columns=['B2B fuel name', 'GREET_Fuel', 'GREET_Fuel type', 'Fuel_mapping_for_price','LHV', 'Unit',
+                     'LHV_numerator', 'LHV_denominator'], inplace=True)
+
+# convert kWh to MJ
+tmp_MAC_df['Adjusted Cost replaced fuel: Unit (Denominator)'] = tmp_MAC_df['Cost replaced fuel: Unit (Denominator)']
+tmp_MAC_df[['Adjusted Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']] = \
+     ob_units.unit_convert_df (
+         tmp_MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']], 
+         Unit='Cost replaced fuel: Unit (Denominator)', 
+         Value='Adjusted Cost_replaced fuel', 
+         if_unit_numerator = False,
+         if_given_unit = True, 
+         given_unit = 'MJ').copy()
+tmp_MAC_df['Adjusted Cost replaced fuel: Unit (Numerator)'] = 'USD'
+
+# Concatenate the data frames
+MAC_df = pd.concat([tmp_MAC_df, MAC_df]).reset_index(drop=True).copy()
+
+MAC_df['Adjusted Cost replaced fuel: Unit (Numerator)'] = 'USD'
+
+
+#%%
 # Step: when decarbonized electric grid is considered, reference CI is updated for biopower pathways
 
 if decarb_electric_grid: 
@@ -1516,145 +1595,6 @@ if decarb_electric_grid:
     
     # Concatenate the data frames
     MAC_df = pd.concat([biopower_sc, MAC_df]).reset_index(drop=True).copy()
-
-
-#%%
-
-# Step: Unit check and conversions
-
-# Unit check for Replaced Fuel
-
-# Unit convert for iquid fuels (fuels except unit of energy kWh)
-tmp_MAC_df = MAC_df.loc[(MAC_df['Cost replaced fuel: Unit (Denominator)'].isin(['kWh'])) |
-                        (MAC_df['Biofuel Stream_LCA'].isin(['Hydrogen'])), :].copy()
-MAC_df = MAC_df.loc[~((MAC_df['Cost replaced fuel: Unit (Denominator)'].isin(['kWh'])) |
-                        (MAC_df['Biofuel Stream_LCA'].isin(['Hydrogen']))), :]
-
-# barrel to gallon
-MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']] = \
-     ob_units.unit_convert_df (
-         MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']], 
-         Unit='Cost replaced fuel: Unit (Denominator)', 
-         Value='Adjusted Cost_replaced fuel', 
-         if_unit_numerator = False,
-         if_given_unit = True, 
-         given_unit = 'gal').copy()
-    
-# Convert fuel cost $/gallon to $/GGE
-# This conversion is done especially if certain calculations in future is required in GGE
-
-# Map Replaced fuel to 'GREET_Fuel', 'GREET_Fuel type' for GGE conversion
-MAC_df = pd.merge(MAC_df, corr_GGE_GREET_fuel_replaced, how='left', 
-                  left_on=['Replaced Fuel'], 
-                  right_on=['B2B fuel name']).reset_index(drop=True)
-
-MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['GREET_Fuel', 'GREET_Fuel type', 'GGE']].drop_duplicates(), 
-                  how='left', 
-                  on=['GREET_Fuel', 'GREET_Fuel type']).reset_index(drop=True)
-MAC_df['Adjusted Cost_replaced fuel'] = MAC_df['Adjusted Cost_replaced fuel'] / MAC_df['GGE']
-MAC_df['Cost replaced fuel: Unit (Denominator)'] = 'GGE'
-MAC_df['Cost replaced fuel: Unit (Numerator)'] = 'USD'
-MAC_df.drop(columns=['GREET_Fuel', 'GREET_Fuel type', 'B2B fuel name', 'GGE'], inplace=True)
-
-# Convert fuel cost from $ per GGE to $ per MJ
-# extract CI of gasoline
-tempdf = ob_units.hv_EIA.loc[(ob_units.hv_EIA['Energy carrier'] == 'Gasoline') &
-                              (ob_units.hv_EIA['Energy carrier type'] == 'Petroleum Gasoline'), ['LHV', 'Unit']]
-# convert unit
-tempdf[['unit_numerator', 'unit_denominator']] = tempdf['Unit'].str.split('/', n=1, expand=True)
-tempdf.drop(columns=['Unit'], inplace=True)
-tempdf[['unit_numerator', 'LHV']] = \
-    ob_units.unit_convert_df (
-        tempdf[['unit_numerator', 'LHV']],
-        Unit='unit_numerator',
-        Value='LHV',
-        if_unit_numerator=True,
-        if_given_unit=True,
-        given_unit='MJ').copy()
-tempdf['unit_denominator'] = 'GGE'
-# merge with MAC df for unit conversion
-MAC_df = pd.merge(MAC_df, tempdf, how='left', 
-                  left_on='Cost replaced fuel: Unit (Denominator)', 
-                  right_on='unit_denominator').reset_index(drop=True)
-MAC_df['Adjusted Cost_replaced fuel'] = MAC_df['Adjusted Cost_replaced fuel']/MAC_df['LHV'] # unit: $/MJ
-MAC_df['Adjusted Cost replaced fuel: Unit (Denominator)'] = MAC_df['unit_numerator']
-MAC_df['Adjusted Cost replaced fuel: Unit (Numerator)'] = 'USD'
-MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
-
-# convert kWh to MJ
-tmp_MAC_df['Adjusted Cost replaced fuel: Unit (Denominator)'] = tmp_MAC_df['Cost replaced fuel: Unit (Denominator)']
-tmp_MAC_df[['Adjusted Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']] = \
-     ob_units.unit_convert_df (
-         tmp_MAC_df[['Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel']], 
-         Unit='Cost replaced fuel: Unit (Denominator)', 
-         Value='Adjusted Cost_replaced fuel', 
-         if_unit_numerator = False,
-         if_given_unit = True, 
-         given_unit = 'MJ').copy()
-tmp_MAC_df['Adjusted Cost replaced fuel: Unit (Numerator)'] = 'USD'
-
-# Concatenate the data frames
-MAC_df = pd.concat([tmp_MAC_df, MAC_df]).reset_index(drop=True).copy()
-
-# Unit check for Replacing Fuel
-
-# $/gal to $/GGE
-# Map Replacing fuel to 'GREET_Fuel', 'GREET_Fuel type' for GGE conversion
-# =============================================================================
-# MAC_df = pd.merge(MAC_df, corr_GGE_GREET_fuel_replacing, how='left', 
-#                   left_on=['Biofuel Stream_LCA'], 
-#                   right_on=['B2B fuel name']).reset_index(drop=True)
-#     
-# MAC_df = pd.merge(MAC_df, ob_units.hv_EIA[['GREET_Fuel', 'GREET_Fuel type', 'GGE']].drop_duplicates(), 
-#                   how='left', 
-#                   on=['GREET_Fuel', 'GREET_Fuel type']).reset_index(drop=True)
-# MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'gal', 'MFSP replacing fuel'] = \
-#     MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'gal', 'MFSP replacing fuel'] / \
-#     MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'gal', 'GGE']
-# MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'gal', 'MFSP replacing fuel: Unit (denominator)'] = 'GGE'
-# MAC_df.drop(columns=['GREET_Fuel', 'GREET_Fuel type', 'B2B fuel name', 'GGE'], inplace=True)
-# 
-# # Convert fuel cost from $ per GGE to $ per MJ
-# # extract CI of gasoline
-# tempdf = ob_units.hv_EIA.loc[(ob_units.hv_EIA['Energy carrier'] == 'Gasoline') &
-#                              (ob_units.hv_EIA['Energy carrier type'] == 'Petroleum Gasoline'), ['LHV', 'Unit']]
-# # convert unit
-# tempdf[['unit_numerator', 'unit_denominator']] = tempdf['Unit'].str.split('/', n=1, expand=True)
-# tempdf.drop(columns=['Unit'], inplace=True)
-# tempdf[['unit_numerator', 'LHV']] = \
-#     ob_units.unit_convert_df (
-#         tempdf[['unit_numerator', 'LHV']],
-#         Unit='unit_numerator',
-#         Value='LHV',
-#         if_unit_numerator=True,
-#         if_given_unit=True,
-#         given_unit='MJ').copy()
-# tempdf['unit_denominator'] = 'GGE'
-# # merge with MAC df for unit conversion
-# MAC_df = pd.merge(MAC_df, tempdf, how='left', 
-#                   left_on='MFSP replacing fuel: Unit (denominator)', 
-#                   right_on='unit_denominator').reset_index(drop=True)
-# MAC_df['MFSP replacing fuel'] = MAC_df['MFSP replacing fuel']/MAC_df['LHV'] # unit: $/MJ
-# MAC_df.loc[MAC_df['MFSP replacing fuel: Unit (denominator)'] == 'GGE', 'MFSP replacing fuel: Unit (denominator)'] = \
-#     MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'unit_numerator']
-# 
-# MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'Total LCA'] = \
-#     MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'Total LCA']/MAC_df['LHV'] # unit: g/MJ
-# MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'Total LCA: Unit (denominator)'] = \
-#     MAC_df.loc[MAC_df['Total LCA: Unit (denominator)'] == 'GGE', 'unit_numerator']
-#     
-# MAC_df.drop(columns=['LHV', 'unit_numerator', 'unit_denominator'], inplace=True)
-# =============================================================================
-
-# unit check for CI replaced fuel
-MAC_df[['CI replaced fuel: Unit (Denominator)', 'CI replaced fuel']] = \
-    ob_units.unit_convert_df (
-        MAC_df[['CI replaced fuel: Unit (Denominator)', 'CI replaced fuel']],
-        Unit='CI replaced fuel: Unit (Denominator)',
-        Value='CI replaced fuel',
-        if_unit_numerator=False,
-        if_given_unit=True,
-        given_unit='MJ').copy()
 
 #%%
 # Step: baseline check for MAC calculations
@@ -1806,9 +1746,7 @@ if write_to_dashboard:
                     'CI replaced fuel: Unit (Denominator)',
                     'CI replaced fuel',
                     'Metric_replaced fuel',
-                    'EIA_fuel_mapping_for_price',
-                    'Year_Cost_replaced fuel',
-                    'Cost basis_replaced fuel',
+                    'Cost_replaced fuel', 
                     'Year_Cost_replaced fuel',
                     'Cost replaced fuel: Unit (Numerator)',
                     'Cost replaced fuel: Unit (Denominator)',
@@ -1957,10 +1895,8 @@ if write_to_dashboard:
                     'CI replaced fuel: Unit (Numerator)',
                     'CI replaced fuel: Unit (Denominator)',
                     'CI replaced fuel',
-                    'Metric_replaced fuel',
-                    'EIA_fuel_mapping_for_price',
-                    'Year_Cost_replaced fuel',
-                    'Cost basis_replaced fuel',
+                    'Metric_replaced fuel',                    
+                    'Cost_replaced fuel', 
                     'Year_Cost_replaced fuel',
                     'Cost replaced fuel: Unit (Numerator)',
                     'Cost replaced fuel: Unit (Denominator)',

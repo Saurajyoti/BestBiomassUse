@@ -75,7 +75,7 @@ class GREET_LCI_import:
 
 if __name__ == '__main__':
     
-    model_path_prefix = 'C:/Users/skar/Box/saura_self/GREET_2022'
+    model_path_prefix = 'C:/Users/skar/Box/saura_self/GREET/GREET_2022'
     file_model = 'GREET1_2022.xlsm'
     sheet_input = 'Inputs'
     
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     file_save_sim = 'corr_LCI_GREET_temporal_03_24_2023.csv'   
     
     start_year = 2022
-    end_year = 2050
+    end_year = 2022
     increment = 1
     
     obj = GREET_LCI_import(model_path_prefix, file_model, sheet_input, 
