@@ -63,7 +63,7 @@ f_corr_fuel_replaced_GREET_pathway = 'corr_fuel_replaced_GREET_pathway.csv'
 # f_corr_fuel_replacing_GREET_pathway = 'corr_fuel_replacing_GREET_pathway.csv'
 f_corr_GGE_GREET_fuel_replaced = 'corr_GGE_GREET_fuel_replaced.csv'
 f_corr_GGE_GREET_fuel_replacing = 'corr_GGE_GREET_fuel_replacing.csv'
-f_corr_itemized_LCI = 'corr_LCI_GREET_temporal_03_24_2023.csv'
+f_corr_itemized_LCI = 'corr_LCI_GREET_temporal_11_15_2023.csv'
 f_corr_replaced_EIA_mfsp = 'corr_replaced_mfsp.csv'
 
 f_Decarb_Model = 'US Decarbonization Model - Dashboard.xlsx'
@@ -226,7 +226,8 @@ def fmt_GREET_LCI(df):
             'Energy Use: mmBtu per ton',
             'Energy Consumption: Btu/mmBtu of fuel transported',
             'Energy use: Btu/gal treated',
-            'Total energy, Btu'
+            'Total energy, Btu',
+            'Energy Use: MJ per MJ'
         ],
 
         'Water consumption': [
@@ -242,7 +243,8 @@ def fmt_GREET_LCI(df):
             'Water consumption: gallons/ton',
             'Water consumption: gallons/mmBtu of fuel transported',
             'Water consumption, gallons/gal treated',
-            'Water consumption, gallons/mmBtu of fuel throughput'
+            'Water consumption, gallons/mmBtu of fuel throughput',
+            'Water consumption: gallons per MJ'
         ],
         'Total emissions': [
             'Total emissions',
@@ -269,7 +271,8 @@ def fmt_GREET_LCI(df):
             'Urban emissions: grams',
             'Urban emissions: grams/mmBtu of fuel throughput, except as noted',
             'Urban Emissions: grams per ton',
-            'Urban emissions: grams/mmBtu of fuel throughput'
+            'Urban emissions: grams/mmBtu of fuel throughput',
+            'Urban Emissions: grams per MJ'
         ],
     }
 

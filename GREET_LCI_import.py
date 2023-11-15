@@ -80,12 +80,12 @@ if __name__ == '__main__':
     sheet_input = 'Inputs'
     
     corr_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Best use of biomass/data/correspondence_files'
-    fcorr_LCI = 'corr_LCI_GREET_pathway_08_16_2023.xlsx'
+    fcorr_LCI = 'corr_LCI_GREET_pathway_11_15_2023.xlsx'
     sheet_corr_LCI = 'GREET_mappings'
     # Please update the range of cells to extract the data if the table changes
     #range_of_output_sheet='A4:L3070'
     
-    file_save_sim = 'corr_LCI_GREET_temporal_03_24_2023.csv'   
+    file_save_sim = 'corr_LCI_GREET_temporal_11_15_2023.csv'   
     
     start_year = 2022
     end_year = 2022
