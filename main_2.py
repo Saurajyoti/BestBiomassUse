@@ -74,8 +74,8 @@ f_Decarb_Model = 'US Decarbonization Model - Dashboard.xlsx'
 # Year(s) of production defined as a list:
 # If single year: [year]
 # If multiple year: [first year, last year], inclusive of both the bounds
-production_year = [2022]
-# production_year = [2022, 2050]
+#production_year = [2022]
+production_year = [2022, 2050]
 
 # cost adjustment year, to which inflation will be adjusted
 cost_year = 2016
@@ -99,7 +99,7 @@ write_to_dashboard = True
 decarb_electric_grid = False
 
 # Scenario of decarb electric grid CI, when different from Decarb Model
-decarb_grid_scenario1 = True
+decarb_grid_scenario1 = False
 decarb_grid_scenario1_values = [1E-20, 140000]  # [min, max], g per mmBtu
 
 # Toggle True to calibrate biopower scenarios baseline (CI and Marginal Cost) for MAC calculations
@@ -244,7 +244,8 @@ def fmt_GREET_LCI(df):
             'Water consumption: gallons/mmBtu of fuel transported',
             'Water consumption, gallons/gal treated',
             'Water consumption, gallons/mmBtu of fuel throughput',
-            'Water consumption: gallons per MJ'
+            'Water consumption: gallons per MJ',
+            
         ],
         'Total emissions': [
             'Total emissions',
@@ -253,10 +254,12 @@ def fmt_GREET_LCI(df):
             'Total emissions: grams/g of material throughput, except as noted',
             'Total Emissions: grams per ton',
             'Total Emissions: grams/mmBtu fuel transported',
+            'Total Emissions: grams/mmBtu of fuel transported',
             'Total emissions: grams/gal treated',
             'Total Emissions: grams/mmBtu of fuel throughput, except as noted',
             'Total emissions: grams',
-            'Total emissions: grams/mmBtu of fuel throughput'
+            'Total emissions: grams/mmBtu of fuel throughput',
+            'Total Emissions: grams per MJ',
         ],
 
         'Urban emissions': [
@@ -417,7 +420,7 @@ def fmt_GREET_LCI(df):
     # testing only
     # df = corr_itemized_LCA.copy()
     # df = df.loc[(df['Parameter_B'] == 'Avoided Ems Credits') & (df['Stream_Flow'] == 'Sludge (dry basis), Counterfactual'), : ].reset_index(drop=True)
-    # df = df.loc[(df['Stream_Flow'] == 'High Octane Gasoline (HOG)') & (df['Stream_LCA'] == 'High Octane Gasoline (HOG)'), : ].reset_index(drop=True)
+    # df = df.loc[(df['Stream_Flow'] == 'Jet Range') & (df['Stream_LCA'] == 'SAF: jet fuel T&D, combustion emissions'), : ].reset_index(drop=True)
 
     # df = df.drop_duplicates().reset_index(drop=True)
 
@@ -638,7 +641,7 @@ df_econ = pd.read_excel(input_path_model + '/' + f_model, sheet_name=sheet_TEA, 
                         na_values=['-'])
 
 pathway_names = pd.read_excel(
-    input_path_model + '/' + f_model, sheet_name=sheet_name_lists, header=3, usecols='B:F')
+    input_path_model + '/' + f_model, sheet_name=sheet_name_lists, header=3, usecols='B:H')
 
 df_econ = df_econ[['Case/Scenario',
                    'Parameter_A',
@@ -1749,6 +1752,8 @@ MAC_df['CI of replaced fuel higher'] = MAC_df['CI replaced fuel'] > MAC_df['Tota
 MAC_df['Cost of replaced fuel higher'] = MAC_df['Adjusted Cost_replaced fuel'] > MAC_df['MFSP replacing fuel']
 MAC_df['Percent CI reduciton'] = (
     (MAC_df['CI replaced fuel'] - MAC_df['Total LCA']) / MAC_df['CI replaced fuel']) * 100
+MAC_df['Percent MFSP increase'] = (
+    (MAC_df['MFSP replacing fuel'] - MAC_df['Adjusted Cost_replaced fuel']) / MAC_df['Adjusted Cost_replaced fuel']) * 100
 
 # Save interim data tables
 if save_interim_files == True:
@@ -1861,8 +1866,8 @@ if write_to_dashboard:
                         'MAC_calculated: Unit (denominator)',
                         'CI of replaced fuel higher',
                         'Cost of replaced fuel higher',
-                        'Percent CI reduciton'
-
+                        'Percent CI reduciton',
+                        'Percent MFSP increase'
                         ]]
 
             sheet_1 = wb.sheets['lca_itm']
@@ -2011,7 +2016,8 @@ if write_to_dashboard:
                         'MAC_calculated: Unit (denominator)',
                         'CI of replaced fuel higher',
                         'Cost of replaced fuel higher',
-                        'Percent CI reduciton'
+                        'Percent CI reduciton',
+                        'Percent MFSP increase'
 
                         ]]
 
@@ -2092,11 +2098,23 @@ if write_to_dashboard:
                             'Itemized MFSP: Unit (denominator)'
                             ]]
 
-        if decarb_electric_grid:
+        # Write out electric grid CI at every run
+        if decarb_electric_grid:            
             # sheet_1 = wb.sheets['EPS_CI']
             wb.sheets['EPS_CI'].range(str(4) + ':1048576').clear_contents()
             wb.sheets['EPS_CI']['A4'].options(index=False, chunksize=10000).value =\
                 decarb_elec_CI[[
+                    'Year',
+                    'LCA: Unit (numerator)',
+                    'LCA: Unit (denominator)',
+                    'LCA_value',
+                    'Parameter_B',
+                    'LCA_metric']]
+        else:
+            tempdf = corr_itemized_LCA.loc[corr_itemized_LCA['Stream_LCA'].isin(['Stationary Use: U.S. Mix']), :]
+            wb.sheets['EPS_CI'].range(str(4) + ':1048576').clear_contents()
+            wb.sheets['EPS_CI']['A4'].options(index=False, chunksize=10000).value =\
+                tempdf[[
                     'Year',
                     'LCA: Unit (numerator)',
                     'LCA: Unit (denominator)',
