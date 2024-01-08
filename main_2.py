@@ -85,8 +85,8 @@ consider_coproduct_env_credit = True
 
 # Toggle variability study
 consider_variability_study = True
-# Either run 'Cost_Item' variabilities or 'Stream_LCA' variabilities so that MAC is calculated with one parameter varied at a time.
-consider_which_variabilities = 'Cost_Item' 
+# Selection to either run 'Cost_Item' or 'Stream_LCA' variabilities so that MAC is calculated with one parameters type varied at a time.
+consider_which_variabilities = 'Stream_LCA' 
 
 # Toggle writing output to interim files
 save_interim_files = True
@@ -1162,7 +1162,7 @@ MFSP_agg.rename(columns={'Itemized MFSP': 'MFSP replacing fuel',
                          'Itemized MFSP: Unit (denominator)': 'MFSP replacing fuel: Unit (denominator)'}, inplace=True)
 
 # Getting back the Fuel Use column
-MFSP_agg = pd.merge(biofuel_yield[['Case/Scenario', 'Biofuel Stream_LCA']].drop_duplicates(),
+MFSP_agg = pd.merge(biofuel_yield[['Case/Scenario', 'Biofuel Stream_LCA', 'Energy_alloc_primary_fuel']].drop_duplicates(),
                     MFSP_agg, how='left', on='Case/Scenario').reset_index(drop=True)
 
 # Save interim data tables
@@ -1543,7 +1543,7 @@ if save_interim_files == True:
 # Step: Merge correspondence tables and GREET emission factors
 
 # Merge aggregrated LCA metric to MFSP tables
-MAC_df = pd.merge(MFSP_agg, LCA_items_agg, on=[
+MAC_df = pd.merge(MFSP_agg.loc[MFSP_agg['Energy_alloc_primary_fuel'] == 'Y', : ], LCA_items_agg, on=[
                   'Case/Scenario', 'Production Year']).reset_index(drop=True)
 
 # map replaced fuels to replacing fuels
