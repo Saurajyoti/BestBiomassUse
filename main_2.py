@@ -1543,8 +1543,9 @@ if save_interim_files == True:
 # Step: Merge correspondence tables and GREET emission factors
 
 # Merge aggregrated LCA metric to MFSP tables
-MAC_df = pd.merge(MFSP_agg.loc[MFSP_agg['Energy_alloc_primary_fuel'] == 'Y', : ], LCA_items_agg, on=[
-                  'Case/Scenario', 'Production Year']).reset_index(drop=True)
+MAC_df = pd.merge(MFSP_agg.loc[MFSP_agg['Energy_alloc_primary_fuel'] == 'Y', : ], 
+                  LCA_items_agg, 
+                  on=['Case/Scenario', 'Production Year']).reset_index(drop=True)
 
 # map replaced fuels to replacing fuels
 MAC_df = pd.merge(MAC_df, corr_replaced_replacing_fuel, how='left',
