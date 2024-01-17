@@ -36,6 +36,7 @@ input_path_GREET = input_path_prefix + '/GREET'
 input_path_EIA_price = input_path_prefix + '/EIA'
 input_path_corr = input_path_prefix + '/correspondence_files'
 input_path_units = input_path_prefix + '/Units'
+input_path_BT16 = input_path_prefix + '/BT16'
 
 # path to the Github local repository
 os.chdir(code_path_prefix)
@@ -68,6 +69,9 @@ f_corr_replaced_EIA_mfsp = 'corr_replaced_mfsp.csv'
 
 f_Decarb_Model = 'US Decarbonization Model - Dashboard.xlsx'
 
+f_BT16_availability = 'B2B resource availability.xlsx'
+sheet_BT16_availability = 'Sheet1'
+
 # Year(s) of production defined as a list:
 # If single year: [year]
 # If multiple year: [first year, last year], inclusive of both the bounds
@@ -84,7 +88,7 @@ consider_coproduct_cost_credit = True
 consider_coproduct_env_credit = True
 
 # Toggle variability study
-consider_variability_study = True
+consider_variability_study = False
 # Selection to either run 'Cost_Item' or 'Stream_LCA' variabilities so that MAC is calculated with one parameters type varied at a time.
 consider_which_variabilities = 'Stream_LCA' 
 
@@ -93,6 +97,9 @@ save_interim_files = True
 
 # Toggle write output to the dashboard workbook
 write_to_dashboard = True
+
+# Toggle scale-up analysis
+consider_scale_up_study = True
 
 # Toggle implementing Decarb Model electric grid carbon intensity
 decarb_electric_grid = False
@@ -869,11 +876,11 @@ cost_items = df_econ.loc[df_econ['Parameter_B'].isin([
     'Cost by process steps']), :].copy()
 
 # Check if cost_items have duplicates
-tempdf = cost_items.duplicated()
-if sum(tempdf):
+tmpdf = cost_items.duplicated()
+if sum(tmpdf):
     print("Warning: Following duplicate rows in cost_items table. Investigate the cause of duplication ..")
-    tempdf = cost_items[tempdf]
-    print(tempdf)
+    tmpdf = cost_items[tmpdf]
+    print(tmpdf)
 
     # Validated duplicates
     # Natural gas for '2021 SOT BDO and Acids pathways'
@@ -929,15 +936,15 @@ else:
 # Step: Merge biofuel flows with Cost Item table
 # For primary fuel products, their biofuel flow are mapped to singular flows rather than aggregrated 'fuel use' energy products
 # This separation helps to add T&D costs for primary product
-tempdf = cost_items.loc[cost_items['Energy_alloc_primary_fuel'].isin(['Y']), : ]
+tmpdf = cost_items.loc[cost_items['Energy_alloc_primary_fuel'].isin(['Y']), : ]
 cost_items = cost_items.loc[~ (cost_items['Energy_alloc_primary_fuel'].isin(['Y']) ), : ]
 
 cost_items = pd.merge(cost_items, biofuel_yield2, how='left', on='Case/Scenario').reset_index(drop=True)
-tempdf = pd.merge(tempdf, biofuel_yield_primary_out[['Case/Scenario', 'Biofuel Stream_LCA', 'Biofuel Flow: Unit (numerator)',
+tmpdf = pd.merge(tmpdf, biofuel_yield_primary_out[['Case/Scenario', 'Biofuel Stream_LCA', 'Biofuel Flow: Unit (numerator)',
        'Biofuel Flow: Unit (denominator)', 'Biofuel Flow']], how='left', 
                   left_on=['Case/Scenario', 'Stream_LCA'],
                   right_on = ['Case/Scenario', 'Biofuel Stream_LCA']).reset_index(drop=True)
-cost_items =  pd.concat([cost_items, tempdf], ignore_index=True).copy()
+cost_items =  pd.concat([cost_items, tmpdf], ignore_index=True).copy()
 cost_items.sort_values(by=['Case/Scenario', 'Parameter_B']).reset_index(drop=True, inplace=True)
 #cost_items.drop(columns=['Energy_alloc_primary_fuel_x', 'Biofuel Stream_LCA', 'Energy_alloc_primary_fuel_y'], inplace=True)
 
@@ -991,7 +998,63 @@ if consider_variability_study & (consider_which_variabilities == 'Cost_Item'):
 
     cost_items = cost_items.merge(
         var_params_tbl, how='left', on='variability_id').reset_index(drop=True)
+    
 
+if consider_scale_up_study:
+    
+    # biomass availability mappings
+    map_bm_types = {
+        'Coal to Power Plants' : '', 
+        'Poplar' : 'Herbaceous', 
+        'Blended woody biomass' : 'Woody',
+        'Forest Residue' : 'Woody', 
+        'Switchgrass' : 'Herbaceous',
+        'Sludge to Biorefinery for HTL' : 'Wastewater sludge',
+        'Logging Residues for CFP, 2020 SOT' : 'Woody',
+        'Clean Pine for CFP, 2020 SOT' : 'Woody',
+        'Manure to Biorefinery for HTL' : 'Manure'
+               }
+    
+    # Read data on biomass availability    
+    bm = pd.read_excel(input_path_BT16 + '/' + f_BT16_availability,
+                       sheet_name=sheet_BT16_availability,
+                       header=17, index_col=None,
+                       usecols="C:K")
+    bm = bm.loc[~bm['Aggregated'].isin(['Total']), : ]
+    bm = bm.melt(['Aggregated'])
+    bm.rename(columns={
+        'Aggregated' : 'bm_types',
+        'variable' : 'bm_cost',
+        'value' : 'qty_dry_bm'}, inplace=True)
+    bm['bm_cost: Unit (numerator)'] = 'USD'
+    bm['bm_cost: Unit (denominator)'] = 'dt'
+    bm['bm_cost: USD year'] = 2014
+    bm['qty_dry_bm: Unit'] = 'MM dt'
+    
+    # Adding cost of T&D for reactor throat price, 40 $/dt
+    bm['bm_cost'] = bm['bm_cost'] + 40
+    
+    unique_bm_costs = bm['bm_cost'].unique()
+    
+    cost_items_temp = cost_items.copy()
+    cost_items = pd.DataFrame(columns=cost_items_temp.columns.to_list() + ['bm_cost_id'])
+    
+    # Map biomass to feedstocks    
+    cost_items_temp.loc[cost_items_temp['Parameter_A'].isin(['Feedstock']), 'bm_types'] =\
+        cost_items_temp.loc[cost_items_temp['Parameter_A'].isin(['Feedstock']), 'Stream_LCA'].map(map_bm_types)
+    
+    # expand cost_items for every feedstock costs
+    for c in unique_bm_costs:
+        # update feedstock cost
+        # assuming units in input db for feedstock costs are same as replaced costs
+        # assuming all feedstocks have same set of feedstock cost data
+        cost_items_temp.loc[cost_items_temp['Parameter_A'].isin(['Feedstock']), 'Unit Cost'] = c
+        # add identifier column
+        cost_items_temp['bm_cost_id'] = c
+        # concatenate data frame
+        cost_items = pd.concat([cost_items, cost_items_temp]).copy()
+
+if (consider_variability_study & (consider_which_variabilities == 'Cost_Item')) | consider_scale_up_study:
     # Calculate itemized MFSP
 
     # re-calculate total cost
@@ -1029,12 +1092,12 @@ if len(production_year) == 1:
     cost_items['Production Year'] = production_year[0]
 else:
     cost_items['Production Year'] = 0
-    tempdf = cost_items.copy()
+    tmpdf = cost_items.copy()
     cost_items = cost_items[0:0]
     for yr in range(production_year[0], production_year[1]+1):
         # for yr in production_year:
-        tempdf['Production Year'] = yr
-        cost_items = pd.concat([cost_items, tempdf], ignore_index=True).copy()
+        tmpdf['Production Year'] = yr
+        cost_items = pd.concat([cost_items, tmpdf], ignore_index=True).copy()
     cost_items.reset_index(drop=True, inplace=True)
 
 # Calculate itemized MFSP
@@ -1139,6 +1202,28 @@ if consider_variability_study & (consider_which_variabilities == 'Cost_Item'):
                                  'param_dist',
                                  'dist_option',
                                  'param_value']).agg({'Itemized MFSP': 'sum'}).reset_index()
+
+elif consider_scale_up_study:
+    
+    MFSP_agg = MFSP_agg[['Case/Scenario',
+                         # 'Feedstock',
+                         'Production Year',
+                         'Itemized MFSP: Unit (numerator)',
+                         'Itemized MFSP: Unit (denominator)',
+                         'Adjusted Cost Year',
+                         'Itemized MFSP',
+                         'bm_cost_id']]
+    MFSP_agg = MFSP_agg[MFSP_agg['Itemized MFSP'].notna()]
+
+    MFSP_agg = MFSP_agg.groupby(['Case/Scenario',
+                                 # 'Feedstock',
+                                 'Production Year',
+                                 'Itemized MFSP: Unit (numerator)',
+                                 'Itemized MFSP: Unit (denominator)',
+                                 'Adjusted Cost Year',
+                                 'bm_cost_id'
+                                 ]).agg({'Itemized MFSP': 'sum'}).reset_index()
+    
 else:
     MFSP_agg = MFSP_agg[['Case/Scenario',
                          # 'Feedstock',
@@ -1207,12 +1292,12 @@ if len(production_year) == 1:
     LCA_items['Production Year'] = production_year[0]
 else:
     LCA_items['Production Year'] = 0
-    tempdf = LCA_items.copy()
+    tmpdf = LCA_items.copy()
     LCA_items = LCA_items[0:0]
     for yr in range(production_year[0], production_year[1]+1):
         # for yr in production_year:
-        tempdf['Production Year'] = yr
-        LCA_items = pd.concat([LCA_items, tempdf], ignore_index=True).copy()
+        tmpdf['Production Year'] = yr
+        LCA_items = pd.concat([LCA_items, tmpdf], ignore_index=True).copy()
     LCA_items.reset_index(drop=True, inplace=True)
 
 # format LCI
@@ -1239,9 +1324,9 @@ if decarb_electric_grid:
 
     # if artificial scaling of CI is enabled for sensitivity analysis
     if decarb_grid_scenario1:
-        tempdf = pd.DataFrame({'Year': np.linspace(max(decarb_elec_CI['Year']), min(decarb_elec_CI['Year']), max(decarb_elec_CI['Year']) - min(decarb_elec_CI['Year'])+1),
+        tmpdf = pd.DataFrame({'Year': np.linspace(max(decarb_elec_CI['Year']), min(decarb_elec_CI['Year']), max(decarb_elec_CI['Year']) - min(decarb_elec_CI['Year'])+1),
                                'LCA_value_replace': np.linspace(decarb_grid_scenario1_values[0], decarb_grid_scenario1_values[1], max(decarb_elec_CI['Year']) - min(decarb_elec_CI['Year'])+1)})
-        decarb_elec_CI = pd.merge(decarb_elec_CI, tempdf, how='left', on=[
+        decarb_elec_CI = pd.merge(decarb_elec_CI, tmpdf, how='left', on=[
                                   'Year']).reset_index(drop=True)
         decarb_elec_CI.drop(columns=['LCIA_estimate'], inplace=True)
         decarb_elec_CI.rename(
@@ -1250,9 +1335,9 @@ if decarb_electric_grid:
     # Creating mapping columns
     decarb_elec_CI[['Parameter_B', 'Stream_Flow', 'Stream_LCA']] = [
         'Conversion: Input Supply Chains', 'Electricity', 'Stationary Use: U.S. Mix']
-    tempdf = decarb_elec_CI.copy()
-    tempdf['Parameter_B'] = 'Coproduct Credits'
-    decarb_elec_CI = pd.concat([decarb_elec_CI, tempdf], ignore_index=True)
+    tmpdf = decarb_elec_CI.copy()
+    tmpdf['Parameter_B'] = 'Coproduct Credits'
+    decarb_elec_CI = pd.concat([decarb_elec_CI, tmpdf], ignore_index=True)
 
     # replace CIs in LCA data frame
     decarb_elec_CI.rename(columns={
@@ -1710,15 +1795,15 @@ if decarb_electric_grid:
     biopower_sc = MAC_df.loc[MAC_df['Case/Scenario']
                              .isin(biopower_scenarios), :]
     MAC_df = MAC_df.loc[~(MAC_df['Case/Scenario'].isin(biopower_scenarios)), :]
-    tempdf = decarb_elec_CI.loc[decarb_elec_CI['Parameter_B'] == 'Coproduct Credits',
+    tmpdf = decarb_elec_CI.loc[decarb_elec_CI['Parameter_B'] == 'Coproduct Credits',
                                 ['Year',
                                  'LCA: Unit (numerator)',
                                  'LCA: Unit (denominator)',
                                  'LCA_value']]
-    tempdf.rename(columns={'LCA: Unit (numerator)': 'decarb_grid_CI: Unit (numerator)',
+    tmpdf.rename(columns={'LCA: Unit (numerator)': 'decarb_grid_CI: Unit (numerator)',
                            'LCA: Unit (denominator)': 'decarb_grid_CI: Unit (denominator)',
                            'LCA_value': 'decarb_grid_CI'}, inplace=True)
-    biopower_sc = pd.merge(biopower_sc, tempdf, how='left',
+    biopower_sc = pd.merge(biopower_sc, tmpdf, how='left',
                            on=['Year'])
 
     # unit check
@@ -1808,59 +1893,68 @@ print('    Elapsed time: ' + str(datetime.now() - init_time))
 #%%
 
 # Scale-up analysis
-"""
-scale_up = MAC_df[['Case/Scenario', 
-                   'Biofuel Stream_LCA', 
-                   'Production Year',
-                   'MFSP replacing fuel: Unit (numerator)',
-                   'MFSP replacing fuel: Unit (denominator)',
-                   'Adjusted Cost Year',
-                   'MFSP replacing fuel', 
-                   'Metric_replacing fuel',
-                   'Total LCA: Unit (numerator)', 
-                   'Total LCA: Unit (denominator)',
-                   'Total LCA', 
-                   'Replaced Fuel', 
-                   'Parameter_B', 
-                   'Stream_Flow',
-                   'Stream_LCA',
-                   'CI replaced fuel: Unit (Numerator)',
-                   'CI replaced fuel: Unit (Denominator)',
-                   'CI replaced fuel',
-                   'Metric_replaced fuel', 
-                   'Fuel_mapping_for_price', 
-                   'Source', 
-                   'Year',
-                   'Cost_replaced fuel', 
-                   'Year_Cost_replaced fuel',
-                   'Cost replaced fuel: Unit (Numerator)',
-                   'Cost replaced fuel: Unit (Denominator)', 
-                   'Adjusted Cost_replaced fuel',
-                   'Adjusted Cost replaced fuel: Unit (Denominator)',
-                   'Adjusted Cost replaced fuel: Unit (Numerator)',
-                   'MAC_calculated',
-                   'MAC_calculated: Unit (numerator)',
-                   'MAC_calculated: Unit (denominator)',
-                   'CI of replaced fuel higher',
-                   'Cost of replaced fuel higher',
-                   'Percent CI reduciton',
-                   'Percent MFSP increase'
-                   ]].copy()
+# calculate CI reduction (g GHG/MJ) and MFSP increase ($/MJ)
+# Map feedstock flow rate (dry tons/MJ)
+# Map feedstock availability (dry tons/year)
+# Calculate net GHG reduction and net cost increase
 
-scale_up['CI_reduction'] = MAC_df['CI replaced fuel'] - MAC_df['Total LCA']
-scale_up['MFSP_increase'] = MAC_df['MFSP replacing fuel'] - MAC_df['Adjusted Cost_replaced fuel']
+if consider_scale_up_study:
 
-tmpdf = cost_items.loc[cost_items['Parameter_A'].isin(['Feedstock']), 
-               ['Case/Scenario', 'Stream_Flow', 'Stream_LCA', 'Flow: Unit (numerator)', 
-                'Flow: Unit (denominator)', 'Flow']].drop_duplicates().reset_index(drop=True)
-tmpdf.rename(columns={
-    'Stream_Flow' : 'feedstock_flow_a',
-    'Stream_LCA' : 'feedstock_flow_b',}, inplace=True)
-
-# Clean pine and Logging residues
-
-scale_up = scale_up.merge(tmpdf, how='left', on=['Case/Scenario'])
-"""
+    # calculate CI reduction (g GHG/MJ) and MFSP increase ($/MJ)
+    scale_up = MAC_df.copy()
+    
+    scale_up['CI_reduction'] = MAC_df['CI replaced fuel'] - MAC_df['Total LCA']
+    scale_up['MFSP_increase'] = MAC_df['MFSP replacing fuel'] - MAC_df['Adjusted Cost_replaced fuel']
+    
+    # Map and merge feedstock and fuel product flow rates (dry lb/hr, MJ/hr -> dry lb/MJ)
+    tmpdf_feedstock = cost_items.loc[cost_items['Parameter_A'].isin(['Feedstock']), 
+                   ['Case/Scenario', 'Stream_Flow', 'Stream_LCA', 'bm_cost_id',
+                    'Flow: Unit (numerator)', 'Flow: Unit (denominator)', 'Flow']].drop_duplicates().reset_index(drop=True)
+    tmpdf_feedstock.rename(columns={
+        'Flow' : 'feedstock_Flow',
+        'Stream_Flow' : 'feedstock_Stream_Flow',
+        'Stream_LCA' : 'feedstock_Stream_LCA',
+        'Flow: Unit (numerator)' : 'feedstock_Flow: Unit (numerator)', 
+        'Flow: Unit (denominator)' : 'feedstock_Flow: Unit (denominator)'}, inplace=True)
+    
+    tmpdf_product = cost_items.loc[cost_items['Parameter_A'].isin(['Final Product']), 
+                   ['Case/Scenario', 'Stream_Flow', 'Stream_LCA', 'bm_cost_id',
+                    'Flow: Unit (numerator)', 'Flow: Unit (denominator)', 'Flow']].drop_duplicates().reset_index(drop=True)
+    tmpdf_product = tmpdf_product.groupby(['Case/Scenario', 'bm_cost_id', 'Flow: Unit (numerator)', 'Flow: Unit (denominator)']).agg({'Flow':'sum'}).reset_index()
+    tmpdf_product.rename(columns={
+        'Flow' : 'product_Flow',
+        'Flow: Unit (numerator)' : 'product_Flow: Unit (numerator)',
+        'Flow: Unit (denominator)' : 'product_Flow: Unit (denominator)'}, inplace=True)
+    
+    tmpdf = tmpdf_feedstock.merge(tmpdf_product, how='left', on=['Case/Scenario', 'bm_cost_id']).reset_index(drop=True)
+    tmpdf['feedstock_per_product'] = tmpdf['feedstock_Flow'] / tmpdf['product_Flow']
+    tmpdf['feedstock_per_product: Unit (numerator)'] = tmpdf['feedstock_Flow: Unit (numerator)']
+    tmpdf['feedstock_per_product: Unit (denominator)'] = tmpdf['product_Flow: Unit (numerator)']
+    
+    # Calculate GHG and USD per feedstock flow rate
+    scale_up = scale_up.merge(tmpdf, how = 'left', on=['Case/Scenario', 'bm_cost_id']).reset_index(drop=True)
+    scale_up['GHG_reduction_per_feedstock_flow'] = scale_up['CI_reduction'] / tmpdf['feedstock_per_product']
+    scale_up['cost_increase_per_feedstock_flow'] = scale_up['MFSP_increase'] / tmpdf['feedstock_per_product']
+    scale_up['GHG_reduction_per_feedstock_flow: Unit (numerator)'] = scale_up['CI replaced fuel: Unit (Numerator)']
+    scale_up['GHG_reduction_per_feedstock_flow: Unit (denominator)'] = scale_up['feedstock_per_product: Unit (numerator)']
+    scale_up['cost_increase_per_feedstock_flow: Unit (numerator)'] = scale_up['MFSP replacing fuel: Unit (numerator)']
+    scale_up['cost_increase_per_feedstock_flow: Unit (denominator)'] = scale_up['feedstock_per_product: Unit (numerator)']
+    
+    # Map feedstock availability (dry tons/year)
+    
+    # Map biomass to feedstocks  
+    scale_up['bm_types'] = scale_up['feedstock_Stream_LCA'].map(map_bm_types)
+    
+    # match to scale_up for all availability costs
+    scale_up = scale_up.merge(bm, how='left', 
+                              left_on = ['bm_types', 'bm_cost_id'],
+                              right_on = ['bm_types', 'bm_cost']).reset_index(drop=True)
+    
+    # Calculate net GHG reduction and net cost increase
+    scale_up['net_GHG_reduction'] = scale_up['GHG_reduction_per_feedstock_flow'] * scale_up['qty_dry_bm'] * 1E6 / 1E12 * 2204.6226 # dry ton to dry lb; grams to million metric ton
+    scale_up['net_cost_increase'] = scale_up['cost_increase_per_feedstock_flow'] * scale_up['qty_dry_bm'] * 1E6 / 1E9 * 2204.6226 # dry ton to dry lb; USD to Billion USD
+    scale_up['net_GHG_reduction: Unit'] = 'MM mt' # scale_up['GHG_reduction_per_feedstock_flow: Unit (numerator)'] 
+    scale_up['net_cost_increase: Unit'] = 'B USD' #scale_up['cost_increase_per_feedstock_flow: Unit (denominator)']
 
 # %%
 # write data to the model dashboard tabs 
@@ -1880,6 +1974,9 @@ if write_to_dashboard:
                         how='left', on='Case/Scenario').reset_index(drop=True)
     MAC_df = pd.merge(MAC_df, pathway_names[['Case/Scenario', 'Pathway Short Form']],
                       how='left', on='Case/Scenario').reset_index(drop=True)
+    if consider_scale_up_study:
+        scale_up = pd.merge(scale_up, pathway_names[['Case/Scenario', 'Pathway Short Form']],
+                          how='left', on='Case/Scenario').reset_index(drop=True)
 
     # with ExcelApp() as app:
     with xw.App(visible=False) as app:
@@ -1889,7 +1986,49 @@ if write_to_dashboard:
         wb.app.screen_updating = False
         # wb.app.raw_value = True
 
-        if consider_variability_study & (consider_which_variabilities == 'Cost_Item'):
+        if consider_scale_up_study:
+            sheet_1 = wb.sheets['scale_up']
+            sheet_1.range(str(4) + ':1048576').clear_contents()
+            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+                scale_up[[
+                    'Pathway Short Form',
+                    'Case/Scenario', 'Biofuel Stream_LCA', 'Energy_alloc_primary_fuel',
+                           'Production Year', 'MFSP replacing fuel: Unit (numerator)',
+                           'MFSP replacing fuel: Unit (denominator)', 'Adjusted Cost Year',
+                           'bm_cost_id', 'MFSP replacing fuel', 'Metric_replacing fuel',
+                           'Total LCA: Unit (numerator)', 'Total LCA: Unit (denominator)',
+                           'Total LCA', 'Replaced Fuel', 'Parameter_B', 'Stream_Flow',
+                           'Stream_LCA', 'CI replaced fuel: Unit (Numerator)',
+                           'CI replaced fuel: Unit (Denominator)', 'CI replaced fuel',
+                           'Metric_replaced fuel', 'Fuel_mapping_for_price', 'Source', 'Year',
+                           'Cost_replaced fuel', 'Year_Cost_replaced fuel',
+                           'Cost replaced fuel: Unit (Numerator)',
+                           'Cost replaced fuel: Unit (Denominator)', 'Adjusted Cost_replaced fuel',
+                           'Adjusted Cost replaced fuel: Unit (Denominator)',
+                           'Adjusted Cost replaced fuel: Unit (Numerator)', 'MAC_calculated',
+                           'MAC_calculated: Unit (numerator)',
+                           'MAC_calculated: Unit (denominator)', 'CI of replaced fuel higher',
+                           'Cost of replaced fuel higher', 'Percent CI reduciton',
+                           'Percent MFSP increase', 'CI_reduction', 'MFSP_increase',
+                           'feedstock_Stream_Flow', 'feedstock_Stream_LCA',
+                           'feedstock_Flow: Unit (numerator)',
+                           'feedstock_Flow: Unit (denominator)', 'feedstock_Flow',
+                           'product_Flow: Unit (numerator)', 'product_Flow: Unit (denominator)',
+                           'product_Flow', 'feedstock_per_product',
+                           'feedstock_per_product: Unit (numerator)',
+                           'feedstock_per_product: Unit (denominator)',
+                           'GHG_reduction_per_feedstock_flow', 'cost_increase_per_feedstock_flow',
+                           'GHG_reduction_per_feedstock_flow: Unit (numerator)',
+                           'GHG_reduction_per_feedstock_flow: Unit (denominator)',
+                           'cost_increase_per_feedstock_flow: Unit (numerator)',
+                           'cost_increase_per_feedstock_flow: Unit (denominator)', 'bm_types',
+                           'bm_cost', 'qty_dry_bm', 'bm_cost: Unit (numerator)',
+                           'bm_cost: Unit (denominator)', 'bm_cost: USD year', 'qty_dry_bm: Unit',
+                           'net_GHG_reduction', 'net_cost_increase', 'net_GHG_reduction: Unit',
+                           'net_cost_increase: Unit'
+                    ]]
+
+        elif consider_variability_study & (consider_which_variabilities == 'Cost_Item'):
             
             sheet_1 = wb.sheets['lca']
             sheet_1.range(str(4) + ':1048576').clear_contents()
@@ -2227,8 +2366,8 @@ if write_to_dashboard:
                             'Itemized MFSP',
                             'Itemized MFSP: Unit (numerator)',
                             'Itemized MFSP: Unit (denominator)'
-                            ]]
-
+                            ]]         
+                
         else:
 
             # sheet_1 = wb.sheets['lca']
@@ -2384,10 +2523,10 @@ if write_to_dashboard:
                     'Parameter_B',
                     'LCA_metric']]
         else:
-            tempdf = corr_itemized_LCA.loc[corr_itemized_LCA['Stream_LCA'].isin(['Stationary Use: U.S. Mix']), :]
+            tmpdf = corr_itemized_LCA.loc[corr_itemized_LCA['Stream_LCA'].isin(['Stationary Use: U.S. Mix']), :]
             wb.sheets['EPS_CI'].range(str(4) + ':1048576').clear_contents()
             wb.sheets['EPS_CI']['A4'].options(index=False, chunksize=10000).value =\
-                tempdf[[
+                tmpdf[[
                     'Year',
                     'LCA: Unit (numerator)',
                     'LCA: Unit (denominator)',
