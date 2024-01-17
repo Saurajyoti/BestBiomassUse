@@ -1034,6 +1034,9 @@ if consider_scale_up_study:
     # Adding cost of T&D for reactor throat price, 40 $/dt
     bm['bm_cost'] = bm['bm_cost'] + 40
     
+    # Adding 30% penalty for feedstock loss in T&D and storage
+    bm['qty_dry_bm'] = bm['qty_dry_bm'] * 0.7
+    
     unique_bm_costs = bm['bm_cost'].unique()
     
     cost_items_temp = cost_items.copy()
@@ -1951,7 +1954,7 @@ if consider_scale_up_study:
                               right_on = ['bm_types', 'bm_cost']).reset_index(drop=True)
     
     # Calculate net GHG reduction and net cost increase
-    scale_up['net_GHG_reduction'] = scale_up['GHG_reduction_per_feedstock_flow'] * scale_up['qty_dry_bm'] * 1E6 / 1E12 * 2204.6226 # dry ton to dry lb; grams to million metric ton
+    scale_up['net_GHG_reduction'] = scale_up['GHG_reduction_per_feedstock_flow'] * scale_up['qty_dry_bm'] * 1E6 / 1E12 * 2204.6226 # dry ton to dry lb of biomass; grams GHG to million metric ton GHG
     scale_up['net_cost_increase'] = scale_up['cost_increase_per_feedstock_flow'] * scale_up['qty_dry_bm'] * 1E6 / 1E9 * 2204.6226 # dry ton to dry lb; USD to Billion USD
     scale_up['net_GHG_reduction: Unit'] = 'MM mt' # scale_up['GHG_reduction_per_feedstock_flow: Unit (numerator)'] 
     scale_up['net_cost_increase: Unit'] = 'B USD' #scale_up['cost_increase_per_feedstock_flow: Unit (denominator)']
