@@ -1955,7 +1955,7 @@ if consider_scale_up_study:
     
     # Calculate net GHG reduction and net cost increase
     scale_up['net_GHG_reduction'] = scale_up['GHG_reduction_per_feedstock_flow'] * scale_up['qty_dry_bm'] * 1E6 / 1E12 * 2204.6226 # dry ton to dry lb of biomass; grams GHG to million metric ton GHG
-    scale_up['net_cost_increase'] = scale_up['cost_increase_per_feedstock_flow'] * scale_up['qty_dry_bm'] * 1E6 / 1E9 * 2204.6226 # dry ton to dry lb; USD to Billion USD
+    scale_up['net_cost_increase'] = scale_up['cost_increase_per_feedstock_flow'] * scale_up['qty_dry_bm'] * 1E6 / 1E12 * 2204.6226 # dry ton to dry lb; USD to Trillion USD
     scale_up['net_GHG_reduction: Unit'] = 'MM mt' # scale_up['GHG_reduction_per_feedstock_flow: Unit (numerator)'] 
     scale_up['net_cost_increase: Unit'] = 'B USD' #scale_up['cost_increase_per_feedstock_flow: Unit (denominator)']
 
