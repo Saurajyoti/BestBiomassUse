@@ -79,7 +79,7 @@ production_year = [2022]
 #production_year = [2022, 2050]
 
 # cost adjustment year, to which inflation will be adjusted
-cost_year = 2016
+cost_year = 2020
 
 # Toggle cost credit for coproducts while calculating aggregrated MFSP
 consider_coproduct_cost_credit = True
@@ -98,8 +98,9 @@ save_interim_files = True
 # Toggle write output to the dashboard workbook
 write_to_dashboard = True
 
-# Toggle scale-up analysis
-consider_scale_up_study = True
+# Toggle scale-up analysis,
+# Only run scale-up analysis with consider_variability_study = False
+consider_scale_up_study = True # True when doing scale-up study, otherwise False
 
 # Toggle implementing Decarb Model electric grid carbon intensity
 decarb_electric_grid = False
@@ -1005,7 +1006,7 @@ if consider_scale_up_study:
     # biomass availability mappings
     map_bm_types = {
         'Coal to Power Plants' : '', 
-        'Poplar' : 'Herbaceous', 
+        'Poplar' : 'Woody', 
         'Blended woody biomass' : 'Woody',
         'Forest Residue' : 'Woody', 
         'Switchgrass' : 'Herbaceous',
@@ -1958,6 +1959,14 @@ if consider_scale_up_study:
     scale_up['net_cost_increase'] = scale_up['cost_increase_per_feedstock_flow'] * scale_up['qty_dry_bm'] * 1E6 / 1E12 * 2204.6226 # dry ton to dry lb; USD to Trillion USD
     scale_up['net_GHG_reduction: Unit'] = 'MM mt' # scale_up['GHG_reduction_per_feedstock_flow: Unit (numerator)'] 
     scale_up['net_cost_increase: Unit'] = 'B USD' #scale_up['cost_increase_per_feedstock_flow: Unit (denominator)']
+    
+    # Total fuel product produced
+    scale_up.loc[scale_up['qty_dry_bm: Unit'].isin(['MM dt']), 'net_primary_fuel_produced'] =\
+        1/(scale_up.loc[scale_up['qty_dry_bm: Unit'].isin(['MM dt']), 'feedstock_per_product']*0.005) * \
+        scale_up.loc[scale_up['qty_dry_bm: Unit'].isin(['MM dt']), 'qty_dry_bm'] /1000 # MJ/dt * MM dt = Tera Joules -> Peta Joules
+    
+    scale_up.loc[scale_up['qty_dry_bm: Unit'].isin(['MM dt']), 'net_primary_fuel_produced: Unit'] = 'PJ'
+    
 
 # %%
 # write data to the model dashboard tabs 
@@ -2028,7 +2037,9 @@ if write_to_dashboard:
                            'bm_cost', 'qty_dry_bm', 'bm_cost: Unit (numerator)',
                            'bm_cost: Unit (denominator)', 'bm_cost: USD year', 'qty_dry_bm: Unit',
                            'net_GHG_reduction', 'net_cost_increase', 'net_GHG_reduction: Unit',
-                           'net_cost_increase: Unit'
+                           'net_cost_increase: Unit',
+                           'net_primary_fuel_produced',
+                           'net_primary_fuel_produced: Unit'
                     ]]
 
         elif consider_variability_study & (consider_which_variabilities == 'Cost_Item'):
