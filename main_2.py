@@ -1960,10 +1960,17 @@ if consider_scale_up_study:
     scale_up['net_GHG_reduction: Unit'] = 'MM mt' # scale_up['GHG_reduction_per_feedstock_flow: Unit (numerator)'] 
     scale_up['net_cost_increase: Unit'] = 'B USD' #scale_up['cost_increase_per_feedstock_flow: Unit (denominator)']
     
-    # Total fuel product produced
+    # Total fuel produced
+    
+    # Convert kWh to MJ
+    scale_up.loc[scale_up['feedstock_per_product: Unit (denominator)'].isin(['kWh']), 'feedstock_per_product'] =\
+        scale_up.loc[scale_up['feedstock_per_product: Unit (denominator)'].isin(['kWh']), 'feedstock_per_product'] / 3.6 # lb/kWh -> lb/MJ, 1 kWh = 3.6 MJ
+    
+    scale_up.loc[scale_up['feedstock_per_product: Unit (denominator)'].isin(['kWh']), 'feedstock_per_product: Unit (denominator)'] = 'MJ'
+        
     scale_up.loc[scale_up['qty_dry_bm: Unit'].isin(['MM dt']), 'net_primary_fuel_produced'] =\
-        1/(scale_up.loc[scale_up['qty_dry_bm: Unit'].isin(['MM dt']), 'feedstock_per_product']*0.005) * \
-        scale_up.loc[scale_up['qty_dry_bm: Unit'].isin(['MM dt']), 'qty_dry_bm'] /1000 # MJ/dt * MM dt = Tera Joules -> Peta Joules
+        1/(scale_up.loc[scale_up['qty_dry_bm: Unit'].isin(['MM dt']), 'feedstock_per_product']*0.0005) * \
+        scale_up.loc[scale_up['qty_dry_bm: Unit'].isin(['MM dt']), 'qty_dry_bm'] /1E3 # MJ/dt * MM dt = Tera Joules -> Peta Joules
     
     scale_up.loc[scale_up['qty_dry_bm: Unit'].isin(['MM dt']), 'net_primary_fuel_produced: Unit'] = 'PJ'
     
