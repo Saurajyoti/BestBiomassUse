@@ -117,8 +117,8 @@ if __name__ == '__main__':
     
     init_time = datetime.now()
     
-    model_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Algae/data/model/09-19-2023'
-    fmodel = 'GREET_2022 Algae_harmonization_individual_approach.xlsm'
+    model_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - GREET sim/Proj_Algae/data/model/02-06-2024'
+    fmodel = 'GREET_2022 Algae_harmonization_individual_approach_2050.xlsm'
     
     # Global parameter declarations
     sheet_gparam = ['Algae', 'Algae'] # the sheets in fmodel that has the parameters
@@ -134,8 +134,8 @@ if __name__ == '__main__':
               #[3,3]
               ]    
    
-    corr_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Algae/data/correspondence_files/09-19-2023'
-    fcorr_LCI = 'corr_LCI_GREET_Algae_individual.xlsx'
+    corr_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - GREET sim/Proj_Algae/data/correspondence_files/02-06-2024'
+    fcorr_LCI = 'corr_LCI_GREET_Algae_individual_2050.xlsx'
     sheets_input = ['PC_disp', 
                     'PC_mass',
                     'PC_proc_alloc',
@@ -144,7 +144,7 @@ if __name__ == '__main__':
     
     for sheet_1 in sheets_input:
         
-        fsave_sim = 'GREET_Algae_sims_' + sheet_1 + '_09_20_2023' + '.csv'         
+        fsave_sim = 'GREET_Algae_sims_' + sheet_1 + '_02_06_2024' + '.csv'         
         
         obj = GREET_LCI_import(model_path_prefix, fmodel,
                                corr_path_prefix, fcorr_LCI, sheet_1,
