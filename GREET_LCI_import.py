@@ -118,7 +118,7 @@ if __name__ == '__main__':
     init_time = datetime.now()
     
     model_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - GREET sim/Proj_Algae/data/model/02-06-2024'
-    fmodel = 'GREET_2022 Algae_harmonization_individual_approach_2050.xlsm'
+    fmodel = 'GREET_2022 Algae_harmonization_individual_approach_100renewable.xlsm'
     
     # Global parameter declarations
     sheet_gparam = ['Algae', 'Algae'] # the sheets in fmodel that has the parameters
@@ -135,7 +135,7 @@ if __name__ == '__main__':
               ]    
    
     corr_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - GREET sim/Proj_Algae/data/correspondence_files/02-06-2024'
-    fcorr_LCI = 'corr_LCI_GREET_Algae_individual_2050.xlsx'
+    fcorr_LCI = 'corr_LCI_GREET_Algae_individual_100renewable.xlsx'
     sheets_input = ['PC_disp', 
                     'PC_mass',
                     'PC_proc_alloc',
