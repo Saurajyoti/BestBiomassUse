@@ -43,7 +43,7 @@ os.chdir(code_path_prefix)
 from unit_conversions import model_units
 
 # f_model = 'MCCAM_09_11_2023_working.xlsx'
-f_model = 'MCCAM_10_23_2023_working.xlsx'
+f_model = 'MCCAM_03_10_2024_working.xlsx'
 sheet_TEA = 'Db'
 sheet_param_variability = 'var_p'
 sheet_name_lists = 'lists'
@@ -100,7 +100,7 @@ write_to_dashboard = True
 
 # Toggle scale-up analysis,
 # Only run scale-up analysis with consider_variability_study = False
-consider_scale_up_study = True # True when doing scale-up study, otherwise False
+consider_scale_up_study = False # True when doing scale-up study, otherwise False
 
 # Toggle implementing Decarb Model electric grid carbon intensity
 decarb_electric_grid = False
