@@ -43,7 +43,9 @@ os.chdir(code_path_prefix)
 from unit_conversions import model_units
 
 # f_model = 'MCCAM_09_11_2023_working.xlsx'
-f_model = 'MCCAM_03_10_2024_working.xlsx'
+
+f_model = 'MCCAM_05_02_2024_working.xlsx'
+
 sheet_TEA = 'Db'
 sheet_param_variability = 'var_p'
 sheet_name_lists = 'lists'
@@ -80,6 +82,9 @@ production_year = [2022]
 
 # cost adjustment year, to which inflation will be adjusted
 cost_year = 2020
+
+# cost year of BT16 feedstock availability data set
+BT16_cost_year = 2014
 
 # Toggle cost credit for coproducts while calculating aggregrated MFSP
 consider_coproduct_cost_credit = True
@@ -425,15 +430,12 @@ def fmt_GREET_LCI(df):
 
     # df = df.drop_duplicates().reset_index(drop=True)
 
-    df.rename(columns={'GREET row names_level1': 'LCA_metric_GREET',
-                       'values_level1': 'LCA_value'}, inplace=True)
+    df.rename(columns={'GREET row names_level1': 'LCA_metric_GREET', 'values_level1': 'LCA_value'}, inplace=True)
 
     # drop rows with loss factor
-    df = df.loc[~(df['LCA_metric_GREET'] == 'Loss factor'),
-                :].reset_index(drop=True)
+    df = df.loc[~(df['LCA_metric_GREET'] == 'Loss factor'),:].reset_index(drop=True).copy()
 
-    df[['LCA: Unit (numerator)', 'LCA: Unit (denominator)']
-       ] = df['Unit'].str.split('/', expand=True)
+    df[['LCA: Unit (numerator)', 'LCA: Unit (denominator)']] = df['Unit'].str.split('/', expand=True)
 
     df = df[[
         'Parameter_B',
@@ -446,15 +448,11 @@ def fmt_GREET_LCI(df):
         'LCA_value',
         'LCA: Unit (numerator)',
         'LCA: Unit (denominator)',
-        'Year']]
+        'Year']].copy()
 
     # strip white spaces before and after metric names
     for row in range(df.shape[0]):
-        df.loc[row, 'LCA_metric_GREET'] = df.loc[row,
-                                                 'LCA_metric_GREET'].strip()
-
-    # identify unique headers
-    # tmp_lci_metric = df['LCA_metric'].unique()
+        df.loc[row, 'LCA_metric_GREET'] = df.loc[row, 'LCA_metric_GREET'].strip()
 
     # replace with harmonized headers and metrices
     df.loc[df['LCA_metric_GREET'].isin(harmonize_headers_long.keys()), 'LCA_metric'] =\
@@ -464,7 +462,7 @@ def fmt_GREET_LCI(df):
     df.loc[df['LCA_metric_GREET'].isin(harmonize_metric_long.keys()), 'LCA_metric'] =\
         df.loc[df['LCA_metric_GREET'].isin(harmonize_metric_long.keys(
         )), 'LCA_metric_GREET'].map(harmonize_metric_long, na_action='ignore')
-    df['LCA_metric'].fillna('-', inplace=True)
+    df.fillna({'LCA_metric' : '-'}, inplace=True)
 
     # Join header to LCI metric
     for row in range(df.shape[0]):
@@ -1000,7 +998,6 @@ if consider_variability_study & (consider_which_variabilities == 'Cost_Item'):
     cost_items = cost_items.merge(
         var_params_tbl, how='left', on='variability_id').reset_index(drop=True)
     
-
 if consider_scale_up_study:
     
     # biomass availability mappings
@@ -1029,7 +1026,7 @@ if consider_scale_up_study:
         'value' : 'qty_dry_bm'}, inplace=True)
     bm['bm_cost: Unit (numerator)'] = 'USD'
     bm['bm_cost: Unit (denominator)'] = 'dt'
-    bm['bm_cost: USD year'] = 2014
+    bm['bm_cost: USD year'] = BT16_cost_year
     bm['qty_dry_bm: Unit'] = 'MM dt'
     
     # Adding cost of T&D for reactor throat price, 40 $/dt
@@ -1040,25 +1037,67 @@ if consider_scale_up_study:
     
     unique_bm_costs = bm['bm_cost'].unique()
     
-    cost_items_temp = cost_items.copy()
-    cost_items = pd.DataFrame(columns=cost_items_temp.columns.to_list() + ['bm_cost_id'])
+    tmp_cost_items = cost_items.copy()
+    cost_items = pd.DataFrame(columns=tmp_cost_items.columns.to_list() + ['bm_cost_id'])
     
     # Map biomass to feedstocks    
-    cost_items_temp.loc[cost_items_temp['Parameter_A'].isin(['Feedstock']), 'bm_types'] =\
-        cost_items_temp.loc[cost_items_temp['Parameter_A'].isin(['Feedstock']), 'Stream_LCA'].map(map_bm_types)
-    
+    tmp_cost_items.loc[tmp_cost_items['Parameter_A'].isin(['Feedstock']), 'bm_types'] =\
+        tmp_cost_items.loc[tmp_cost_items['Parameter_A'].isin(['Feedstock']), 'Stream_LCA'].map(map_bm_types)
+       
     # expand cost_items for every feedstock costs
     for c in unique_bm_costs:
         # update feedstock cost
-        # assuming units in input db for feedstock costs are same as replaced costs
-        # assuming all feedstocks have same set of feedstock cost data
-        cost_items_temp.loc[cost_items_temp['Parameter_A'].isin(['Feedstock']), 'Unit Cost'] = c
+        
+        # assuming all feedstocks those are in the list of feedstock availability have same set of feedstock cost data
+        tmp_cost_items.loc[(tmp_cost_items['Parameter_A'].isin(['Feedstock'])) & 
+                            (~tmp_cost_items['bm_types'].isna()) &  # not NA
+                            (~tmp_cost_items['bm_types'].isin([''])), # not blank
+                            'Unit Cost'] = c
+        
+        # update cost year
+        tmp_cost_items.loc[(tmp_cost_items['Parameter_A'].isin(['Feedstock'])) & 
+                            (~tmp_cost_items['bm_types'].isna()) &  # not NA
+                            (~tmp_cost_items['bm_types'].isin([''])), # not blank
+                            'Cost Year'] = BT16_cost_year
+        
+        # harmonize unit for feedstock cost
+        # unit of cost is in per dt basis in BT16 feedstock availability and implemented default cost data is in lb; convert dt to dry lb
+        tmp_cost_items.loc[(tmp_cost_items['Parameter_A'].isin(['Feedstock'])) & 
+                            (~tmp_cost_items['bm_types'].isna()) &  # not NA
+                            (~tmp_cost_items['bm_types'].isin([''])), # not blank
+                            'Unit Cost']  =\
+            tmp_cost_items.loc[(tmp_cost_items['Parameter_A'].isin(['Feedstock'])) & 
+                                (~tmp_cost_items['bm_types'].isna()) &  # not NA
+                                (~tmp_cost_items['bm_types'].isin([''])), # not blank
+                                'Unit Cost'] / 2000
+            
+        # re-calculate total cost
+        tmp_cost_items.loc[((tmp_cost_items['Parameter_A'].isin(['Feedstock'])) &
+                        (tmp_cost_items['Flow'] != '-') &
+                        (tmp_cost_items['Operating Time'] != '-') &
+                        (tmp_cost_items['Unit Cost'] != '-')), 'Total Cost'] = \
+            tmp_cost_items.loc[((tmp_cost_items['Parameter_A'].isin(['Feedstock'])) &
+                            (tmp_cost_items['Flow'] != '-') &
+                            (tmp_cost_items['Operating Time'] != '-') &
+                            (tmp_cost_items['Unit Cost'] != '-')), 'Flow'] *\
+            tmp_cost_items.loc[((tmp_cost_items['Parameter_A'].isin(['Feedstock'])) &
+                            (tmp_cost_items['Flow'] != '-') &
+                            (tmp_cost_items['Operating Time'] != '-') &
+                            (tmp_cost_items['Unit Cost'] != '-')), 'Operating Time'] *\
+            tmp_cost_items.loc[((tmp_cost_items['Parameter_A'].isin(['Feedstock'])) &
+                            (tmp_cost_items['Flow'] != '-') &
+                            (tmp_cost_items['Operating Time'] != '-') &
+                            (tmp_cost_items['Unit Cost'] != '-')), 'Unit Cost']
+        
         # add identifier column
-        cost_items_temp['bm_cost_id'] = c
-        # concatenate data frame
-        cost_items = pd.concat([cost_items, cost_items_temp]).copy()
+        tmp_cost_items['bm_cost_id'] = c
+        # revert data frame
+        if cost_items.shape[0]!=0:
+            cost_items = pd.concat([cost_items,tmp_cost_items], ignore_index=True, sort=False)
+        else:
+            cost_items = tmp_cost_items.copy()
 
-if (consider_variability_study & (consider_which_variabilities == 'Cost_Item')) | consider_scale_up_study:
+if (consider_variability_study & (consider_which_variabilities == 'Cost_Item')):
     # Calculate itemized MFSP
 
     # re-calculate total cost
@@ -1120,7 +1159,6 @@ ignored_cost_items = ignored_cost_items[['Case/Scenario', 'Parameter_A', 'Parame
                                          'Stream_Flow', 'Stream_LCA',
                                          'Total Flow: Unit (numerator)', 'Cost: Unit (denominator)']]
 
-
 # Harmonize energy units, unit convert for power
 tmp_cost_items = cost_items.loc[cost_items['Itemized MFSP: Unit (denominator)'].isin([
     'kWh']), :].copy()
@@ -1144,7 +1182,6 @@ cost_items = pd.concat([tmp_cost_items, cost_items]).reset_index(drop=True).copy
 cost_items.loc[cost_items['Parameter_B'] == 'Coproduct Credits', 'Itemized MFSP'] = \
     cost_items.loc[cost_items['Parameter_B'] ==
                    'Coproduct Credits', 'Itemized MFSP'] * -1
-
 
 if allocation_type == 'Energy':
     
@@ -1924,18 +1961,20 @@ if consider_scale_up_study:
     tmpdf_product = cost_items.loc[cost_items['Parameter_A'].isin(['Final Product']), 
                    ['Case/Scenario', 'Stream_Flow', 'Stream_LCA', 'bm_cost_id',
                     'Flow: Unit (numerator)', 'Flow: Unit (denominator)', 'Flow']].drop_duplicates().reset_index(drop=True)
+    # aggregating energy products
     tmpdf_product = tmpdf_product.groupby(['Case/Scenario', 'bm_cost_id', 'Flow: Unit (numerator)', 'Flow: Unit (denominator)']).agg({'Flow':'sum'}).reset_index()
     tmpdf_product.rename(columns={
         'Flow' : 'product_Flow',
         'Flow: Unit (numerator)' : 'product_Flow: Unit (numerator)',
         'Flow: Unit (denominator)' : 'product_Flow: Unit (denominator)'}, inplace=True)
     
+    # merge feedstock and product flows
     tmpdf = tmpdf_feedstock.merge(tmpdf_product, how='left', on=['Case/Scenario', 'bm_cost_id']).reset_index(drop=True)
     tmpdf['feedstock_per_product'] = tmpdf['feedstock_Flow'] / tmpdf['product_Flow']
     tmpdf['feedstock_per_product: Unit (numerator)'] = tmpdf['feedstock_Flow: Unit (numerator)']
     tmpdf['feedstock_per_product: Unit (denominator)'] = tmpdf['product_Flow: Unit (numerator)']
     
-    # Calculate GHG and USD per feedstock flow rate
+    # Calculate total GHG and USD per feedstock flow rate
     scale_up = scale_up.merge(tmpdf, how = 'left', on=['Case/Scenario', 'bm_cost_id']).reset_index(drop=True)
     scale_up['GHG_reduction_per_feedstock_flow'] = scale_up['CI_reduction'] / tmpdf['feedstock_per_product']
     scale_up['cost_increase_per_feedstock_flow'] = scale_up['MFSP_increase'] / tmpdf['feedstock_per_product']
@@ -1956,7 +1995,7 @@ if consider_scale_up_study:
     
     # Calculate net GHG reduction and net cost increase
     scale_up['net_GHG_reduction'] = scale_up['GHG_reduction_per_feedstock_flow'] * scale_up['qty_dry_bm'] * 1E6 / 1E12 * 2204.6226 # dry ton to dry lb of biomass; grams GHG to million metric ton GHG
-    scale_up['net_cost_increase'] = scale_up['cost_increase_per_feedstock_flow'] * scale_up['qty_dry_bm'] * 1E6 / 1E12 * 2204.6226 # dry ton to dry lb; USD to Trillion USD
+    scale_up['net_cost_increase'] = scale_up['cost_increase_per_feedstock_flow'] * scale_up['qty_dry_bm'] * 1E6 / 1E9 * 2204.6226 # dry ton to dry lb; USD to Billion USD
     scale_up['net_GHG_reduction: Unit'] = 'MM mt' # scale_up['GHG_reduction_per_feedstock_flow: Unit (numerator)'] 
     scale_up['net_cost_increase: Unit'] = 'B USD' #scale_up['cost_increase_per_feedstock_flow: Unit (denominator)']
     
@@ -1976,7 +2015,7 @@ if consider_scale_up_study:
     
 
 # %%
-# write data to the model dashboard tabs 
+# write data to the model dashboard tabs ○
 
 if write_to_dashboard:
     print('Writing to Dashboard ..')
