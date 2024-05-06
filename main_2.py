@@ -1976,8 +1976,8 @@ if consider_scale_up_study:
     
     # Calculate total GHG and USD per feedstock flow rate
     scale_up = scale_up.merge(tmpdf, how = 'left', on=['Case/Scenario', 'bm_cost_id']).reset_index(drop=True)
-    scale_up['GHG_reduction_per_feedstock_flow'] = scale_up['CI_reduction'] / tmpdf['feedstock_per_product']
-    scale_up['cost_increase_per_feedstock_flow'] = scale_up['MFSP_increase'] / tmpdf['feedstock_per_product']
+    scale_up['GHG_reduction_per_feedstock_flow'] = scale_up['CI_reduction'] / scale_up['feedstock_per_product']
+    scale_up['cost_increase_per_feedstock_flow'] = scale_up['MFSP_increase'] / scale_up['feedstock_per_product']
     scale_up['GHG_reduction_per_feedstock_flow: Unit (numerator)'] = scale_up['CI replaced fuel: Unit (Numerator)']
     scale_up['GHG_reduction_per_feedstock_flow: Unit (denominator)'] = scale_up['feedstock_per_product: Unit (numerator)']
     scale_up['cost_increase_per_feedstock_flow: Unit (numerator)'] = scale_up['MFSP replacing fuel: Unit (numerator)']
@@ -2013,7 +2013,6 @@ if consider_scale_up_study:
     
     scale_up.loc[scale_up['qty_dry_bm: Unit'].isin(['MM dt']), 'net_primary_fuel_produced: Unit'] = 'PJ'
     
-
 # %%
 # write data to the model dashboard tabs ○
 
