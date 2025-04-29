@@ -1,0 +1,17 @@
+This correspondence file maps conventional fuel names to GREET pathways,,,
+,,,
+,,,
+Replaced Fuel,Parameter_B,Stream_Flow,Stream_LCA
+Motor Gasoline,Replaced Fuel,Gasoline Vehicle (well to wheels),Gasoline Vehicle: Gasoline
+Naptha,Replaced Fuel,Gasoline Vehicle (well to wheels),Gasoline Vehicle: Gasoline
+Crude Oil,Replaced Fuel,Crude oil (well to wheel),Crude: Industrial boiler
+Jet Fuel,Replaced Fuel,Petroleum Conventional Jet (well to wake),"Passenger Aircraft, Single Aisle (SA): Petroleum Conventional Jet"
+Diesel,Replaced Fuel,Conventional Diesel in Vehicles (well to wheels),CIDI Vehicle: Conventional and LS Diesel
+Acetone,Replaced Fuel,Conventional Diesel in Vehicles (well to wheels),CIDI Vehicle: Conventional and LS Diesel
+MEK,Replaced Fuel,Conventional Diesel in Vehicles (well to wheels),CIDI Vehicle: Conventional and LS Diesel
+HFO (0.5% sulfur),Replaced Fuel,HFO (0.5% sulfur) (well to hall),HFO (0.5% sulfur)
+MDO (0.5% sulfur),Replaced Fuel,MDO (0.5% sulfur) (well to hall),MDO (0.5% sulfur)
+Residual Oil,Replaced Fuel,Residual Oil (well to wheels),Resi. Oil
+Coal-Fired Power Plant,Replaced Fuel,Electricity,Coal-Fired Power Plant
+Hydrogen,Replaced Fuel,Hydrogen,Central Plants: NG or FG to Gaseous Hydrogen
+Stationary Use: U.S. Mix,Replaced Fuel,Electricity,Stationary Use: U.S. Mix

@@ -1,0 +1,14 @@
+This correspondence file maps conventional fuel names to GREET pathways,,
+,,
+,,
+Replaced Fuel,GREET Pathway,GREET fuel name
+Diesel,CIDI Vehicle: Conventional and LS Diesel,U.S. conventional diesel
+Crude Oil,Crude Oil: Industrial Boiler,Crude oil
+Jet Fuel,Petroleum Conv. Jet Fuel,Conventional Jet Fuel
+Motor Gasoline,Gasoline Vehicle: Gasoline,Gasoline
+Naptha,Gasoline Vehicle: Gasoline,Gasoline
+Acetone,CIDI Vehicle: Conventional and LS Diesel,U.S. conventional diesel
+MEK,CIDI Vehicle: Conventional and LS Diesel,U.S. conventional diesel
+HFO (0.5% sulfur),HFO (0.5% sulfur),HFO (0.5% sulfur)
+MDO (0.5% sulfur),MDO (0.5% sulfur),MDO (0.5% sulfur)
+Residual Oil,Residual Oil: Stationary Reciprocating Engine,Residual Oil: Stationary Reciprocating Engine

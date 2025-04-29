@@ -1,0 +1,124 @@
+"This correspondence file maps biofuel pathway name, feedstock, and biofuel flow name to the fossil fuel its targetted to replace",,,
+,,,
+,,,
+Case/Scenario,Biofuel Stream_LCA,Feedstock,Replaced Fuel
+2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel,Renewable Diesel Blendstock,Biomass,Diesel
+2015 Biochemical Catalysis Design Report,Hydrocarbon Blendstock,Biomass,Diesel
+2018 Biochemical Design Case: BDO Pathway,Renewable Diesel Blendstock,Blended herbaceous biomass,Diesel
+2018 Biochemical Design Case: Organic Acids Pathway,Renewable Diesel Blendstock,Blended herbaceous biomass,Diesel
+"2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates",High Octane Gasoline (HOG),Woody Biomass,Motor Gasoline
+"2018, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates",High Octane Gasoline (HOG),Woody Biomass,Motor Gasoline
+2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels,Renewable Diesel,Blended woody biomass,Diesel
+2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels,Renewable Gasoline,Blended woody biomass,Motor Gasoline
+"2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates",High Octane Gasoline (HOG),Blended woody biomass,Motor Gasoline
+"2020, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates",High Octane Gasoline (HOG),Woody Biomass,Motor Gasoline
+"2021 SOT: Biochemical design case, Acids pathway with burn lignin",Renewable Diesel,Blended woody biomass,Diesel
+"2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA",Renewable Diesel,Blended woody biomass,Diesel
+"2021 SOT: Biochemical design case, BDO pathway with burn lignin",Renewable Diesel,Blended woody biomass,Diesel
+"2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA",Renewable Diesel,Blended woody biomass,Diesel
+2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates,High Octane Gasoline (HOG),Blended woody biomass,Motor Gasoline
+"2022, Fully upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure",Fully upgraded Marine fuel,Manure to Biorefinery for HTL,HFO (0.5% sulfur)
+"2022, Fully upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge",Fully upgraded Marine fuel,Sludge to Biorefinery for HTL,HFO (0.5% sulfur)
+"2022, Marine biocrude via HTL from Manure with NH3 removal for 1000 MTPD Manure",Biocrude,Manure to Biorefinery for HTL,HFO (0.5% sulfur)
+"2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge",Biocrude,Sludge to Biorefinery for HTL,HFO (0.5% sulfur)
+"2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass",Marine fuel,"Clean Pine for CFP, 2020 SOT",HFO (0.5% sulfur)
+"2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass",Marine fuel,"Logging Residues for CFP, 2020 SOT",HFO (0.5% sulfur)
+"2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass",Marine fuel,"Clean Pine for CFP, 2020 SOT",HFO (0.5% sulfur)
+"2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass",Marine fuel,"Logging Residues for CFP, 2020 SOT",HFO (0.5% sulfur)
+"2022, Partially upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure",Partially upgraded Marine fuel,Manure to Biorefinery for HTL,HFO (0.5% sulfur)
+"2022, Partially upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge",Partially upgraded Marine fuel,Sludge to Biorefinery for HTL,HFO (0.5% sulfur)
+"Baseline for Biopower with coal, w/o BECCS",Stationary Use: U.S. Mix,"Coal to Power Plants, industrial boiler",Stationary Use: U.S. Mix
+"Baseline for Biopower with coal, w/o BECCS",Stationary Use: U.S. Mix,Poplar,Stationary Use: U.S. Mix
+"Baseline for Biopower, 100% coal, w/ CCS, 650 MWe",Stationary Use: U.S. Mix,"Coal to Power Plants, industrial boiler",Stationary Use: U.S. Mix
+"Baseline for Biopower, 100% coal, w/ CCS, 650 MWe",Stationary Use: U.S. Mix,Poplar,Stationary Use: U.S. Mix
+"Baseline for Biopower, 100% coal, w/o CCS, 650 MWe",Stationary Use: U.S. Mix,"Coal to Power Plants, industrial boiler",Stationary Use: U.S. Mix
+"Baseline for Biopower, 100% coal, w/o CCS, 650 MWe",Stationary Use: U.S. Mix,Poplar,Stationary Use: U.S. Mix
+Biochemical 2019 SOT: Acids Pathway (Burn Lignin Case),Renewable Diesel,Woody Biomass,Diesel
+"Biochemical 2019 SOT: Acids Pathway (Convert Lignin - ""Base"" Case)",Renewable Diesel,Woody Biomass,Diesel
+Biochemical 2019 SOT: Acids Pathway (Convert Lignin - High),Renewable Diesel,Woody Biomass,Diesel
+Biochemical 2019 SOT: BDO Pathway (Burn Lignin Case),Renewable Diesel,Woody Biomass,Diesel
+Biochemical 2019 SOT: BDO Pathway (Convert Lignin - Base),Renewable Diesel,Woody Biomass,Diesel
+Biochemical 2019 SOT: BDO Pathway (Convert Lignin - High),Renewable Diesel,Woody Biomass,Diesel
+Biomass to Gasoline and Diesel Using Integrated Hydropyrolysis and Hydroconversion,Renewable Diesel,Woody Biomass,Diesel
+Biomass to Gasoline and Diesel Using Integrated Hydropyrolysis and Hydroconversion,Renewable Gasoline,Woody Biomass,Motor Gasoline
+Biomass to Hydrogen,Hydrogen,Poplar,Hydrogen
+"Biopower: 100% biomass, w/ BECCS, 130 MWe",Stationary Use: U.S. Mix,"Coal to Power Plants, IGCC turbine",Stationary Use: U.S. Mix
+"Biopower: 100% biomass, w/ BECCS, 130 MWe",Stationary Use: U.S. Mix,Poplar,Stationary Use: U.S. Mix
+"Biopower: 100% biomass, w/o BECCS, 130 MWe",Stationary Use: U.S. Mix,"Coal to Power Plants, IGCC turbine",Stationary Use: U.S. Mix
+"Biopower: 100% biomass, w/o BECCS, 130 MWe",Stationary Use: U.S. Mix,Poplar,Stationary Use: U.S. Mix
+"Biopower: 80% coal, w/ BECCS, 650 MWe",Stationary Use: U.S. Mix,"Coal to Power Plants, IGCC turbine",Stationary Use: U.S. Mix
+"Biopower: 80% coal, w/ BECCS, 650 MWe",Stationary Use: U.S. Mix,Poplar,Stationary Use: U.S. Mix
+"Biopower: 80% coal, w/o BECCS, 650 MWe",Stationary Use: U.S. Mix,"Coal to Power Plants, IGCC turbine",Stationary Use: U.S. Mix
+"Biopower: 80% coal, w/o BECCS, 650 MWe",Stationary Use: U.S. Mix,Poplar,Stationary Use: U.S. Mix
+"Biopower: cofiring with coal, at 49%, w/o BECCS",Stationary Use: U.S. Mix,"Coal to Power Plants, IGCC turbine",Stationary Use: U.S. Mix
+"Biopower: cofiring with coal, at 49%, w/o BECCS",Stationary Use: U.S. Mix,Poplar,Stationary Use: U.S. Mix
+Cellulosic Ethanol,Renewable Gasoline,Herbaceous biomass,Motor Gasoline
+Cellulosic Ethanol with Jet Upgrading,Jet Fuel,Herbaceous biomass,Jet Fuel
+Cellulosic Ethanol with Jet Upgrading,Renewable Gasoline,Herbaceous biomass,Motor Gasoline
+Corn stover ETJ,Jet Fuel,Corn Stover,Jet Fuel
+Corn stover ETJ,Renewable Diesel,Corn Stover,Diesel
+Corn stover ETJ,Renewable Gasoline,Corn Stover,Motor Gasoline
+Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels,Jet Range,Forest Residue,Jet Fuel
+Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels,Renewable Gasoline,Forest Residue,Motor Gasoline
+Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2,Jet Range,Forest Residue,Jet Fuel
+Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2,Renewable Gasoline,Forest Residue,Motor Gasoline
+Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2,Jet Range,Forest Residue,Jet Fuel
+Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2,Renewable Gasoline,Forest Residue,Motor Gasoline
+Decarb 2b: Ex-Situ CFP,Renewable Diesel,Blended woody biomass,Diesel
+Decarb 2b: Ex-Situ CFP,Renewable Gasoline,Blended woody biomass,Motor Gasoline
+Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2,Renewable Diesel,Blended woody biomass,Diesel
+Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2,Renewable Gasoline,Blended woody biomass,Motor Gasoline
+Decarb 2b: Fischer-Tropsch SPK,Jet Range,Forest Residue,Jet Fuel
+Decarb 2b: Fischer-Tropsch SPK,Naptha Range,Forest Residue,Naptha
+Decarb 2b: Fischer-Tropsch SPK,Renewable Diesel,Forest Residue,Diesel
+Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2,Jet Range,Forest Residue,Jet Fuel
+Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2,Naptha Range,Forest Residue,Naptha
+Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2,Renewable Diesel,Forest Residue,Diesel
+Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2,Jet Range,Forest Residue,Jet Fuel
+Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2,Naptha Range,Forest Residue,Naptha
+Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2,Renewable Diesel,Forest Residue,Diesel
+Dry Mill (Corn) ETJ,Jet Fuel,Corn grain (Dry),Jet Fuel
+Dry Mill (Corn) ETJ,Renewable Diesel,Corn grain (Dry),Diesel
+Dry Mill (Corn) ETJ,Renewable Gasoline,Corn grain (Dry),Motor Gasoline
+Ex Situ CFP 2022 Target Case,Renewable Blendstock,Woody Biomass,Crude Oil
+Ex Situ CFP 2022 Target Case,Renewable Diesel,Woody Biomass,Diesel
+Ex Situ CFP 2022 Target Case,Renewable Gasoline,Woody Biomass,Motor Gasoline
+Ex-Situ CFP 2019 SOT,Acetone,Woody Biomass,Acetone
+Ex-Situ CFP 2019 SOT,Light Oxygenated Coproducts,Woody Biomass,Diesel
+Ex-Situ CFP 2019 SOT,MEK,Woody Biomass,MEK
+Ex-Situ CFP 2019 SOT,Renewable Blendstock,Woody Biomass,Diesel
+Ex-Situ CFP 2019 SOT,Renewable Diesel,Woody Biomass,Diesel
+Ex-Situ CFP 2019 SOT,Renewable Gasoline,Woody Biomass,Motor Gasoline
+Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst),Renewable Blendstock,Woody Biomass,Crude Oil
+Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst),Renewable Diesel,Blended woody biomass,Diesel
+Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst),Renewable Diesel,Woody Biomass,Diesel
+Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst),Renewable Gasoline,Blended woody biomass,Motor Gasoline
+Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst),Renewable Gasoline,Woody Biomass,Motor Gasoline
+Ex-Situ Fixed Bed 2022 Projection,Renewable Blendstock,Woody Biomass,Crude Oil
+Ex-Situ Fixed Bed 2022 Projection,Renewable Diesel,Woody Biomass,Diesel
+Ex-Situ Fixed Bed 2022 Projection,Renewable Gasoline,Woody Biomass,Motor Gasoline
+Fischer-Tropsch SPK,Jet Fuel,Woody Residue (dry),Jet Fuel
+Fischer-Tropsch SPK,Naptha,Woody Residue (dry),Motor Gasoline
+Fischer-Tropsch SPK,Renewable Diesel,Woody Residue (dry),Diesel
+Gasification to Methanol,Methanol,Blended woody biomass (dry),Motor Gasoline
+Gasoline from upgraded bio-oil from pyrolysis,Renewable Diesel,Blended woody biomass (dry),Diesel
+Gasoline from upgraded bio-oil from pyrolysis,Renewable Gasoline,Blended woody biomass (dry),Motor Gasoline
+In-Situ CFP 2022 Target Case,Renewable Blendstock,Woody Biomass,Diesel
+In-Situ CFP 2022 Target Case,Renewable Diesel,Woody Biomass,Diesel
+In-Situ CFP 2022 Target Case,Renewable Gasoline,Woody Biomass,Motor Gasoline
+"Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",Diesel Range,Blended woody biomass,Diesel
+"Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",Jet Range,Blended woody biomass,Jet Fuel
+"Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",Naptha Range,Blended woody biomass,Naptha
+"Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",Diesel Range,Blended woody biomass,Diesel
+"Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",Jet Range,Blended woody biomass,Jet Fuel
+"Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",Naptha Range,Blended woody biomass,Naptha
+"Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",Diesel Range,Blended woody biomass,Diesel
+"Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",Jet Range,Blended woody biomass,Jet Fuel
+"Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",Naptha Range,Blended woody biomass,Naptha
+"Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",Diesel Range,Blended woody biomass,Diesel
+"Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",Jet Range,Blended woody biomass,Jet Fuel
+"Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",Naptha Range,Blended woody biomass,Naptha
+Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons,Diesel Range,Blended woody biomass,Diesel
+Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons,Jet Range,Blended woody biomass,Jet Fuel
+Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons,Naptha Range,Blended woody biomass,Naptha
+Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates,High-Octane Gasoline Blendstock,Woody Biomass,Motor Gasoline

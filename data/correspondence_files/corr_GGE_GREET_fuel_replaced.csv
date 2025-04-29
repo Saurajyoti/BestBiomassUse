@@ -1,0 +1,14 @@
+This correspondence file maps the B2B model fuel name to the energy carrier and energy carrier type as per EIA. One case of this mapping use is for converting gal to GGE as per LHV measures of fuels,,
+,,
+,,
+B2B fuel name,GREET_Fuel,GREET_Fuel type
+Diesel,U.S. conventional diesel,liquid fuel
+Jet Fuel,Conventional Jet Fuel,liquid fuel
+Motor Gasoline,Gasoline blendstock,liquid fuel
+Naptha,Gasoline blendstock,liquid fuel
+Crude Oil,Crude oil,liquid fuel
+Acetone,Acetone,liquid fuel
+MEK,Butanol,liquid fuel
+Residual Oil,Residual oil,liquid fuel
+HFO (0.5% sulfur),Bunker fuel for ocean tanker,liquid fuel
+MDO (0.5% sulfur),Bunker fuel for ocean tanker,liquid fuel

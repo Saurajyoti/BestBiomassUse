@@ -1,0 +1,126 @@
+"This correspondence file maps biofuel pathway name, feedstock, and biofuel flow name to the fossil fuel its targetted to replace",,
+,,
+,,
+Case/Scenario,Biofuel Stream_LCA,Replaced Fuel
+Ex-Situ CFP 2019 SOT,Acetone,Acetone
+"2022, Marine biocrude via HTL from Manure with NH3 removal for 1000 MTPD Manure",Marine Biooil,HFO (0.5% sulfur)
+"2022, Marine biocrude via HTL from sludge with NH3 removal for 1000 MTPD sludge",Marine Biooil,HFO (0.5% sulfur)
+"Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",Diesel Range,Diesel
+"Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",Diesel Range,Diesel
+"Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",Diesel Range,Diesel
+"Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",Diesel Range,Diesel
+Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons,Diesel Range,Diesel
+"Baseline for Biopower with coal, w/o BECCS",Electricity,Stationary Use: U.S. Mix
+"Baseline for Biopower, 100% coal, w/ CCS, 650 MWe",Electricity,Stationary Use: U.S. Mix
+"Baseline for Biopower, 100% coal, w/o CCS, 650 MWe",Electricity,Stationary Use: U.S. Mix
+"Biopower: 100% biomass, w/ BECCS, 130 MWe",Electricity,Stationary Use: U.S. Mix
+"Biopower: 100% biomass, w/o BECCS, 130 MWe",Electricity,Stationary Use: U.S. Mix
+"Biopower: 80% coal, w/ BECCS, 650 MWe",Electricity,Stationary Use: U.S. Mix
+"Biopower: 80% coal, w/o BECCS, 650 MWe",Electricity,Stationary Use: U.S. Mix
+"Biopower: cofiring with coal, at 49%, w/o BECCS",Electricity,Stationary Use: U.S. Mix
+"2022, Fully upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure",Fully upgraded Marine fuel,HFO (0.5% sulfur)
+"2022, Fully upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge",Fully upgraded Marine fuel,HFO (0.5% sulfur)
+"2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates",High Octane Gasoline (HOG),Motor Gasoline
+"2018, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates",High Octane Gasoline (HOG),Motor Gasoline
+"2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates",High Octane Gasoline (HOG),Motor Gasoline
+"2020, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates",High Octane Gasoline (HOG),Motor Gasoline
+2021 SOT: High octane gasoline from lignocellulosic biomass via syngas and methanol/dimethyl ether intermediates,High Octane Gasoline (HOG),Motor Gasoline
+Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates,High-Octane Gasoline Blendstock,Motor Gasoline
+2015 Biochemical Catalysis Design Report,Hydrocarbon Blendstock,Diesel
+Biomass to Hydrogen,Hydrogen,Hydrogen
+"Biomass to Hydrogen with CCS, design case",Hydrogen,Hydrogen
+Cellulosic Ethanol with Jet Upgrading,"SAF: jet fuel T&D, combustion emissions",Jet Fuel
+Corn stover ETJ,"SAF: jet fuel T&D, combustion emissions",Jet Fuel
+Dry Mill (Corn) ETJ,"SAF: jet fuel T&D, combustion emissions",Jet Fuel
+Fischer-Tropsch SPK,"SAF: jet fuel T&D, combustion emissions",Jet Fuel
+Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels,"SAF: jet fuel T&D, combustion emissions",Jet Fuel
+Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2,"SAF: jet fuel T&D, combustion emissions",Jet Fuel
+Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2,"SAF: jet fuel T&D, combustion emissions",Jet Fuel
+Decarb 2b: Fischer-Tropsch SPK,"SAF: jet fuel T&D, combustion emissions",Jet Fuel
+Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2,"SAF: jet fuel T&D, combustion emissions",Jet Fuel
+Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2,"SAF: jet fuel T&D, combustion emissions",Jet Fuel
+"Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation","SAF: jet fuel T&D, combustion emissions",Jet Fuel
+"Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation","SAF: jet fuel T&D, combustion emissions",Jet Fuel
+"Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation","SAF: jet fuel T&D, combustion emissions",Jet Fuel
+"Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation","SAF: jet fuel T&D, combustion emissions",Jet Fuel
+Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons,"SAF: jet fuel T&D, combustion emissions",Jet Fuel
+2022 SOT: Sludge HTL to Biocrude upgraded to Hydrocarbons,"SAF: jet fuel T&D, combustion emissions",Jet Fuel
+"2023: Catalytic Fast Pyrolysis of woody biomass to SAF, renewable diesel, and renewable gasoline, 17% oxygen content","SAF: jet fuel T&D, combustion emissions",Jet Fuel
+"2023: Catalytic Fast Pyrolysis of woody biomass to SAF, renewable diesel, and renewable gasoline, 20% oxygen content","SAF: jet fuel T&D, combustion emissions",Jet Fuel
+"2023: Catalytic Fast Pyrolysis of woody biomass to SAF, renewable diesel, and renewable gasoline, 22% oxygen content","SAF: jet fuel T&D, combustion emissions",Jet Fuel
+Ex-Situ CFP 2019 SOT,Light Oxygenated Coproducts,Diesel
+"2022, Marine fuel through Fast Pyrolysis of blended woody biomass",Marine Biooil,HFO (0.5% sulfur)
+"2022, Marine fuel through Catalytic Fast Pyrolysis with Pt/TiO2 of blended woody biomass",Marine Biooil,HFO (0.5% sulfur)
+"2022, Marine fuel through Catalytic Fast Pyrolysis with ZSM5 of blended woody biomass",Marine Biooil,HFO (0.5% sulfur)
+Ex-Situ CFP 2019 SOT,MEK,MEK
+Gasification to Methanol,Methanol,Motor Gasoline
+Fischer-Tropsch SPK,Naptha,Motor Gasoline
+Decarb 2b: Fischer-Tropsch SPK,Naptha Range,Naptha
+Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2,Naptha Range,Naptha
+Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2,Naptha Range,Naptha
+"Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",Naptha Range,Naptha
+"Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",Naptha Range,Naptha
+"Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",Naptha Range,Naptha
+"Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",Naptha Range,Naptha
+Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons,Naptha Range,Naptha
+2022 SOT: Sludge HTL to Biocrude upgraded to Hydrocarbons,Naptha Range,Naptha
+"2022, Partially upgraded marine fuel via HTL from Manure with NH3 removal for 1000 MTPD Manure",Partially upgraded Marine fuel,HFO (0.5% sulfur)
+"2022, Partially upgraded marine fuel via HTL from sludge with NH3 removal for 1000 MTPD sludge",Partially upgraded Marine fuel,HFO (0.5% sulfur)
+Ex Situ CFP 2022 Target Case,Renewable Blendstock,Crude Oil
+Ex-Situ CFP 2019 SOT,Renewable Blendstock,Diesel
+Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst),Renewable Blendstock,Crude Oil
+Ex-Situ Fixed Bed 2022 Projection,Renewable Blendstock,Crude Oil
+In-Situ CFP 2022 Target Case,Renewable Blendstock,Diesel
+2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels,Renewable Diesel,Diesel
+"2021 SOT: Biochemical design case, Acids pathway with burn lignin",Renewable Diesel,Diesel
+"2021 SOT: Biochemical design case, Acids pathway with convert lignin to BKA",Renewable Diesel,Diesel
+"2021 SOT: Biochemical design case, BDO pathway with burn lignin",Renewable Diesel,Diesel
+"2021 SOT: Biochemical design case, BDO pathway with convert lignin to BKA",Renewable Diesel,Diesel
+Biochemical 2019 SOT: Acids Pathway (Burn Lignin Case),Renewable Diesel,Diesel
+"Biochemical 2019 SOT: Acids Pathway (Convert Lignin - ""Base"" Case)",Renewable Diesel,Diesel
+Biochemical 2019 SOT: Acids Pathway (Convert Lignin - High),Renewable Diesel,Diesel
+Biochemical 2019 SOT: BDO Pathway (Burn Lignin Case),Renewable Diesel,Diesel
+Biochemical 2019 SOT: BDO Pathway (Convert Lignin - Base),Renewable Diesel,Diesel
+Biochemical 2019 SOT: BDO Pathway (Convert Lignin - High),Renewable Diesel,Diesel
+Biomass to Gasoline and Diesel Using Integrated Hydropyrolysis and Hydroconversion,Renewable Diesel,Diesel
+Corn stover ETJ,Renewable Diesel,Diesel
+Decarb 2b: Ex-Situ CFP,Renewable Diesel,Diesel
+Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2,Renewable Diesel,Diesel
+Decarb 2b: Fischer-Tropsch SPK,Renewable Diesel,Diesel
+Decarb 2b: Fischer-Tropsch SPK with CCS of all flue gases CO2,Renewable Diesel,Diesel
+Decarb 2b: Fischer-Tropsch SPK with CCS of FT flue gas CO2,Renewable Diesel,Diesel
+Dry Mill (Corn) ETJ,Renewable Diesel,Diesel
+Ex Situ CFP 2022 Target Case,Renewable Diesel,Diesel
+Ex-Situ CFP 2019 SOT,Renewable Diesel,Diesel
+Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst),Renewable Diesel,Diesel
+Ex-Situ Fixed Bed 2022 Projection,Renewable Diesel,Diesel
+Fischer-Tropsch SPK,Renewable Diesel,Diesel
+Gasoline from upgraded bio-oil from pyrolysis,Renewable Diesel,Diesel
+In-Situ CFP 2022 Target Case,Renewable Diesel,Diesel
+2022 SOT: Sludge HTL to Biocrude upgraded to Hydrocarbons,Renewable Diesel,Diesel
+"2023: Catalytic Fast Pyrolysis of woody biomass to SAF, renewable diesel, and renewable gasoline, 17% oxygen content",Renewable Diesel,Diesel
+"2023: Catalytic Fast Pyrolysis of woody biomass to SAF, renewable diesel, and renewable gasoline, 20% oxygen content",Renewable Diesel,Diesel
+"2023: Catalytic Fast Pyrolysis of woody biomass to SAF, renewable diesel, and renewable gasoline, 22% oxygen content",Renewable Diesel,Diesel
+2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel,Renewable Diesel Blendstock,Diesel
+2018 Biochemical Design Case: BDO Pathway,Renewable Diesel Blendstock,Diesel
+2018 Biochemical Design Case: Organic Acids Pathway,Renewable Diesel Blendstock,Diesel
+2020 SOT: Ex-Situ CFP of lignocellulosic biomass to hydrocarbon fuels,High Octane Gasoline (HOG),Motor Gasoline
+Biomass to Gasoline and Diesel Using Integrated Hydropyrolysis and Hydroconversion,High Octane Gasoline (HOG),Motor Gasoline
+Cellulosic Ethanol,High Octane Gasoline (HOG),Motor Gasoline
+Cellulosic Ethanol with Jet Upgrading,High Octane Gasoline (HOG),Motor Gasoline
+Corn stover ETJ,High Octane Gasoline (HOG),Motor Gasoline
+Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels,High Octane Gasoline (HOG),Motor Gasoline
+Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas and boiler vent streams CO2,High Octane Gasoline (HOG),Motor Gasoline
+Decarb 2b: Cellulosic Ethanol to renewable gasoline and jet fuels with CCS of fermentation offgas CO2,High Octane Gasoline (HOG),Motor Gasoline
+Decarb 2b: Ex-Situ CFP,High Octane Gasoline (HOG),Motor Gasoline
+Decarb 2b: Ex-Situ CFP with CCS of all flue gases CO2,High Octane Gasoline (HOG),Motor Gasoline
+Dry Mill (Corn) ETJ,High Octane Gasoline (HOG),Motor Gasoline
+Ex Situ CFP 2022 Target Case,High Octane Gasoline (HOG),Motor Gasoline
+Ex-Situ CFP 2019 SOT,High Octane Gasoline (HOG),Motor Gasoline
+Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst),High Octane Gasoline (HOG),Motor Gasoline
+Ex-Situ Fixed Bed 2022 Projection,High Octane Gasoline (HOG),Motor Gasoline
+Gasoline from upgraded bio-oil from pyrolysis,High Octane Gasoline (HOG),Motor Gasoline
+In-Situ CFP 2022 Target Case,High Octane Gasoline (HOG),Motor Gasoline
+"2023: Catalytic Fast Pyrolysis of woody biomass to SAF, renewable diesel, and renewable gasoline, 17% oxygen content",High Octane Gasoline (HOG),Motor Gasoline
+"2023: Catalytic Fast Pyrolysis of woody biomass to SAF, renewable diesel, and renewable gasoline, 20% oxygen content",High Octane Gasoline (HOG),Motor Gasoline
+"2023: Catalytic Fast Pyrolysis of woody biomass to SAF, renewable diesel, and renewable gasoline, 22% oxygen content",High Octane Gasoline (HOG),Motor Gasoline

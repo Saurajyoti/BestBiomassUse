@@ -1,0 +1,70 @@
+"This correspondence file maps biofuel pathway name, feedstock, and biofuel flow name to the GREET fuel pathway",,,
+,,,
+,,,
+Case/Scenario,Biofuel Flow Name,Feedstock,GREET Pathway
+2013 Biochemical Design Case: Corn Stover-Derived Sugars to Diesel,Renewable Diesel Blendstock,Biomass,"CIDI Vehicle: FTD100, Biomass"
+2015 Biochemical Catalysis Design Report,Hydrocarbon Blendstock,Biomass,"CIDI Vehicle: FTD100, Biomass"
+Corn stover ETJ,Jet Fuel,Corn Stover,"Passenger Aircraft, Single Aisle (SA): FT Jet from Biomass"
+Corn stover ETJ,Renewable Diesel,Corn Stover,
+Corn stover ETJ,Renewable Gasoline,Corn Stover,
+Dry Mill (Corn) ETJ,Jet Fuel,Corn grain (Dry),"Passenger Aircraft, Single Aisle (SA): FT Jet from Biomass"
+Dry Mill (Corn) ETJ,Renewable Diesel,Corn grain (Dry),
+Dry Mill (Corn) ETJ,Renewable Gasoline,Corn grain (Dry),
+2018 Biochemical Design Case: Organic Acids Pathway,Renewable Diesel Blendstock,Blended herbaceous biomass,"CIDI Vehicle: FTD100, Biomass"
+2018 Biochemical Design Case: BDO Pathway,Renewable Diesel Blendstock,Blended herbaceous biomass,"CIDI Vehicle: FTD100, Biomass"
+Biochemical 2019 SOT: BDO Pathway (Burn Lignin Case),Renewable Diesel Blendstock,Blend of 2-pass and 3-pass Corn Stover,"CIDI Vehicle: FTD100, Biomass"
+Biochemical 2019 SOT: BDO Pathway (Convert Lignin - Base),Renewable Diesel Blendstock,Blend of 2-pass and 3-pass Corn Stover,"CIDI Vehicle: FTD100, Biomass"
+Biochemical 2019 SOT: BDO Pathway (Convert Lignin - High),Renewable Diesel Blendstock,Blend of 2-pass and 3-pass Corn Stover,"CIDI Vehicle: FTD100, Biomass"
+Biochemical 2019 SOT: Acids Pathway (Burn Lignin Case),Renewable Diesel Blendstock,Blend of 2-pass and 3-pass Corn Stover,"CIDI Vehicle: FTD100, Biomass"
+"Biochemical 2019 SOT: Acids Pathway (Convert Lignin - ""Base"" Case)",Renewable Diesel Blendstock,Blend of 2-pass and 3-pass Corn Stover,"CIDI Vehicle: FTD100, Biomass"
+Biochemical 2019 SOT: Acids Pathway (Convert Lignin - High),Renewable Diesel Blendstock,Blend of 2-pass and 3-pass Corn Stover,"CIDI Vehicle: FTD100, Biomass"
+Thermochemical Research Pathway to High-Octane Gasoline Blendstock Through Methanol/Dimethyl Ether Intermediates,High-Octane Gasoline Blendstock,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+"Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",FT-Naptha,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+"Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",FT-Jet,Woody Biomass,"Passenger Aircraft, Single Aisle (SA): FT Jet from Biomass"
+"Pathway 1A: Syngas to molybdenum disulfide (MoS2)-catalyzed alcohols followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",FT-Diesel,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+"Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",FT-Naptha,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+"Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",FT-Jet,Woody Biomass,"Passenger Aircraft, Single Aisle (SA): FT Jet from Biomass"
+"Pathway 1B: Syngas fermentation to ethanol followed by fuel production via alcohol condensation (Guerbet reaction), dehydration, oligomerization, and hydrogenation",FT-Diesel,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+"Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",FT-Naptha,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+"Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",FT-Jet,Woody Biomass,"Passenger Aircraft, Single Aisle (SA): FT Jet from Biomass"
+"Pathway 2A: Syngas to rhodium (Rh)-catalyzed mixed oxygenates followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",FT-Diesel,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+"Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",FT-Naptha,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+"Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",FT-Jet,Woody Biomass,"Passenger Aircraft, Single Aisle (SA): FT Jet from Biomass"
+"Pathway 2B: Syngas fermentation to ethanol followed by fuel production via carbon coupling/deoxygenation (to isobutene), oligomerization, and hydrogenation",FT-Diesel,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons,FT-Naptha,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons,FT-Jet,Woody Biomass,"Passenger Aircraft, Single Aisle (SA): FT Jet from Biomass"
+Pathway FT: Syngas to liquid fuels via Fischer-Tropsch technology as a commercial benchmark for comparisons,FT-Diesel,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+"2018, 2018 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates",High Octane Gasoline (HOG),Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+"2018, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates",High Octane Gasoline (HOG),Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+"2020, 2019 SOT High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates",High Octane Gasoline (HOG),Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+"2020, 2022 projection High Octane Gasoline from Lignocellulosic Biomass via Syngas and Methanol/Dimethyl Ether Intermediates",High Octane Gasoline (HOG),Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Biomass to Gasoline and Diesel Using Integrated Hydropyrolysis and Hydroconversion,Renewable Gasoline,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Biomass to Gasoline and Diesel Using Integrated Hydropyrolysis and Hydroconversion,Renewable Diesel,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+In-Situ CFP 2022 Target Case,Renewable Gasoline,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+In-Situ CFP 2022 Target Case,Renewable Diesel,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+In-Situ CFP 2022 Target Case,Renewable Blendstock,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex Situ CFP 2022 Target Case,Renewable Gasoline,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex Situ CFP 2022 Target Case,Renewable Diesel,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex Situ CFP 2022 Target Case,Renewable Blendstock,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst),Renewable Gasoline,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst),Renewable Diesel,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex-Situ Fixed Bed 2018 SOT (0.5 wt% Pt/TiO2 Catalyst),Renewable Blendstock,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex-Situ Fixed Bed 2022 Projection,Renewable Gasoline,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex-Situ Fixed Bed 2022 Projection,Renewable Diesel,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex-Situ Fixed Bed 2022 Projection,Renewable Blendstock,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex-Situ CFP 2019 SOT,Light Oxygenated Coproducts,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex-Situ CFP 2019 SOT,Acetone,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex-Situ CFP 2019 SOT,MEK,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex-Situ CFP 2019 SOT,Renewable Gasoline,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex-Situ CFP 2019 SOT,Renewable Diesel,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Ex-Situ CFP 2019 SOT,Renewable Blendstock,Woody Biomass,"CIDI Vehicle: FTD100, Biomass"
+Fischer-Tropsch SPK,Renewable Diesel,"Woody Residue (wet, 30% moisture)",
+Fischer-Tropsch SPK,Jet Fuel,"Woody Residue (wet, 30% moisture)",
+Fischer-Tropsch SPK,Naptha,"Woody Residue (wet, 30% moisture)",
+Gasification to Methanol,Methanol,Blended woody biomass (wet),
+Gasoline from upgraded bio-oil from pyrolysis,Renewable Gasoline,Blended woody biomass (wet),
+Gasoline from upgraded bio-oil from pyrolysis,Renewable Diesel,Blended woody biomass (wet),
+"Baseline for Biopower with coal, w/o BECCS",Stationary Use: U.S. Mix,"Coal to Power Plants, industrial boiler",
+"Baseline for Biopower with coal, w/o BECCS",Stationary Use: U.S. Mix,Poplar,
+"Biopower: cofiring with coal, at 49%, w/o BECCS",Stationary Use: U.S. Mix,"Coal to Power Plants, IGCC turbine",
+"Biopower: cofiring with coal, at 49%, w/o BECCS",Stationary Use: U.S. Mix,Poplar,

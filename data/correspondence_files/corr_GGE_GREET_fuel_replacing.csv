@@ -1,0 +1,18 @@
+This correspondence file maps the B2B model fuel name to the GREET fuel and fuel type. One use of this mapping is for converting gal to GGE as per LHV measures of fuels.,,
+,,
+,,
+GREET_Fuel,GREET_Fuel type,B2B fuel name
+Acetone,liquid fuel,Acetone
+Fischer-Tropsch diesel (FTD),liquid fuel,FT-Diesel
+Conventional Jet Fuel,liquid fuel,FT-Jet
+Fischer-Tropsch diesel (FTD),liquid fuel,FT-Naptha
+Gasoline blendstock,liquid fuel,High Octane Gasoline (HOG)
+Gasoline blendstock,liquid fuel,High-Octane Gasoline Blendstock
+Fischer-Tropsch diesel (FTD),liquid fuel,Hydrocarbon Blendstock
+Conventional Jet Fuel,liquid fuel,Jet Fuel
+Fischer-Tropsch diesel (FTD),liquid fuel,Light Oxygenated Coproducts
+Butane,liquid fuel,MEK
+Fischer-Tropsch diesel (FTD),liquid fuel,Renewable Blendstock
+Fischer-Tropsch diesel (FTD),liquid fuel,Renewable Diesel
+Fischer-Tropsch diesel (FTD),liquid fuel,Renewable Diesel Blendstock
+Gasoline blendstock,liquid fuel,Renewable Gasoline

@@ -26,10 +26,13 @@ import pandas as pd
 
 code_path_prefix = 'C:/Users/skar/repos/BestBiomassUse'
 
-input_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Best use of biomass/data'
+input_path_prefix = 'C:/Users/skar/repos/BestBiomassUse/data'
 input_path_decarb_model = 'C:/Users/skar/Box/EERE SA Decarbonization/1. Tool/EERE Tool/Dashboard'
 
-output_path_prefix = 'C:/Users/skar/Box/saura_self/Proj - Best use of biomass/data/interim'
+output_path_prefix = 'C:/Users/skar/repos/BestBiomassUse/data/interim'
+
+# Excel worksheet row limit
+EXCEL_MAX_ROWS = 1_048_576
 
 input_path_model = input_path_prefix + '/model'
 input_path_GREET = input_path_prefix + '/GREET'
@@ -44,7 +47,7 @@ from unit_conversions import model_units
 
 # f_model = 'MCCAM_09_11_2023_working.xlsx'
 
-f_model = 'MCCAM_05_02_2024_working.xlsx'
+f_model = 'MCCAM_04_10_2025_working.xlsx'
 
 sheet_TEA = 'Db'
 sheet_param_variability = 'var_p'
@@ -77,8 +80,8 @@ sheet_BT16_availability = 'Sheet1'
 # Year(s) of production defined as a list:
 # If single year: [year]
 # If multiple year: [first year, last year], inclusive of both the bounds
-production_year = [2022]
-#production_year = [2022, 2050]
+# production_year = [2022]
+production_year = [2022, 2050]
 
 # cost adjustment year, to which inflation will be adjusted
 cost_year = 2020
@@ -93,7 +96,7 @@ consider_coproduct_cost_credit = True
 consider_coproduct_env_credit = True
 
 # Toggle variability study
-consider_variability_study = False
+consider_variability_study = True # When true toggle scale-up study below to False 
 # Selection to either run 'Cost_Item' or 'Stream_LCA' variabilities so that MAC is calculated with one parameters type varied at a time.
 consider_which_variabilities = 'Stream_LCA' 
 
@@ -187,25 +190,34 @@ class ExcelApp(xw.App):
 
 # Function to expand on the input variability table
 def variability_table(var_params):
-    var_tbl = pd.DataFrame(
-        columns=var_params.columns.to_list() + ['param_value'])
-    for r in range(0, var_params.shape[0]):
-        if var_params.loc[r, 'param_dist'] == 'linear':
-            val = var_params.loc[r, 'param_min']
-            while (var_params.loc[r, 'param_max'] - val) > 0.000001:
-                # var_params.loc[r,'param_value'] = val
-                var_tbl = pd.concat([var_tbl,
-                                     pd.DataFrame({
-                                         'col_param': [var_params.loc[r, 'col_param']],
-                                         'col_val': [var_params.loc[r, 'col_val']],
-                                         'param_name': [var_params.loc[r, 'param_name']],
-                                         'param_min': [var_params.loc[r, 'param_min']],
-                                         'param_max': [var_params.loc[r, 'param_max']],
-                                         'param_dist': [var_params.loc[r, 'param_dist']],
-                                         'dist_option': [var_params.loc[r, 'dist_option']],
-                                         'param_value': [val]})
-                                     ])
-                val = val + var_params.loc[r, 'dist_option']
+    # Create an empty list to collect all rows
+    all_rows = []
+
+    for r in range(var_params.shape[0]):
+        param_min = var_params.loc[r, 'param_min']
+        param_max = var_params.loc[r, 'param_max']
+        dist_option = var_params.loc[r, 'dist_option']
+        param_dist = var_params.loc[r, 'param_dist']
+        
+        # Check for linear distribution
+        if param_dist == 'linear':
+            val = param_min
+            while val <= param_max:
+                all_rows.append({
+                    'col_param': var_params.loc[r, 'col_param'],
+                    'col_val': var_params.loc[r, 'col_val'],
+                    'param_name': var_params.loc[r, 'param_name'],
+                    'param_min': param_min,
+                    'param_max': param_max,
+                    'param_dist': param_dist,
+                    'dist_option': dist_option,
+                    'param_value': val
+                })
+                val += dist_option
+
+    # Convert list of rows into a DataFrame
+    var_tbl = pd.DataFrame(all_rows, columns=var_params.columns.to_list() + ['param_value'])
+    
     return var_tbl
 
 
@@ -414,26 +426,20 @@ def fmt_GREET_LCI(df):
 
     }
 
-    harmonize_headers_long = {}
-    for k, v in harmonize_headers.items():
-        for v1 in v:
-            harmonize_headers_long[v1] = k
-    harmonize_metric_long = {}
-    for k, v in harmonize_metric.items():
-        for v1 in v:
-            harmonize_metric_long[v1] = k
+    harmonize_headers_long = {v1: k for k, v_list in harmonize_headers.items() for v1 in v_list}
+    harmonize_metric_long = {v1: k for k, v_list in harmonize_metric.items() for v1 in v_list}
 
     # testing only
     # df = corr_itemized_LCA.copy()
     # df = df.loc[(df['Parameter_B'] == 'Avoided Ems Credits') & (df['Stream_Flow'] == 'Sludge (dry basis), Counterfactual'), : ].reset_index(drop=True)
     # df = df.loc[(df['Stream_Flow'] == 'Jet Range') & (df['Stream_LCA'] == 'SAF: jet fuel T&D, combustion emissions'), : ].reset_index(drop=True)
 
-    # df = df.drop_duplicates().reset_index(drop=True)
+    df = df.drop_duplicates().reset_index(drop=True)
 
     df.rename(columns={'GREET row names_level1': 'LCA_metric_GREET', 'values_level1': 'LCA_value'}, inplace=True)
 
     # drop rows with loss factor
-    df = df.loc[~(df['LCA_metric_GREET'] == 'Loss factor'),:].reset_index(drop=True).copy()
+    df = df.loc[df['LCA_metric_GREET'].ne('Loss factor')].reset_index(drop=True)
 
     df[['LCA: Unit (numerator)', 'LCA: Unit (denominator)']] = df['Unit'].str.split('/', expand=True)
 
@@ -448,34 +454,23 @@ def fmt_GREET_LCI(df):
         'LCA_value',
         'LCA: Unit (numerator)',
         'LCA: Unit (denominator)',
-        'Year']].copy()
+        'Year'
+        ]]
 
     # strip white spaces before and after metric names
-    for row in range(df.shape[0]):
-        df.loc[row, 'LCA_metric_GREET'] = df.loc[row, 'LCA_metric_GREET'].strip()
+    df['LCA_metric_GREET'] = df['LCA_metric_GREET'].str.strip()
 
     # replace with harmonized headers and metrices
-    df.loc[df['LCA_metric_GREET'].isin(harmonize_headers_long.keys()), 'LCA_metric'] =\
-        df.loc[df['LCA_metric_GREET'].isin(harmonize_headers_long.keys(
-        )), 'LCA_metric_GREET'].map(harmonize_headers_long, na_action='ignore')
-
-    df.loc[df['LCA_metric_GREET'].isin(harmonize_metric_long.keys()), 'LCA_metric'] =\
-        df.loc[df['LCA_metric_GREET'].isin(harmonize_metric_long.keys(
-        )), 'LCA_metric_GREET'].map(harmonize_metric_long, na_action='ignore')
-    df.fillna({'LCA_metric' : '-'}, inplace=True)
-
-    # Join header to LCI metric
-    for row in range(df.shape[0]):
-        if df.loc[row, 'LCA_metric'] in harmonize_headers.keys():
-            header_val = df.loc[row, 'LCA_metric']
-        else:
-            # concatenating with header
-            df.loc[row, 'LCA_metric'] = header_val + \
-                '__' + df.loc[row, 'LCA_metric'].strip()
+    full_mapping = {**harmonize_headers_long, **harmonize_metric_long}
+    df['LCA_metric'] = df['LCA_metric_GREET'].map(full_mapping).fillna('-')
+            
+    # Join header to LCI metric   
+    df['header_val'] = df['LCA_metric'].where(df['LCA_metric'].isin(harmonize_headers)).ffill()
+    df['LCA_metric'] = df['header_val'] + '__' + df['LCA_metric']
 
     # remove the header rows except water consumption
     df = df.loc[~(df['LCA_metric'].isin(
-        harmonize_headers.keys()-['Water consumption'])), :]
+    set(harmonize_headers.keys()) - {'Water consumption'})), :].reset_index(drop=True)
 
     # select a subset of LCA metrices for GHG calculation
     select_GHG_metrices = [
@@ -499,6 +494,7 @@ def fmt_GREET_LCI(df):
     col_indices = ['Parameter_B', 'Stream_Flow', 'Stream_LCA', 'GREET1 sheet',
                    'Coproduct allocation method', 'GREET classification of coproduct',
                    'LCA_metric', 'LCA: Unit (numerator)', 'LCA: Unit (denominator)', 'Year']
+    #cols_duplicate_check = ['Case/Scenario', 'Parameter_B', 'Stream_Flow', 'Stream_LCA', 'Year']
 
     df = df.loc[df['LCA_metric'].isin(select_GHG_metrices), :]
 
@@ -523,9 +519,9 @@ def fmt_GREET_LCI(df):
                                  if_unit_numerator=False, if_given_category=False)
 
     # identify duplicate rows
-    df_duplicates = df.loc[df[col_indices].duplicated(), :]
+    df_duplicates = df.loc[df[col_indices].duplicated(), :].copy()
     if df_duplicates.shape[0] > 0:
-        print("Warning: The following LCA metrices need attention as there are duplicates and metrices will be aggregrated by summation..")
+        print("Warning: Note certain LCA metrices are duplicates. The duplicates arrise due to harmonizing LCA metrices. Duplicates with all data considered are already removed after file is read.")
         print(df_duplicates)
     df = df.groupby(col_indices, dropna=False, sort=False).agg(
         {'LCA_value': 'sum'}).reset_index()
@@ -542,15 +538,13 @@ def fmt_GREET_LCI(df):
    
     # Check and calculate CO2 (w/C in VOC & CO)
     # if co2 == 0: don't re-calculate CO2 w/C.
-    for idx, r in df.iterrows():
-        # if ( ((r['Total emissions__CO2 (w/ C in VOC & CO)'] == 0) &
-        #     r['CO2'] != 0) | always_calc_CO2_w_VOC_CO ) :
-        if (r['Total emissions__CO2'] != 0) & always_calc_CO2_w_VOC_CO:
-            df.loc[idx, 'Total emissions__CO2 (w/ C in VOC & CO)'] =\
-                r['Total emissions__CO2'] +\
-                r['Total emissions__VOC'] * dict_frac_C['Carbon ratio of VOC'] / dict_frac_C['Carbon ratio of CO2'] +\
-                r['Total emissions__CO'] * dict_frac_C['Carbon ratio of CO'] / \
-                dict_frac_C['Carbon ratio of CO2']
+    mask = (df['Total emissions__CO2'] != 0) & (always_calc_CO2_w_VOC_CO)
+    df.loc[mask, 'Total emissions__CO2 (w/ C in VOC & CO)'] = (
+        df.loc[mask, 'Total emissions__CO2'] +
+        df.loc[mask, 'Total emissions__VOC'] * dict_frac_C['Carbon ratio of VOC'] / dict_frac_C['Carbon ratio of CO2'] +
+        df.loc[mask, 'Total emissions__CO'] * dict_frac_C['Carbon ratio of CO'] / dict_frac_C['Carbon ratio of CO2']
+    )
+
 
     # Calculate GHG metric
     df['GHG'] = df['Total emissions__CO2 (w/ C in VOC & CO)'] +\
@@ -589,22 +583,29 @@ def fmt_GREET_LCI(df):
     df.rename(columns={'GHG': 'LCA_value'}, inplace=True)
     df['LCA_metric'] = 'CO2e'
 
-    return df
+    return df_duplicates, df
 
 
 def ef_calc_co2e(df):
-    # calculate CO2e
+
+    df['Reference case'] = pd.to_numeric(df['Reference case'], errors='coerce')
+    df['Elec0'] = pd.to_numeric(df['Elec0'], errors='coerce')
+
+    # Multiply by the corresponding factor from dict_gco2e
     df['mult'] = df['Formula'].map(dict_gco2e)
-    df['Reference case'] = pd.to_numeric(df['Reference case'])
-    df['Elec0'] = pd.to_numeric(df['Elec0'])
-    df['Reference case'] = df['Reference case'] * df['mult']
-    df['Elec0'] = df['Elec0'] * df['mult']
+    
+    # Calculate CO2e for 'Reference case' and 'Elec0'
+    df['Reference case'] *= df['mult']
+    df['Elec0'] *= df['mult']
+
     df = df.groupby(['GREET Pathway', 'Unit (Numerator)',
-                     'Unit (Denominator)', 'Case', 'Scope', 'Year'
-                     ]).agg({'Reference case': 'sum',
-                             'Elec0': 'sum'}).reset_index()
+                     'Unit (Denominator)', 'Case', 'Scope', 'Year'], as_index=False).agg({
+                         'Reference case': 'sum',
+                         'Elec0': 'sum'
+                     })
     df['Formula'] = 'CO2e'
     df['Stream_LCA'] = 'Carbon dioxide equivalent'
+    
     return df
 
 
@@ -843,6 +844,7 @@ corr_GGE_GREET_fuel_replacing = pd.read_csv(
 
 corr_itemized_LCA = pd.read_csv(
     input_path_corr + '/' + f_corr_itemized_LCI, dtype={8: 'str'}, header=0, index_col=0)
+corr_itemized_LCA.drop_duplicates(inplace=True)
 
 corr_replaced_mfsp = pd.read_csv(
     input_path_corr + '/' + f_corr_replaced_EIA_mfsp, header=3, index_col=None)
@@ -961,10 +963,8 @@ elif allocation_type == 'Hybrid':
 # Step: calculate cost per variability of parameters
 
 # drop blanks and zeros
-cost_items = cost_items.loc[~(cost_items['Total Cost'].isin(['-']) | 
-                              cost_items['Total Cost'].isna() |
-                              cost_items['Total Cost'].isnull() | 
-                              (cost_items['Total Cost'] == 0)), :].copy()
+cost_items = cost_items.query('`Total Cost` not in ["-", None, 0]').copy()
+
 
 if consider_variability_study & (consider_which_variabilities == 'Cost_Item'):
 
@@ -985,233 +985,210 @@ if consider_variability_study & (consider_which_variabilities == 'Cost_Item'):
 
     cost_items_temp = cost_items.copy()
 
-    cost_items = pd.DataFrame(
-        columns=cost_items_temp.columns.to_list() + ['variability_id'])
+    cost_items_list = []    
     for r in range(0, var_params_tbl.shape[0]):
         cost_items_temp.loc[
             cost_items_temp[var_params_tbl.loc[r, 'col_param']].isin(
                 [var_params_tbl.loc[r, 'param_name']]),
             var_params_tbl.loc[r, 'col_val']] = var_params_tbl.loc[r, 'param_value']
         cost_items_temp['variability_id'] = var_params_tbl.loc[r,'variability_id']
-        cost_items = pd.concat([cost_items, cost_items_temp]).copy()
+        cost_items_list.append(cost_items_temp)
+    cost_items = pd.concat(cost_items_list, ignore_index=True)
 
     cost_items = cost_items.merge(
         var_params_tbl, how='left', on='variability_id').reset_index(drop=True)
-    
+
+
 if consider_scale_up_study:
     
-    # biomass availability mappings
+    # Map biomass types based on feedstock
     map_bm_types = {
-        'Coal to Power Plants' : '', 
-        'Poplar' : 'Woody', 
-        'Blended woody biomass' : 'Woody',
-        'Forest Residue' : 'Woody', 
-        'Switchgrass' : 'Herbaceous',
-        'Sludge to Biorefinery for HTL' : 'Wastewater sludge',
-        'Logging Residues for CFP, 2020 SOT' : 'Woody',
-        'Clean Pine for CFP, 2020 SOT' : 'Woody',
-        'Manure to Biorefinery for HTL' : 'Manure'
-               }
-    
-    # Read data on biomass availability    
+        'Coal to Power Plants': '', 
+        'Poplar': 'Woody', 
+        'Blended woody biomass': 'Woody',
+        'Forest Residue': 'Woody', 
+        'Switchgrass': 'Herbaceous',
+        'Sludge to Biorefinery for HTL': 'Wastewater sludge',
+        'Logging Residues for CFP, 2020 SOT': 'Woody',
+        'Clean Pine for CFP, 2020 SOT': 'Woody',
+        'Manure to Biorefinery for HTL': 'Manure'
+    }
+
+    # Read data on biomass availability
     bm = pd.read_excel(input_path_BT16 + '/' + f_BT16_availability,
-                       sheet_name=sheet_BT16_availability,
-                       header=17, index_col=None,
-                       usecols="C:K")
+                    sheet_name=sheet_BT16_availability,
+                    header=17, index_col=None,
+                    usecols="C:K")
     bm = bm.loc[~bm['Aggregated'].isin(['Total']), : ]
     bm = bm.melt(['Aggregated'])
-    bm.rename(columns={
-        'Aggregated' : 'bm_types',
-        'variable' : 'bm_cost',
-        'value' : 'qty_dry_bm'}, inplace=True)
+    bm.rename(columns={'Aggregated': 'bm_types', 'variable': 'bm_cost', 'value': 'qty_dry_bm'}, inplace=True)
+
+    # Add unit cost and year columns
     bm['bm_cost: Unit (numerator)'] = 'USD'
     bm['bm_cost: Unit (denominator)'] = 'dt'
     bm['bm_cost: USD year'] = BT16_cost_year
     bm['qty_dry_bm: Unit'] = 'MM dt'
-    
-    # Adding cost of T&D for reactor throat price, 40 $/dt
-    bm['bm_cost'] = bm['bm_cost'] + 40
-    
-    # Adding 30% penalty for feedstock loss in T&D and storage
-    bm['qty_dry_bm'] = bm['qty_dry_bm'] * 0.7
-    
+
+    # Add cost of T&D and feedstock loss penalty
+    bm['bm_cost'] += 40  # Reactor throat price
+    bm['qty_dry_bm'] *= 0.7  # 30% penalty for feedstock loss
+
+    # Get unique biomass costs
     unique_bm_costs = bm['bm_cost'].unique()
-    
+
+    # Initialize cost_items DataFrame
     tmp_cost_items = cost_items.copy()
     cost_items = pd.DataFrame(columns=tmp_cost_items.columns.to_list() + ['bm_cost_id'])
-    
-    # Map biomass to feedstocks    
-    tmp_cost_items.loc[tmp_cost_items['Parameter_A'].isin(['Feedstock']), 'bm_types'] =\
-        tmp_cost_items.loc[tmp_cost_items['Parameter_A'].isin(['Feedstock']), 'Stream_LCA'].map(map_bm_types)
-       
-    # expand cost_items for every feedstock costs
-    for c in unique_bm_costs:
-        # update feedstock cost
-        
-        # assuming all feedstocks those are in the list of feedstock availability have same set of feedstock cost data
-        tmp_cost_items.loc[(tmp_cost_items['Parameter_A'].isin(['Feedstock'])) & 
-                            (~tmp_cost_items['bm_types'].isna()) &  # not NA
-                            (~tmp_cost_items['bm_types'].isin([''])), # not blank
-                            'Unit Cost'] = c
-        
-        # update cost year
-        tmp_cost_items.loc[(tmp_cost_items['Parameter_A'].isin(['Feedstock'])) & 
-                            (~tmp_cost_items['bm_types'].isna()) &  # not NA
-                            (~tmp_cost_items['bm_types'].isin([''])), # not blank
-                            'Cost Year'] = BT16_cost_year
-        
-        # harmonize unit for feedstock cost
-        # unit of cost is in per dt basis in BT16 feedstock availability and implemented default cost data is in lb; convert dt to dry lb
-        tmp_cost_items.loc[(tmp_cost_items['Parameter_A'].isin(['Feedstock'])) & 
-                            (~tmp_cost_items['bm_types'].isna()) &  # not NA
-                            (~tmp_cost_items['bm_types'].isin([''])), # not blank
-                            'Unit Cost']  =\
-            tmp_cost_items.loc[(tmp_cost_items['Parameter_A'].isin(['Feedstock'])) & 
-                                (~tmp_cost_items['bm_types'].isna()) &  # not NA
-                                (~tmp_cost_items['bm_types'].isin([''])), # not blank
-                                'Unit Cost'] / 2000
-            
-        # re-calculate total cost
-        tmp_cost_items.loc[((tmp_cost_items['Parameter_A'].isin(['Feedstock'])) &
-                        (tmp_cost_items['Flow'] != '-') &
-                        (tmp_cost_items['Operating Time'] != '-') &
-                        (tmp_cost_items['Unit Cost'] != '-')), 'Total Cost'] = \
-            tmp_cost_items.loc[((tmp_cost_items['Parameter_A'].isin(['Feedstock'])) &
-                            (tmp_cost_items['Flow'] != '-') &
-                            (tmp_cost_items['Operating Time'] != '-') &
-                            (tmp_cost_items['Unit Cost'] != '-')), 'Flow'] *\
-            tmp_cost_items.loc[((tmp_cost_items['Parameter_A'].isin(['Feedstock'])) &
-                            (tmp_cost_items['Flow'] != '-') &
-                            (tmp_cost_items['Operating Time'] != '-') &
-                            (tmp_cost_items['Unit Cost'] != '-')), 'Operating Time'] *\
-            tmp_cost_items.loc[((tmp_cost_items['Parameter_A'].isin(['Feedstock'])) &
-                            (tmp_cost_items['Flow'] != '-') &
-                            (tmp_cost_items['Operating Time'] != '-') &
-                            (tmp_cost_items['Unit Cost'] != '-')), 'Unit Cost']
-        
-        # add identifier column
-        tmp_cost_items['bm_cost_id'] = c
-        # revert data frame
-        if cost_items.shape[0]!=0:
-            cost_items = pd.concat([cost_items,tmp_cost_items], ignore_index=True, sort=False)
-        else:
-            cost_items = tmp_cost_items.copy()
 
-if (consider_variability_study & (consider_which_variabilities == 'Cost_Item')):
+    # Map biomass types to feedstocks
+    feedstock_mask = tmp_cost_items['Parameter_A'] == 'Feedstock'
+    tmp_cost_items.loc[feedstock_mask, 'bm_types'] = tmp_cost_items.loc[feedstock_mask, 'Stream_LCA'].map(map_bm_types)
+
+    # Expand cost_items for every feedstock cost
+    for c in unique_bm_costs:
+        # Apply feedstock cost where valid
+        valid_feedstocks = feedstock_mask & tmp_cost_items['bm_types'].notna() & (tmp_cost_items['bm_types'] != '')
+        
+        tmp_cost_items.loc[valid_feedstocks, 'Unit Cost'] = c
+        tmp_cost_items.loc[valid_feedstocks, 'Cost Year'] = BT16_cost_year
+        
+        # Harmonize unit (dt to dry lb)
+        tmp_cost_items.loc[valid_feedstocks, 'Unit Cost'] /= 2000
+        
+        # Recalculate total cost
+        total_cost_mask = valid_feedstocks & (tmp_cost_items['Flow'] != '-') & (tmp_cost_items['Operating Time'] != '-') & (tmp_cost_items['Unit Cost'] != '-')
+        tmp_cost_items.loc[total_cost_mask, 'Total Cost'] = (
+            tmp_cost_items.loc[total_cost_mask, 'Flow'] *
+            tmp_cost_items.loc[total_cost_mask, 'Operating Time'] *
+            tmp_cost_items.loc[total_cost_mask, 'Unit Cost']
+        )
+        
+        # Add identifier column
+        tmp_cost_items['bm_cost_id'] = c
+
+        # Accumulate results in a list to avoid multiple concat calls
+        if cost_items.empty:
+            cost_items = tmp_cost_items.copy()
+        else:
+            cost_items = pd.concat([cost_items, tmp_cost_items], ignore_index=True, sort=False)
+
+    # Reset index after concat and clean up
+    cost_items.reset_index(drop=True, inplace=True)
+
+
+if consider_variability_study and (consider_which_variabilities == 'Cost_Item'):
     # Calculate itemized MFSP
 
-    # re-calculate total cost
-    cost_items.loc[cost_items['Flow'] != '-', 'Flow'] =\
-        pd.to_numeric(cost_items.loc[cost_items['Flow'] != '-', 'Flow']).copy()
-    cost_items.loc[cost_items['Operating Time'] != '-', 'Operating Time'] =\
-        pd.to_numeric(
-            cost_items.loc[cost_items['Operating Time'] != '-', 'Operating Time']).copy()
-    cost_items.loc[cost_items['Unit Cost'] != '-', 'Unit Cost'] =\
-        pd.to_numeric(
-            cost_items.loc[cost_items['Unit Cost'] != '-', 'Unit Cost']).copy()
+    # Create a mask for valid rows where 'Flow', 'Operating Time', and 'Unit Cost' are not '-'
+    valid_mask = (cost_items['Flow'] != '-') & (cost_items['Operating Time'] != '-') & (cost_items['Unit Cost'] != '-')
 
-    cost_items.loc[((cost_items['Flow'] != '-') &
-                    (cost_items['Operating Time'] != '-') &
-                    (cost_items['Unit Cost'] != '-')), 'Total Cost'] = \
-        cost_items.loc[((cost_items['Flow'] != '-') &
-                        (cost_items['Operating Time'] != '-') &
-                        (cost_items['Unit Cost'] != '-')), 'Flow'] *\
-        cost_items.loc[((cost_items['Flow'] != '-') &
-                        (cost_items['Operating Time'] != '-') &
-                        (cost_items['Unit Cost'] != '-')), 'Operating Time'] *\
-        cost_items.loc[((cost_items['Flow'] != '-') &
-                        (cost_items['Operating Time'] != '-') &
-                        (cost_items['Unit Cost'] != '-')), 'Unit Cost']
+    # Convert 'Flow', 'Operating Time', and 'Unit Cost' to numeric where valid
+    cost_items.loc[valid_mask, 'Flow'] = pd.to_numeric(cost_items.loc[valid_mask, 'Flow'])
+    cost_items.loc[valid_mask, 'Operating Time'] = pd.to_numeric(cost_items.loc[valid_mask, 'Operating Time'])
+    cost_items.loc[valid_mask, 'Unit Cost'] = pd.to_numeric(cost_items.loc[valid_mask, 'Unit Cost'])
+
+    # Recalculate total cost for valid rows
+    cost_items.loc[valid_mask, 'Total Cost'] = (
+        cost_items.loc[valid_mask, 'Flow'] *
+        cost_items.loc[valid_mask, 'Operating Time'] *
+        cost_items.loc[valid_mask, 'Unit Cost']
+    )
+
+
+print("Correcting inflation to the year of study..")
 
 # Correct for inflation to the year of study
+
+#cost_items['Cost Year'] = cost_items['Cost Year'].astype(int)
+# Inflation row-wise
+#cost_items['Adjusted Total Cost'] = cost_items.apply(
+#    lambda row: cpi.inflate(row['Total Cost'], row['Cost Year'], to=cost_year),
+#    axis=1
+#)
+
+# revising inflation adjustment code to improve performance
+cpi_to = cpi.get(cost_year)
 cost_items['Cost Year'] = cost_items['Cost Year'].astype(int)
-# cost_items['Total Cost'] = pd.to_numeric(cost_items['Total Cost'])
-cost_items['Adjusted Total Cost'] = cost_items.apply(
-    lambda x: cpi.inflate(x['Total Cost'], x['Cost Year'], to=cost_year), axis=1)
+start_years = cost_items['Cost Year'].unique().astype(int)
+cpi_start_dict = {year: cpi.get(year) for year in start_years}
+cost_items['cpi_start'] = cost_items['Cost Year'].map(cpi_start_dict)
+cost_items['Adjusted Total Cost'] = cost_items['Total Cost'] * (cpi_to / cost_items['cpi_start'])
+
+# Record adjusted year
 cost_items['Adjusted Cost Year'] = cost_year
 
 # Set or expand LCI based on production year
 if len(production_year) == 1:
     cost_items['Production Year'] = production_year[0]
 else:
-    cost_items['Production Year'] = 0
-    tmpdf = cost_items.copy()
-    cost_items = cost_items[0:0]
-    for yr in range(production_year[0], production_year[1]+1):
-        # for yr in production_year:
-        tmpdf['Production Year'] = yr
-        cost_items = pd.concat([cost_items, tmpdf], ignore_index=True).copy()
-    cost_items.reset_index(drop=True, inplace=True)
+    # Create a list of all years in the range
+    years = list(range(production_year[0], production_year[1] + 1))
+    
+    # Replicate the cost_items DataFrame for each year and assign the 'Production Year'
+    cost_items = pd.DataFrame(np.repeat(cost_items.values, len(years), axis=0), columns=cost_items.columns)
+    cost_items['Production Year'] = np.tile(years, len(cost_items) // len(years))
+    
+cost_items.reset_index(drop=True, inplace=True)
+
+print ("Calculating MFSP ..")
 
 # Calculate itemized MFSP
-cost_items['Itemized MFSP'] = cost_items['Adjusted Total Cost'].astype(
-    float) / cost_items['Biofuel Flow'].astype(float)
+cost_items['Itemized MFSP'] = cost_items['Adjusted Total Cost'].astype(float) / cost_items['Biofuel Flow'].astype(float)
 cost_items['Itemized MFSP: Unit (numerator)'] = cost_items['Total Cost: Unit (numerator)']
 cost_items['Itemized MFSP: Unit (denominator)'] = cost_items['Biofuel Flow: Unit (numerator)']
 
-# Identify non-harmonized units if any
-ignored_cost_items = cost_items.loc[cost_items['Total Flow: Unit (numerator)']
-                                    != cost_items['Cost: Unit (denominator)'], :]
-if ignored_cost_items.shape[0] > 0:
-    print("Warning: The following cost items need attention as the units are not harmonized ..")
-    print(ignored_cost_items)
-ignored_cost_items = ignored_cost_items[['Case/Scenario', 'Parameter_A', 'Parameter_B',
-                                         'Stream_Flow', 'Stream_LCA',
-                                         'Total Flow: Unit (numerator)', 'Cost: Unit (denominator)']]
+# Harmonize energy units, convert kWh to MJ
+tmp_cost_items = cost_items[cost_items['Itemized MFSP: Unit (denominator)'] == 'kWh'].copy()
+cost_items = cost_items[cost_items['Itemized MFSP: Unit (denominator)'] != 'kWh']
 
-# Harmonize energy units, unit convert for power
-tmp_cost_items = cost_items.loc[cost_items['Itemized MFSP: Unit (denominator)'].isin([
-    'kWh']), :].copy()
-cost_items = cost_items.loc[~(
-    cost_items['Itemized MFSP: Unit (denominator)'].isin(['kWh'])), :]
-
-# convert kWh to MJ
-tmp_cost_items[['Itemized MFSP: Unit (denominator)', 'Itemized MFSP']] = \
-    ob_units.unit_convert_df(
+converted = ob_units.unit_convert_df(
     tmp_cost_items[['Itemized MFSP: Unit (denominator)', 'Itemized MFSP']],
     Unit='Itemized MFSP: Unit (denominator)',
     Value='Itemized MFSP',
     if_unit_numerator=False,
     if_given_unit=True,
-    given_unit='MJ').copy()
+    given_unit='MJ'
+)
+tmp_cost_items['Itemized MFSP: Unit (denominator)'] = converted['Itemized MFSP: Unit (denominator)']
+tmp_cost_items['Itemized MFSP'] = converted['Itemized MFSP']
+cost_items = pd.concat([cost_items, tmp_cost_items], ignore_index=True)
 
-# Concatenate the data frames
-cost_items = pd.concat([tmp_cost_items, cost_items]).reset_index(drop=True).copy()
+# Identify non-harmonized units
+ignored_cost_items = cost_items[(cost_items['Total Flow: Unit (numerator)'] != cost_items['Cost: Unit (denominator)']) &
+                                 ~(cost_items['Parameter_A'].isin(['Fixed Costs', 'Capital Depreciation', 'Average Income Tax', 'Average Return on Investment']))]
 
-# For co-products we consider their cost as credit to the MFSP [co-product credit by displacement]
-cost_items.loc[cost_items['Parameter_B'] == 'Coproduct Credits', 'Itemized MFSP'] = \
-    cost_items.loc[cost_items['Parameter_B'] ==
-                   'Coproduct Credits', 'Itemized MFSP'] * -1
+if ignored_cost_items.shape[0] > 0:
+    print("Warning: The following cost items need attention as the units are not harmonized ..")
+    print(ignored_cost_items)
 
+# Concatenate the energy unit-adjusted data and original data
+cost_items = pd.concat([tmp_cost_items, cost_items]).reset_index(drop=True)
+
+# For co-products, consider their cost as a credit to the MFSP
+cost_items.loc[cost_items['Parameter_B'] == 'Coproduct Credits', 'Itemized MFSP'] *= -1
 if allocation_type == 'Energy':
-    
-    # In Db, all mappings of Fuel Use to T&D costs are removed.
+    # In Energy allocation, no cost credit is considered for produced fuel (per MJ of fuels produced)
+    # Remove mapping of Fuel Use to T&D costs (already removed in database)
     pass
-    
-    # For Energy allocation no cost credit is considered for produced fuel as calculations are per MJ of fuels produced
-    #cost_items.loc[cost_items['Parameter_B']
-    #               == 'Fuel Use', 'Itemized MFSP'] = 0
 
-# For 'Fuel Use' those are not marked as primary fuel are considered for displacement credit
 elif allocation_type == 'Hybrid':
+    # For 'Hybrid' allocation, fuel use items that are not primary fuel get a displacement credit
     cost_items.loc[(cost_items['Parameter_B'] == 'Fuel Use') &
-                   (cost_items['Energy_alloc_primary_fuel'] != 'Y'), 'Itemized MFSP'] = \
-        cost_items.loc[(cost_items['Parameter_B'] == 'Fuel Use') &
-                       (cost_items['Energy_alloc_primary_fuel'] != 'Y'), 'Itemized MFSP'] * -1
+                   (cost_items['Energy_alloc_primary_fuel'] != 'Y'), 'Itemized MFSP'] *= -1
+
 
 # %%
 # Step: Calculate aggregrated Marginal Fuel Selling Price (MFSP)
 
 MFSP_agg = cost_items.copy()
 
-if consider_coproduct_cost_credit == False:
+if not consider_coproduct_cost_credit:
     MFSP_agg = MFSP_agg.loc[~MFSP_agg['Parameter_B'].isin(
         ['Coproduct Credits']), :]
 
-if consider_variability_study & (consider_which_variabilities == 'Cost_Item'):
-
+if consider_variability_study and (consider_which_variabilities == 'Cost_Item'):
+    # Filter and group for variability study
     MFSP_agg = MFSP_agg[['Case/Scenario',
-                         # 'Feedstock',
                          'Production Year',
                          'Itemized MFSP: Unit (numerator)',
                          'Itemized MFSP: Unit (denominator)',
@@ -1227,27 +1204,16 @@ if consider_variability_study & (consider_which_variabilities == 'Cost_Item'):
                          'dist_option',
                          'param_value']]
     MFSP_agg = MFSP_agg[MFSP_agg['Itemized MFSP'].notna()]
-
-    MFSP_agg = MFSP_agg.groupby(['Case/Scenario',
-                                 # 'Feedstock',
-                                 'Production Year',
-                                 'Itemized MFSP: Unit (numerator)',
-                                 'Itemized MFSP: Unit (denominator)',
-                                 'Adjusted Cost Year',
-                                 'variability_id',
-                                 'col_param',
-                                 'col_val',
-                                 'param_name',
-                                 'param_min',
-                                 'param_max',
-                                 'param_dist',
-                                 'dist_option',
-                                 'param_value']).agg({'Itemized MFSP': 'sum'}).reset_index()
+    MFSP_agg = MFSP_agg.groupby([
+        'Case/Scenario', 'Production Year', 'Itemized MFSP: Unit (numerator)', 
+        'Itemized MFSP: Unit (denominator)', 'Adjusted Cost Year', 'variability_id', 
+        'col_param', 'col_val', 'param_name', 'param_min', 'param_max', 'param_dist', 
+        'dist_option', 'param_value'
+    ])['Itemized MFSP'].sum().reset_index()
 
 elif consider_scale_up_study:
-    
+    # Filter and group for scale-up study
     MFSP_agg = MFSP_agg[['Case/Scenario',
-                         # 'Feedstock',
                          'Production Year',
                          'Itemized MFSP: Unit (numerator)',
                          'Itemized MFSP: Unit (denominator)',
@@ -1255,52 +1221,49 @@ elif consider_scale_up_study:
                          'Itemized MFSP',
                          'bm_cost_id']]
     MFSP_agg = MFSP_agg[MFSP_agg['Itemized MFSP'].notna()]
+    MFSP_agg = MFSP_agg.groupby([
+        'Case/Scenario', 'Production Year', 'Itemized MFSP: Unit (numerator)', 
+        'Itemized MFSP: Unit (denominator)', 'Adjusted Cost Year', 'bm_cost_id'
+    ])['Itemized MFSP'].sum().reset_index()
 
-    MFSP_agg = MFSP_agg.groupby(['Case/Scenario',
-                                 # 'Feedstock',
-                                 'Production Year',
-                                 'Itemized MFSP: Unit (numerator)',
-                                 'Itemized MFSP: Unit (denominator)',
-                                 'Adjusted Cost Year',
-                                 'bm_cost_id'
-                                 ]).agg({'Itemized MFSP': 'sum'}).reset_index()
-    
 else:
+    # Filter and group for general case (no study considered)
     MFSP_agg = MFSP_agg[['Case/Scenario',
-                         # 'Feedstock',
                          'Production Year',
                          'Itemized MFSP: Unit (numerator)',
                          'Itemized MFSP: Unit (denominator)',
                          'Adjusted Cost Year',
                          'Itemized MFSP']]
     MFSP_agg = MFSP_agg[MFSP_agg['Itemized MFSP'].notna()]
+    MFSP_agg = MFSP_agg.groupby([
+        'Case/Scenario', 'Production Year', 'Itemized MFSP: Unit (numerator)', 
+        'Itemized MFSP: Unit (denominator)', 'Adjusted Cost Year'
+    ])['Itemized MFSP'].sum().reset_index()
 
-    MFSP_agg = MFSP_agg.groupby(['Case/Scenario',
-                                 # 'Feedstock',
-                                 'Production Year',
-                                 'Itemized MFSP: Unit (numerator)',
-                                 'Itemized MFSP: Unit (denominator)',
-                                 'Adjusted Cost Year'
-                                 ]).agg({'Itemized MFSP': 'sum'}).reset_index()
+# Rename columns to reflect MFSP replacing fuel
+MFSP_agg.rename(columns={
+    'Itemized MFSP': 'MFSP replacing fuel',
+    'Itemized MFSP: Unit (numerator)': 'MFSP replacing fuel: Unit (numerator)',
+    'Itemized MFSP: Unit (denominator)': 'MFSP replacing fuel: Unit (denominator)'
+}, inplace=True)
 
-MFSP_agg.rename(columns={'Itemized MFSP': 'MFSP replacing fuel',
-                         'Itemized MFSP: Unit (numerator)': 'MFSP replacing fuel: Unit (numerator)',
-                         'Itemized MFSP: Unit (denominator)': 'MFSP replacing fuel: Unit (denominator)'}, inplace=True)
-
-# Getting back the Fuel Use column
+# Merge with biofuel yield data to get Fuel Use column back
 MFSP_agg = pd.merge(biofuel_yield[['Case/Scenario', 'Biofuel Stream_LCA', 'Energy_alloc_primary_fuel']].drop_duplicates(),
                     MFSP_agg, how='left', on='Case/Scenario').reset_index(drop=True)
 
 # Save interim data tables
-if save_interim_files == True:
+if save_interim_files:
     cost_items.to_csv(output_path_prefix + '/' + f_out_itemized_mfsp)
     MFSP_agg.to_csv(output_path_prefix + '/' + f_out_agg_mfsp)
 
 # %%
 
-# Step: Merge Itemized LCAs to TEA-pathway LCIs
+# Step: Expand LCIs based on TEA production year
 
-LCA_items = df_econ.loc[df_econ['Parameter_B'].isin([
+print ('Expand LCI and LCA calculation ..')
+
+# Filter relevant LCA items
+LCA_parameters = [
     'Conversion: Input Supply Chains',
     'Avoided Ems Credits',
     'Conversion: Combustion Ems, Fossil',
@@ -1311,43 +1274,46 @@ LCA_items = df_econ.loc[df_econ['Parameter_B'].isin([
     'Fuel Use',
     'CCS Stream, Fossil',
     'CCS Stream, Biogenic'
-]), :].reset_index().copy()
-LCA_items = LCA_items[['Case/Scenario',
-                       'Parameter_A',
-                       'Parameter_B',
-                       'Stream_Flow',
-                       'Stream_LCA',
-                       'Energy_alloc_primary_fuel',
-                       'Flow: Unit (numerator)',
-                       'Flow: Unit (denominator)',
-                       'Flow',
-                       'Operating Time: Unit',
-                       'Operating Time',
-                       'Operating Time (%)',
-                       'Total Flow: Unit (numerator)',
-                       'Total Flow: Unit (denominator)',
-                       'Total Flow']]
+]
 
-# Set or expand LCI based on production year
+LCA_columns = [
+    'Case/Scenario',
+    'Parameter_A',
+    'Parameter_B',
+    'Stream_Flow',
+    'Stream_LCA',
+    'Energy_alloc_primary_fuel',
+    'Flow: Unit (numerator)',
+    'Flow: Unit (denominator)',
+    'Flow',
+    'Operating Time: Unit',
+    'Operating Time',
+    'Operating Time (%)',
+    'Total Flow: Unit (numerator)',
+    'Total Flow: Unit (denominator)',
+    'Total Flow'
+]
+
+# Apply filter and column selection
+LCA_items = df_econ.loc[df_econ['Parameter_B'].isin(LCA_parameters), LCA_columns].reset_index(drop=True)
+
+
 if len(production_year) == 1:
     LCA_items['Production Year'] = production_year[0]
 else:
-    LCA_items['Production Year'] = 0
-    tmpdf = LCA_items.copy()
-    LCA_items = LCA_items[0:0]
-    for yr in range(production_year[0], production_year[1]+1):
-        # for yr in production_year:
-        tmpdf['Production Year'] = yr
-        LCA_items = pd.concat([LCA_items, tmpdf], ignore_index=True).copy()
-    LCA_items.reset_index(drop=True, inplace=True)
+    LCA_items = pd.concat(
+        [LCA_items.assign(**{'Production Year': yr}) for yr in range(production_year[0], production_year[1]+1)],
+        ignore_index=True
+    )
 
 # format LCI
-corr_itemized_LCA = fmt_GREET_LCI(corr_itemized_LCA)
+tempdf, corr_itemized_LCA = fmt_GREET_LCI(corr_itemized_LCA)
 
 # %%
 # Update carbon intensities as per scope of study
 
 # implementing carbon intensities of decarbonized electric grid
+
 if decarb_electric_grid:
     decarb_elec_CI = pd.read_excel(input_path_decarb_model + '/' + f_Decarb_Model,
                                    sheet_name='EPS - CI', header=3)
@@ -1403,6 +1369,7 @@ if decarb_electric_grid:
     corr_itemized_LCA = pd.concat(
         [corr_itemized_LCA, decarb_elec_CI], ignore_index=True)
 
+
 # %%
 # Merge itemized LCAs to LCIs
 LCA_items = pd.merge(LCA_items, corr_itemized_LCA, how='left',
@@ -1411,59 +1378,67 @@ LCA_items = pd.merge(LCA_items, corr_itemized_LCA, how='left',
                      right_on=['Parameter_B', 'Stream_Flow', 'Stream_LCA', 'Year']).reset_index(drop=True)
 
 # Variability analysis for LCA parameters
-if consider_variability_study & (consider_which_variabilities == 'Stream_LCA'):
+if consider_variability_study and (consider_which_variabilities == 'Stream_LCA'):
 
-    """# unit check
-    check_units = (cost_items['Flow: Unit (numerator)'] != cost_items['Cost: Unit (denominator)']) |\
-        (cost_items['Flow: Unit (denominator)']
-         != cost_items['Operating Time: Unit'])
-    cost_items = cost_items.loc[~check_units]
-    check_units = cost_items.loc[check_units, :]
-    if check_units.shape[0] > 0:
-        print("Warning: The following cost items need attention as the units are not harmonized ..")
-        print(check_units)
-        """
-
-    var_params = corr_params_variability.loc[corr_params_variability['col_param'].isin(['Stream_LCA']), :].reset_index(drop=True)
+    var_params = corr_params_variability.loc[
+        corr_params_variability['col_param'] == 'Stream_LCA'
+    ].reset_index(drop=True)
 
     var_params_tbl = variability_table(var_params).reset_index(drop=True)
     var_params_tbl['variability_id'] = var_params_tbl.index
 
-    LCA_items_temp = LCA_items.copy()
+    # Prepare a list to collect all modified versions
+    modified_LCA_items = []
 
-    LCA_items = pd.DataFrame(
-        columns=LCA_items_temp.columns.to_list() + ['variability_id'])
-    for r in range(0, var_params_tbl.shape[0]):
-        LCA_items_temp.loc[
-            LCA_items_temp[var_params_tbl.loc[r, 'col_param']].isin(
-                [var_params_tbl.loc[r, 'param_name']]),
-            var_params_tbl.loc[r, 'col_val']] = var_params_tbl.loc[r, 'param_value']
-        LCA_items_temp['variability_id'] = var_params_tbl.loc[r,'variability_id']
-        LCA_items = pd.concat([LCA_items, LCA_items_temp]).copy()
+    for _, row in var_params_tbl.iterrows():
+        temp = LCA_items.copy()
+        mask = temp[row['col_param']].isin([row['param_name']])
+        temp.loc[mask, row['col_val']] = row['param_value']
+        temp['variability_id'] = row['variability_id']
+        modified_LCA_items.append(temp)
+
+    # Only one concat after the loop (MUCH faster)
+    LCA_items = pd.concat(modified_LCA_items, ignore_index=True)
 
     LCA_items = LCA_items.merge(
-        var_params_tbl, how='left', on='variability_id').reset_index(drop=True)
+        var_params_tbl, how='left', on='variability_id'
+    ).reset_index(drop=True)
+
 
 # harmonize units
 # converting material flow units to model standard units
-LCA_items['Total Flow'] = ['0' if val == '-' else val for val in LCA_items['Total Flow']]
-LCA_items['Total Flow'] = pd.to_numeric(LCA_items['Total Flow'])
+# Replace '-' with 0 and convert to numeric in one go (vectorized)
+LCA_items['Total Flow'] = pd.to_numeric(
+    LCA_items['Total Flow'].replace('-', 0)
+)
+
+# Fill missing values
 LCA_items['Total Flow: Unit (numerator)'] = LCA_items['Total Flow: Unit (numerator)'].fillna('-')
 
-LCA_items.loc[~(LCA_items['Total Flow: Unit (numerator)'].isin(['-'])),
-              ['Total Flow: Unit (numerator)', 'Total Flow']] = \
-    ob_units.unit_convert_df(LCA_items.loc[~(LCA_items['Total Flow: Unit (numerator)'].isin(['-'])), ['Total Flow: Unit (numerator)', 'Total Flow']],
-                             Unit='Total Flow: Unit (numerator)', Value='Total Flow',
-                             if_unit_numerator=True, if_given_category=False)
+# Create a mask once
+mask = LCA_items['Total Flow: Unit (numerator)'] != '-'
 
-# Identify non-harmonized units if any
-ignored_LCA_items = LCA_items.loc[LCA_items['Total Flow: Unit (numerator)']
-                                  != LCA_items['LCA: Unit (denominator)'], :]
-if ignored_LCA_items.shape[0] > 0:
+# Only call unit_convert_df once with the filtered rows
+if mask.any():
+    converted = ob_units.unit_convert_df(
+        LCA_items.loc[mask, ['Total Flow: Unit (numerator)', 'Total Flow']],
+        Unit='Total Flow: Unit (numerator)', 
+        Value='Total Flow',
+        if_unit_numerator=True,
+        if_given_category=False
+    )
+    LCA_items.loc[mask, ['Total Flow: Unit (numerator)', 'Total Flow']] = converted
+
+# Check for non-harmonized units
+non_harmonized_mask = LCA_items['Total Flow: Unit (numerator)'] != LCA_items['LCA: Unit (denominator)']
+if non_harmonized_mask.any():
+    ignored_LCA_items = LCA_items.loc[non_harmonized_mask]
     print("Warning: The following LCA items need attention as the units are not harmonized ..")
     print(ignored_LCA_items)
-LCA_items = LCA_items.loc[~(
-    LCA_items['Total Flow: Unit (numerator)'] != LCA_items['LCA: Unit (denominator)']), :]
+
+# Keep only harmonized items
+LCA_items = LCA_items.loc[~non_harmonized_mask]
+
 
 # %%
 # Step: Itemized LCA and CCS implementation
@@ -1473,27 +1448,26 @@ LCA_items['Total LCA'] = LCA_items['LCA_value'] * LCA_items['Total Flow']
 LCA_items['Total LCA: Unit (numerator)'] = LCA_items['LCA: Unit (numerator)']
 LCA_items['Total LCA: Unit (denominator)'] = LCA_items['Total Flow: Unit (denominator)']
 
-# If co-product, LCA is credited by displacement
-LCA_items.loc[LCA_items['Parameter_B'].isin(['Coproduct Credits']), 'Total LCA'] = \
-    LCA_items.loc[LCA_items['Parameter_B'].isin(
-        ['Coproduct Credits']), 'Total LCA'] * -1
+# If co-product, credit LCA by displacement
+coproduct_mask = LCA_items['Parameter_B'] == 'Coproduct Credits'
+LCA_items.loc[coproduct_mask, 'Total LCA'] *= -1
 
-# Merge biofuel yield data by Case/Scenario
-LCA_items = pd.merge(LCA_items, biofuel_yield2, how='left',
-                     on='Case/Scenario').reset_index(drop=True)
+# Merge biofuel yield data by 'Case/Scenario'
+LCA_items = LCA_items.merge(biofuel_yield2, how='left', on='Case/Scenario').reset_index(drop=True)
 
-# based on energy allocation choice, all components are allocated per 'Fuel Use' product
-
-# LCA_items[['Flow', 'Total Flow', 'Total LCA']] = LCA_items[['Flow', 'Total Flow', 'Total LCA']].convert_dtypes()
-
+# Allocation step
 if allocation_type == 'Energy':
-    pass
+    pass  # Nothing to do
 
 elif allocation_type == 'Hybrid':
-    for colm in ['Flow', 'Total Flow', 'Total LCA']:
-        LCA_items.loc[[isinstance(x, numbers.Number) for x in LCA_items[colm]], colm] =\
-            LCA_items.loc[[isinstance(x, numbers.Number) for x in LCA_items[colm]], colm].multiply(
-            LCA_items.loc[[isinstance(x, numbers.Number) for x in LCA_items[colm]], 'biofuel_yield_energy_alloc'], axis='index')
+    # Only for numeric columns
+    cols_to_allocate = ['Flow', 'Total Flow', 'Total LCA']
+    
+    # Prepare mask once for all columns (assuming consistent types)
+    numeric_mask = LCA_items[cols_to_allocate[0]].apply(lambda x: isinstance(x, numbers.Number))
+
+    for col in cols_to_allocate:
+        LCA_items.loc[numeric_mask, col] *= LCA_items.loc[numeric_mask, 'biofuel_yield_energy_alloc']
 
 # %%
 
@@ -1505,197 +1479,202 @@ elif allocation_type == 'Hybrid':
 if harmonize_CCS_fossil:
 
     # Select Case/Scenario with CCS flow
-    CCS_cases = LCA_items.loc[LCA_items['Parameter_B'].isin(['CCS Stream, Fossil']) &
-                              LCA_items['Stream_Flow'].isin(['Carbon Dioxide']), 'Case/Scenario'].drop_duplicates()
+    CCS_cases = LCA_items.query("Parameter_B == 'CCS Stream, Fossil' and Stream_Flow == 'Carbon Dioxide'")['Case/Scenario'].drop_duplicates()
 
     # Select rows with selected cases and Parameter_B in ['CCS Stream', 'Combustion, Fossil']
-    tmp_LCA_items = LCA_items.loc[LCA_items['Case/Scenario'].isin(CCS_cases) &
-                                  LCA_items['Parameter_B'].isin(['CCS Stream, Fossil', 'Conversion: Combustion Ems, Fossil']), :]
+    tmp_LCA_items = LCA_items.query("`Case/Scenario` in @CCS_cases and Parameter_B in ['CCS Stream, Fossil', 'Conversion: Combustion Ems, Fossil']").copy()
 
     # Remove selected rows from LCA_items
-    LCA_items = LCA_items.loc[~(LCA_items['Case/Scenario'].isin(CCS_cases) &
-                                LCA_items['Parameter_B'].isin(['CCS Stream, Fossil', 'Conversion: Combustion Ems, Fossil'])), :].copy()
+    LCA_items = LCA_items.drop(tmp_LCA_items.index).reset_index(drop=True)
 
-    tmp_LCA_items_CCS_Stream = tmp_LCA_items.loc[tmp_LCA_items['Parameter_B'].isin(
-        ['CCS Stream, Fossil']), :]
-    tmp_LCA_items_Combust = tmp_LCA_items.loc[tmp_LCA_items['Parameter_B'].isin(
-        ['Conversion: Combustion Ems, Fossil']), :]
+    tmp_CCS = tmp_LCA_items.query("Parameter_B == 'CCS Stream, Fossil'").copy()
+    tmp_combust = tmp_LCA_items.query("Parameter_B == 'Conversion: Combustion Ems, Fossil'").copy()
 
     # Merge combustion emissions if-any to CCS flows
-    tmp_LCA_items_CCS_Stream = pd.merge(
-        tmp_LCA_items_CCS_Stream[['Case/Scenario', 'Parameter_B', 'Production Year', 'Year',
-                                  'Total LCA', 'Total LCA: Unit (numerator)', 'Total LCA: Unit (denominator)']],
-        tmp_LCA_items_Combust[['Case/Scenario', 'Parameter_B', 'Production Year', 'Year',
-                               'Total LCA', 'Total LCA: Unit (numerator)', 'Total LCA: Unit (denominator)']],
-        how='left',
-        on=['Case/Scenario', 'Production Year', 'Year']
-    ).reset_index(drop=True).copy()
-    tmp_LCA_items_CCS_Stream.rename(columns={'Total LCA_x': 'Total LCA_CCS, fossil',
-                                             'Total LCA_y': 'Total LCA_combustion, fossil',
-                                             'Parameter_B_x': 'Parameter_B_CCS, fossil',
-                                             'Parameter_B_y': 'Parameter_B_combustion, fossil'}, inplace=True)
+    tmp_merge = pd.merge(
+    tmp_CCS[['Case/Scenario', 'Production Year', 'Year', 'Total LCA', 'Total LCA: Unit (numerator)', 'Total LCA: Unit (denominator)']],
+    tmp_combust[['Case/Scenario', 'Production Year', 'Year', 'Total LCA', 'Total LCA: Unit (numerator)', 'Total LCA: Unit (denominator)']],
+    on=['Case/Scenario', 'Production Year', 'Year'],
+    suffixes=('_CCS, fossil', '_combustion, fossil'),
+    how='left'
+    )
+    
+    # Check Unit Consistency
+    unit_mismatch = (
+        (tmp_merge['Total LCA: Unit (numerator)_CCS, fossil'] != tmp_merge['Total LCA: Unit (numerator)_combustion, fossil']) |
+        (tmp_merge['Total LCA: Unit (denominator)_CCS, fossil'] != tmp_merge['Total LCA: Unit (denominator)_combustion, fossil'])
+    )
 
-    # Check unit homogeneity
-    check_units_temp_LCA_items_CCS_Stream = (tmp_LCA_items_CCS_Stream['Total LCA: Unit (numerator)_x'] != tmp_LCA_items_CCS_Stream['Total LCA: Unit (numerator)_y']) |\
-        (tmp_LCA_items_CCS_Stream['Total LCA: Unit (denominator)_x'] !=
-         tmp_LCA_items_CCS_Stream['Total LCA: Unit (denominator)_y'])
-    tmp_LCA_items_CCS_Stream = tmp_LCA_items_CCS_Stream.loc[~check_units_temp_LCA_items_CCS_Stream]
-    check_units_temp_LCA_items_CCS_Stream = tmp_LCA_items_CCS_Stream.loc[
-        check_units_temp_LCA_items_CCS_Stream, :]
-    if check_units_temp_LCA_items_CCS_Stream.shape[0] > 0:
-        print("Warning: The following CCS LCA harmonization rows need attention as the units are not harmonized ..")
-        print(check_units_temp_LCA_items_CCS_Stream)
+    if unit_mismatch.any():
+        print("\n⚠️ Warning: Unit mismatch detected between CCS and Combustion LCA values:")
+        print(tmp_merge.loc[unit_mismatch].to_string(index=False))
+
+    # Keep only matching units
+    tmp_merge = tmp_merge.loc[~unit_mismatch].reset_index(drop=True)
+
 
     # Calculate net CCS stream, CCS_net: 'Combustion, Fossil' + 'CCS Stream credit'
-    tmp_LCA_items_CCS_Stream['Total LCA_combustion, fossil_net'] =\
-        tmp_LCA_items_CCS_Stream['Total LCA_combustion, fossil'] + \
-        tmp_LCA_items_CCS_Stream['Total LCA_CCS, fossil']
+    tmp_merge['Total LCA_combustion, fossil_net'] =\
+        tmp_merge['Total LCA_combustion, fossil'] + \
+        tmp_merge['Total LCA_CCS, fossil']
 
     # zero CCS, fossil
-    tmp_LCA_items_CCS_Stream['Total LCA_CCS, fossil_net'] = 0
+    tmp_merge['Total LCA_CCS, fossil_net'] = 0
 
-    # If -ve, show warning
-    check_combustion_em_margin = tmp_LCA_items_CCS_Stream.loc[
-        tmp_LCA_items_CCS_Stream['Total LCA_combustion, fossil_net'] < 0, :]
-    if check_combustion_em_margin.shape[0] > 0:
-        print("Warning: The following rows show more fossil_CCS emissions than estimated fossil_combustion emissions, please check data for accuracy. These rows are not ignored from next calculation steps.")
-        print(check_combustion_em_margin)
+    # Warning for Negative Net Emissions
+    negatives = tmp_merge[tmp_merge['Total LCA_combustion, fossil_net'] < 0]
 
-    # merge and update
-    tmp_LCA_items = tmp_LCA_items.merge(tmp_LCA_items_CCS_Stream[['Case/Scenario', 'Parameter_B_combustion, fossil', 'Production Year', 'Year', 'Total LCA_combustion, fossil_net']],
-                                        how='left',
-                                        left_on=[
-                                            'Case/Scenario', 'Parameter_B', 'Production Year', 'Year'],
-                                        right_on=['Case/Scenario', 'Parameter_B_combustion, fossil', 'Production Year', 'Year']).reset_index(drop=True)
+    if not negatives.empty:
+        print("\n⚠️ Warning: Net combustion emissions are negative in the following rows:")
+        print(negatives.to_string(index=False))
 
-    tmp_LCA_items.loc[tmp_LCA_items['Parameter_B_combustion, fossil'].isin(['Conversion: Combustion Ems, Fossil']), 'Total LCA'] =\
-        tmp_LCA_items.loc[tmp_LCA_items['Parameter_B_combustion, fossil'].isin(
-            ['Conversion: Combustion Ems, Fossil']), 'Total LCA_combustion, fossil_net']
+    tmp_combust = tmp_combust.merge(
+    tmp_merge[['Case/Scenario', 'Production Year', 'Year', 'Total LCA_combustion, fossil_net']],
+    how='left',
+    on=['Case/Scenario', 'Production Year', 'Year']
+    )
+    tmp_combust['Total LCA'] = tmp_combust['Total LCA_combustion, fossil_net']
 
-    tmp_LCA_items = tmp_LCA_items.merge(tmp_LCA_items_CCS_Stream[['Case/Scenario', 'Parameter_B_CCS, fossil', 'Production Year', 'Year', 'Total LCA_CCS, fossil_net']],
-                                        how='left',
-                                        left_on=[
-                                            'Case/Scenario', 'Parameter_B', 'Production Year', 'Year'],
-                                        right_on=['Case/Scenario', 'Parameter_B_CCS, fossil', 'Production Year', 'Year']).reset_index(drop=True)
+    # Map net CCS values
+    tmp_CCS = tmp_CCS.merge(
+        tmp_merge[['Case/Scenario', 'Production Year', 'Year', 'Total LCA_CCS, fossil_net']],
+        how='left',
+        on=['Case/Scenario', 'Production Year', 'Year']
+    )
+    tmp_CCS['Total LCA'] = tmp_CCS['Total LCA_CCS, fossil_net']
 
-    tmp_LCA_items.loc[tmp_LCA_items['Parameter_B_CCS, fossil'].isin(['CCS Stream, Fossil']), 'Total LCA'] =\
-        tmp_LCA_items.loc[tmp_LCA_items['Parameter_B_CCS, fossil'].isin(
-            ['CCS Stream, Fossil']), 'Total LCA_CCS, fossil_net']
+    # Combine and rebuild tmp_LCA_items
+    tmp_LCA_items_updated = pd.concat([tmp_CCS, tmp_combust], ignore_index=True)
 
-    tmp_LCA_items = tmp_LCA_items[['Case/Scenario', 'Parameter_A', 'Parameter_B', 'Stream_Flow',
-                                   'Stream_LCA', 'Flow: Unit (numerator)', 'Flow: Unit (denominator)',
-                                   'Flow', 'Operating Time: Unit', 'Operating Time', 'Operating Time (%)',
-                                   'Total Flow: Unit (numerator)', 'Total Flow: Unit (denominator)',
-                                   'Total Flow', 'Production Year', 'GREET1 sheet',
-                                   'Coproduct allocation method', 'GREET classification of coproduct',
-                                   'LCA: Unit (numerator)', 'LCA: Unit (denominator)', 'Year', 'LCA_value',
-                                   'LCA_metric', 'Total LCA', 'Total LCA: Unit (numerator)',
-                                   'Total LCA: Unit (denominator)', 'Biofuel Flow: Unit (numerator)',
-                                   'Biofuel Flow: Unit (denominator)', 'Biofuel Flow']].copy()
+    # Keep only necessary columns
+    columns_to_keep = [
+        'Case/Scenario', 'Parameter_A', 'Parameter_B', 'Stream_Flow',
+        'Stream_LCA', 'Flow: Unit (numerator)', 'Flow: Unit (denominator)', 'Flow',
+        'Operating Time: Unit', 'Operating Time', 'Operating Time (%)',
+        'Total Flow: Unit (numerator)', 'Total Flow: Unit (denominator)', 'Total Flow',
+        'Production Year', 'GREET1 sheet', 'Coproduct allocation method',
+        'GREET classification of coproduct', 'LCA: Unit (numerator)', 'LCA: Unit (denominator)',
+        'Year', 'LCA_value', 'LCA_metric', 'Total LCA',
+        'Total LCA: Unit (numerator)', 'Total LCA: Unit (denominator)',
+        'Biofuel Flow: Unit (numerator)', 'Biofuel Flow: Unit (denominator)', 'Biofuel Flow'
+    ]
 
-    # Concatenate the data frames
-    LCA_items = pd.concat([LCA_items, tmp_LCA_items]
-                          ).reset_index(drop=True).copy()
+    tmp_LCA_items_updated = tmp_LCA_items_updated[columns_to_keep].copy()
 
-    # Sort LCA_item for readability
-
-    # delete temporary data frames and free memory
+    # Final Concatenation
+    LCA_items = pd.concat([LCA_items, tmp_LCA_items_updated], ignore_index=True)
 
 # %%
 
 # Step: LCA Metric calculation, itemized and aggregrated
 
 # Calculate LCA metric per unit biofuel yield
-LCA_items['Total LCA'] = LCA_items['Total LCA'] / LCA_items['Biofuel Flow']
+LCA_items['Total LCA'] /= LCA_items['Biofuel Flow']
 LCA_items['Total LCA: Unit (denominator)'] = LCA_items['Biofuel Flow: Unit (numerator)']
 
-# LCA_items['LCA_metric'] = ['CO2' if val in ['CO2', 'CO2 (w/ C in VOC & CO)'] else val for val in LCA_items['LCA_metric']]
+# Harmonize units: convert 'kWh' -> 'MJ'
+kWh_mask = LCA_items['Total LCA: Unit (denominator)'] == 'kWh'
+if kWh_mask.any():
+    tmp_LCA_items = LCA_items.loc[kWh_mask].copy()
+    LCA_items = LCA_items.loc[~kWh_mask].copy()
 
-# Harmonize energy units, unit convert for power
-tmp_LCA_items = LCA_items.loc[LCA_items['Total LCA: Unit (denominator)'].isin([
-    'kWh']), :].copy()
-LCA_items = LCA_items.loc[~(
-    LCA_items['Total LCA: Unit (denominator)'].isin(['kWh'])), :]
+    tmp_LCA_items[['Total LCA: Unit (denominator)', 'Total LCA']] = ob_units.unit_convert_df(
+        tmp_LCA_items[['Total LCA: Unit (denominator)', 'Total LCA']],
+        Unit='Total LCA: Unit (denominator)',
+        Value='Total LCA',
+        if_unit_numerator=False,
+        if_given_unit=True,
+        given_unit='MJ'
+    )
 
-# convert kWh to MJ
-tmp_LCA_items[['Total LCA: Unit (denominator)', 'Total LCA']] = \
-    ob_units.unit_convert_df(
-    tmp_LCA_items[['Total LCA: Unit (denominator)', 'Total LCA']],
-    Unit='Total LCA: Unit (denominator)',
-    Value='Total LCA',
-    if_unit_numerator=False,
-    if_given_unit=True,
-    given_unit='MJ').copy()
+    # Re-combine
+    LCA_items = pd.concat([LCA_items, tmp_LCA_items], ignore_index=True)
 
-# Concatenate the data frames
-LCA_items = pd.concat([tmp_LCA_items, LCA_items]).reset_index(drop=True).copy()
-
+# Prepare for aggregation
 LCA_items_agg = LCA_items.copy()
 
-if consider_coproduct_env_credit == False:
-    LCA_items_agg = LCA_items_agg.loc[~LCA_items_agg['Parameter_B'].isin(
-        ['Coproduct Credits']), :]
+if not consider_coproduct_env_credit:
+    LCA_items_agg = LCA_items_agg[LCA_items_agg['Parameter_B'] != 'Coproduct Credits']
 
-# Calculate net LCA metric per pathway
-if consider_variability_study & (consider_which_variabilities == 'Stream_LCA'):  
-    LCA_items_agg = LCA_items_agg.groupby(['Case/Scenario', 'LCA_metric',
-                                           'Total LCA: Unit (numerator)',
-                                           'Total LCA: Unit (denominator)',
-                                           'Production Year',
-                                           'variability_id',
-                                           'col_param',
-                                           'col_val',
-                                           'param_name',
-                                           'param_min',
-                                           'param_max',
-                                           'param_dist',
-                                           'dist_option',
-                                           'param_value'], as_index=False).\
-        agg({'Total LCA': 'sum'})
+# Aggregate Total LCA
+if consider_variability_study and consider_which_variabilities == 'Stream_LCA':
+    group_cols = [
+        'Case/Scenario', 'LCA_metric', 'Total LCA: Unit (numerator)', 'Total LCA: Unit (denominator)',
+        'Production Year', 'variability_id', 'col_param', 'col_val',
+        'param_name', 'param_min', 'param_max', 'param_dist', 'dist_option', 'param_value'
+    ]
 else:
-    LCA_items_agg = LCA_items_agg.groupby(['Case/Scenario', 'LCA_metric',
-                                           'Total LCA: Unit (numerator)',
-                                           'Total LCA: Unit (denominator)',
-                                           'Production Year'], as_index=False).\
-        agg({'Total LCA': 'sum'})
+    group_cols = [
+        'Case/Scenario', 'LCA_metric', 'Total LCA: Unit (numerator)', 'Total LCA: Unit (denominator)',
+        'Production Year'
+    ]
 
-# Save interim data tables
-if save_interim_files == True:
-    LCA_items.to_csv(output_path_prefix + '/' + f_out_itemized_LCA)
-    LCA_items_agg.to_csv(output_path_prefix + '/' + f_out_agg_LCA)
+LCA_items_agg = LCA_items_agg.groupby(group_cols, as_index=False)['Total LCA'].sum()
+
+# Save interim outputs
+if save_interim_files:
+    LCA_items.to_csv(f"{output_path_prefix}/{f_out_itemized_LCA}", index=False)
+    LCA_items_agg.to_csv(f"{output_path_prefix}/{f_out_agg_LCA}", index=False)
+
 
 # %%
 
 # Step: Merge correspondence tables and GREET emission factors
 
+print ('Calculate MAC ..')
+
 # Merge aggregrated LCA metric to MFSP tables
-MAC_df = pd.merge(MFSP_agg.loc[MFSP_agg['Energy_alloc_primary_fuel'] == 'Y', : ], 
-                  LCA_items_agg, 
-                  on=['Case/Scenario', 'Production Year']).reset_index(drop=True)
+# Merge MFSP and LCA aggregated data
+MAC_df = pd.merge(
+    MFSP_agg.loc[MFSP_agg['Energy_alloc_primary_fuel'] == 'Y'],
+    LCA_items_agg,
+    on=['Case/Scenario', 'Production Year'],
+    how='inner'
+).reset_index(drop=True)
 
-# map replaced fuels to replacing fuels
-MAC_df = pd.merge(MAC_df, corr_replaced_replacing_fuel, how='left',
-                  on=['Case/Scenario', 'Biofuel Stream_LCA']).reset_index(drop=True)
+# Map replaced fuels to replacing fuels
+MAC_df = MAC_df.merge(
+    corr_replaced_replacing_fuel,
+    on=['Case/Scenario', 'Biofuel Stream_LCA'],
+    how='left'
+)
 
-# map replaced fuels with GREET pathways
-MAC_df = pd.merge(MAC_df, corr_fuel_replaced_GREET_pathway,
-                  how='left', on=['Replaced Fuel']).reset_index(drop=True)
+# Map replaced fuels to GREET pathways
+MAC_df = MAC_df.merge(
+    corr_fuel_replaced_GREET_pathway,
+    on='Replaced Fuel',
+    how='left'
+).rename(
+    columns={'GREET Pathway': 'GREET Pathway for replaced fuel'}
+)
+
+# Map replaced fuels to their CIs
+MAC_df = MAC_df.merge(
+    corr_itemized_LCA,
+    left_on=['Parameter_B', 'Stream_Flow', 'Stream_LCA', 'Production Year'],
+    right_on=['Parameter_B', 'Stream_Flow', 'Stream_LCA', 'Year'],
+    how='left'
+)
+
+# Clean up and rename columns
+MAC_df.drop(
+    columns=['Year', 'GREET1 sheet', 'Coproduct allocation method', 'GREET classification of coproduct'],
+    inplace=True
+)
+
 MAC_df.rename(
-    columns={'GREET Pathway': 'GREET Pathway for replaced fuel'}, inplace=True)
+    columns={
+        'LCA: Unit (numerator)': 'CI replaced fuel: Unit (Numerator)',
+        'LCA: Unit (denominator)': 'CI replaced fuel: Unit (Denominator)',
+        'LCA_value': 'CI replaced fuel',
+        'LCA_metric_x': 'Metric_replacing fuel',
+        'LCA_metric_y': 'Metric_replaced fuel'
+    },
+    inplace=True
+)
 
-# map replaced fuels to their CIs
-MAC_df = pd.merge(MAC_df,
-                  corr_itemized_LCA,
-                  left_on=['Parameter_B', 'Stream_Flow',
-                           'Stream_LCA', 'Production Year'],
-                  right_on=['Parameter_B', 'Stream_Flow', 'Stream_LCA', 'Year']).reset_index(drop=True)
-MAC_df.drop(['Year', 'GREET1 sheet', 'Coproduct allocation method',
-             'GREET classification of coproduct'], axis=1, inplace=True)
-MAC_df.rename(columns={'LCA: Unit (numerator)': 'CI replaced fuel: Unit (Numerator)',
-                       'LCA: Unit (denominator)': 'CI replaced fuel: Unit (Denominator)',
-                       'LCA_value': 'CI replaced fuel',
-                       'LCA_metric_x': 'Metric_replacing fuel',
-                       'LCA_metric_y': 'Metric_replaced fuel'}, inplace=True)
+MAC_df.reset_index(drop=True, inplace=True)
+
 
 """
 # harmonize emission factors of conventional fuels to CO2e unit
@@ -1728,40 +1707,60 @@ MAC_df.drop(['GREET Pathway'], axis=1, inplace=True)
 """
 
 # Map MFSP of replaced fuels
-MAC_df = pd.merge(MAC_df,
-                  corr_replaced_mfsp,
-                  how='left',
-                  on=['Replaced Fuel']).reset_index(drop=True)
-MAC_df = pd.merge(MAC_df,
-                  EIA_price[['Year', 'Value',
-                             'Energy carrier', 'Cost basis', 'Unit']],
-                  how='left',
-                  left_on=['Production Year', 'Fuel_mapping_for_price'],
-                  right_on=['Year', 'Energy carrier']).reset_index(drop=True)
-MAC_df.rename(columns={'Value': 'Cost_replaced fuel',
-                       'Cost basis': 'Cost basis_replaced fuel'}, inplace=True)
+# Map replaced fuels to MFSP
+MAC_df = MAC_df.merge(
+    corr_replaced_mfsp,
+    on='Replaced Fuel',
+    how='left'
+)
 
-MAC_df[['Year_Cost_replaced fuel',
-        'Unit Cost_replaced fuel (Numerator)']] = MAC_df['Unit'].str.split(' ', n=1, expand=True)
+# Map replaced fuels to EIA prices
+MAC_df = MAC_df.merge(
+    EIA_price[['Year', 'Value', 'Energy carrier', 'Cost basis', 'Unit']],
+    how='left',
+    left_on=['Production Year', 'Fuel_mapping_for_price'],
+    right_on=['Year', 'Energy carrier']
+)
 
-MAC_df[['Cost replaced fuel: Unit (Numerator)',
-        'Cost replaced fuel: Unit (Denominator)']] = \
-    MAC_df['Unit Cost_replaced fuel (Numerator)'].str.split(
-        '/', n=1, expand=True)
+# Rename columns
+MAC_df.rename(
+    columns={
+        'Value': 'Cost_replaced fuel',
+        'Cost basis': 'Cost basis_replaced fuel'
+    },
+    inplace=True
+)
 
-MAC_df.drop(columns=['Unit Cost_replaced fuel (Numerator)',
-            'Energy carrier', 'Unit', 'Cost basis_replaced fuel'], inplace=True)
+# Split unit strings into numerator and denominator
+MAC_df[['Year_Cost_replaced fuel', 'Unit Cost_replaced fuel (Numerator)']] = (
+    MAC_df['Unit'].str.split(' ', n=1, expand=True)
+)
+
+MAC_df[['Cost replaced fuel: Unit (Numerator)', 'Cost replaced fuel: Unit (Denominator)']] = (
+    MAC_df['Unit Cost_replaced fuel (Numerator)'].str.split('/', n=1, expand=True)
+)
+
+# Drop unnecessary columns
+MAC_df.drop(
+    columns=['Unit Cost_replaced fuel (Numerator)', 'Energy carrier', 'Unit', 'Cost basis_replaced fuel'],
+    inplace=True
+)
+
+# Final reset index
+MAC_df.reset_index(drop=True, inplace=True)
+
 
 # %%
 
 # Step: Correct inflation of replacing fuel cost
+# revising inflation adjustment code to improve performance
+cpi_to = cpi.get(cost_year)
+MAC_df['Year_Cost_replaced fuel']  = MAC_df['Year_Cost_replaced fuel'] .astype(int)
+start_years = MAC_df['Year_Cost_replaced fuel'].unique()
+cpi_start_dict = {year: cpi.get(year) for year in start_years}
+MAC_df['cpi_start'] = MAC_df['Year_Cost_replaced fuel'].map(cpi_start_dict)
+MAC_df['Adjusted Cost_replaced fuel'] = MAC_df['Cost_replaced fuel'] * (cpi_to / MAC_df['cpi_start'])
 
-# MAC_df['Adjusted Cost Year'] = cost_year
-MAC_df['Year_Cost_replaced fuel'] = pd.to_numeric(
-    MAC_df['Year_Cost_replaced fuel'])
-MAC_df['Adjusted Cost_replaced fuel'] = \
-    MAC_df.apply(lambda x: cpi.inflate(
-        x['Cost_replaced fuel'], x['Year_Cost_replaced fuel'], to=x['Adjusted Cost Year']), axis=1)
 
 # %%
 
@@ -2014,7 +2013,7 @@ if consider_scale_up_study:
     scale_up.loc[scale_up['qty_dry_bm: Unit'].isin(['MM dt']), 'net_primary_fuel_produced: Unit'] = 'PJ'
     
 # %%
-# write data to the model dashboard tabs ○
+# write data to the model dashboard tabs
 
 if write_to_dashboard:
     print('Writing to Dashboard ..')
@@ -2101,6 +2100,7 @@ if write_to_dashboard:
                                'Production Year',
                                'Total LCA']]
 
+            print ('writing to sheet mfsp_var ..')
             sheet_1 = wb.sheets['mfsp_var']
             sheet_1.range(str(4) + ':1048576').clear_contents()
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
@@ -2122,6 +2122,7 @@ if write_to_dashboard:
                           'Adjusted Cost Year'
                           ]]
 
+            print ('writing to sheet mac_var_Cost_Item ..')
             sheet_1 = wb.sheets['mac_var_Cost_Item']
             sheet_1.range(str(4) + ':1048576').clear_contents()
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
@@ -2171,6 +2172,8 @@ if write_to_dashboard:
                         ]]
 
             sheet_1 = wb.sheets['lca_itm']
+            print ('writing to sheet lca_itm ..')
+            sheet_1 = wb.sheets['lca_itm']
             sheet_1.range(str(4) + ':1048576').clear_contents()
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
                 LCA_items[[
@@ -2206,9 +2209,16 @@ if write_to_dashboard:
                            # 'Biofuel Flow'
                            ]]
 
-            sheet_1 = wb.sheets['mfsp_itm_var']
-            sheet_1.range(str(4) + ':1048576').clear_contents()
-            sheet_1['A4'].options(index=False, chunksize=10000).value =\
+            
+            print ('writing to sheet mfsp_itm_var')
+            
+            cost_items = cost_items.fillna('')
+            cost_items = cost_items.astype(str)
+
+            if len(cost_items) <= EXCEL_MAX_ROWS - 4:                
+                sheet_1 = wb.sheets['mfsp_itm_var']
+                sheet_1.range(str(4) + ':1048576').clear_contents()
+                sheet_1['A4'].options(index=False, chunksize=10000).value =\
                 cost_items[['variability_id',
                             'col_param',
                             'col_val',
@@ -2256,9 +2266,15 @@ if write_to_dashboard:
                             'Itemized MFSP: Unit (numerator)',
                             'Itemized MFSP: Unit (denominator)'
                             ]]
+            else:
+                print(f"⚠️ DataFrame too big for Excel ({len(cost_items)} rows). Writing to parquet instead: dashboard_mfsp_itm_var.parquet")                
+                cost_items.to_parquet(input_path_model + "/" + "dashboard_mfsp_itm_var.parquet", index=False)
+                print(f"✅ Parquet file saved: dashboard_mfsp_itm_var.parquet")
+            
             
         elif consider_variability_study & (consider_which_variabilities == 'Stream_LCA'):
 
+            print ('writing to sheet lca_var')
             sheet_1 = wb.sheets['lca_var']
             sheet_1.range(str(4) + ':1048576').clear_contents()
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
@@ -2279,6 +2295,7 @@ if write_to_dashboard:
                                'Production Year',
                                'Total LCA']]
 
+            print ('writing to sheet mfsp')
             sheet_1 = wb.sheets['mfsp']
             sheet_1.range(str(4) + ':1048576').clear_contents()
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
@@ -2292,6 +2309,7 @@ if write_to_dashboard:
                           'Adjusted Cost Year'
                           ]]
 
+            print ('writing to sheet mac_var_Stream_LCA')
             sheet_1 = wb.sheets['mac_var_Stream_LCA']
             sheet_1.range(str(4) + ':1048576').clear_contents()
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
@@ -2340,50 +2358,61 @@ if write_to_dashboard:
                         'Percent MFSP increase'
                         ]]
 
-            sheet_1 = wb.sheets['lca_itm_var']
-            sheet_1.range(str(4) + ':1048576').clear_contents()
-            sheet_1['A4'].options(index=False, chunksize=10000).value =\
-                LCA_items[['variability_id',
-                           'col_param',
-                           'col_val',
-                           'param_name',
-                           'param_min',
-                           'param_max',
-                           'param_dist',
-                           'dist_option',
-                           'param_value',
-                           'Pathway Short Form',
-                           'Case/Scenario',
-                           'Parameter_A',
-                           'Parameter_B',
-                           'Stream_Flow',
-                           'Stream_LCA',
-                           'Flow: Unit (numerator)',
-                           'Flow: Unit (denominator)',
-                           'Flow',
-                           'Operating Time: Unit',
-                           'Operating Time',
-                           'Operating Time (%)',
-                           'Total Flow: Unit (numerator)',
-                           'Total Flow: Unit (denominator)',
-                           'Total Flow',
-                           'Production Year',
-                           # 'Year',
-                           # 'GREET1 sheet',
-                           # 'Coproduct allocation method',
-                           # 'GREET classification of coproduct',
-                           'LCA: Unit (numerator)',
-                           'LCA: Unit (denominator)',
-                           'LCA_value',
-                           'LCA_metric',
-                           'Total LCA',
-                           'Total LCA: Unit (numerator)',
-                           'Total LCA: Unit (denominator)',
-                           # 'Biofuel Flow: Unit (numerator)',
-                           # 'Biofuel Flow: Unit (denominator)',
-                           # 'Biofuel Flow'
-                           ]]
+            print ('writing to sheet lca_itm_var')
+            
+            LCA_items = LCA_items.fillna('')
+            LCA_items = LCA_items.astype(str)
 
+            if len(LCA_items) <= EXCEL_MAX_ROWS - 4:
+                sheet_1 = wb.sheets['lca_itm_var']
+                sheet_1.range(str(4) + ':1048576').clear_contents()
+                sheet_1['A4'].options(index=False, chunksize=10000).value =\
+                    LCA_items[['variability_id',
+                            'col_param',
+                            'col_val',
+                            'param_name',
+                            'param_min',
+                            'param_max',
+                            'param_dist',
+                            'dist_option',
+                            'param_value',
+                            'Pathway Short Form',
+                            'Case/Scenario',
+                            'Parameter_A',
+                            'Parameter_B',
+                            'Stream_Flow',
+                            'Stream_LCA',
+                            'Flow: Unit (numerator)',
+                            'Flow: Unit (denominator)',
+                            'Flow',
+                            'Operating Time: Unit',
+                            'Operating Time',
+                            'Operating Time (%)',
+                            'Total Flow: Unit (numerator)',
+                            'Total Flow: Unit (denominator)',
+                            'Total Flow',
+                            'Production Year',
+                            # 'Year',
+                            # 'GREET1 sheet',
+                            # 'Coproduct allocation method',
+                            # 'GREET classification of coproduct',
+                            'LCA: Unit (numerator)',
+                            'LCA: Unit (denominator)',
+                            'LCA_value',
+                            'LCA_metric',
+                            'Total LCA',
+                            'Total LCA: Unit (numerator)',
+                            'Total LCA: Unit (denominator)',
+                            # 'Biofuel Flow: Unit (numerator)',
+                            # 'Biofuel Flow: Unit (denominator)',
+                            # 'Biofuel Flow'
+                            ]]
+            else:
+                print(f"⚠️ DataFrame too big for Excel ({len(LCA_items)} rows). Writing to Parquet instead: dashboard_LCA_items.parquet")                
+                LCA_items.to_parquet(input_path_model + "/" + "dashboard_LCA_items.parquet", index=False)
+                print(f"✅ Parquet file saved: dashboard_LCA_items.parquet")
+
+            print ('writing to sheet mfsp_itm')
             sheet_1 = wb.sheets['mfsp_itm']
             sheet_1.range(str(4) + ':1048576').clear_contents()
             sheet_1['A4'].options(index=False, chunksize=10000).value =\
@@ -2596,6 +2625,7 @@ if write_to_dashboard:
         # resetting xlwings parameters before exiting
         wb.app.screen_updating = True
 
+        print ('closing workbook ..')
         # wb.app.calculate()
         wb.save()
         wb.close()
