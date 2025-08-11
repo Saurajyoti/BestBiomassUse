@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Project:EERE Decarbonization
-Authors: George G. Zaimes and Saurajyoti Kar
-Affiliation: Argonne National Laboratory
+Copyright © 2025, UChicago Argonne, LLC
+The full description is available in the LICENSE file at location:
+    https://github.com/Saurajyoti/BestBiomassUse/blob/master/LICENSE
+
+@Project: Best Use of Biomass
+@Title: Fetched from Decarbonization  project repository
+@Authors: George G. Zaimes and Saurajyoti Kar
+@Contact: skar@anl.gov
+@Affiliation: Argonne National Laboratory 
 Date: 07/14/2021
 Version: V1
 

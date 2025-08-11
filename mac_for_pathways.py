@@ -1,8 +1,17 @@
 # -*- coding: utf-8 -*-
 """
+Copyright © 2025, UChicago Argonne, LLC
+The full description is available in the LICENSE file at location:
+    https://github.com/Saurajyoti/BestBiomassUse/blob/master/LICENSE
+
+@Project: Best Use of Biomass
+@Title: Calculate MAC for reported TEA and LCA studies
+@Authors: Saurajyoti Kar
+@Contact: skar@anl.gov
+@Affiliation: Argonne National Laboratory
+
 Created on Wed Feb 22 16:50:36 2023
 
-@author: skar
 """
 
 # Calculate MAC for reported TEA and LCA studies

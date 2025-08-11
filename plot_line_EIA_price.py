@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Dec  7 17:59:41 2021
+Copyright © 2025, UChicago Argonne, LLC
+The full description is available in the LICENSE file at location:
+    https://github.com/Saurajyoti/BestBiomassUse/blob/master/LICENSE
 
-@author: Saurajyoti Kar
-@affiliation: Argonne National Laboratory
-@description: Make EIA price data plot in a grid
+@Project: Best Use of Biomass
+@Title: Plot line plots of EIA fuel prices
+@Authors: Saurajyoti Kar
+@Contact: skar@anl.gov
+@Affiliation: Argonne National Laboratory
+
+Created on Tue Dec  7 17:59:41 2021
 """
 
 import os

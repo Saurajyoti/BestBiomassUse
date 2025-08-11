@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
 """
+Copyright © 2025, UChicago Argonne, LLC
+The full description is available in the LICENSE file at location:
+    https://github.com/Saurajyoti/BestBiomassUse/blob/master/LICENSE
+
+@Project: Best Use of Biomass
+@Title: Plot sunburst of billion ton data
+@Authors: Saurajyoti Kar
+@Contact: skar@anl.gov
+@Affiliation: Argonne National Laboratory
+@data source: Billion Ton Script.py output data
+
 Created on Thu Dec  2 14:49:41 2021
 
-@author: Saurajyoti Kar
-@affiliation: Argonne National Laboratory
-@description: sunburst plot of billion ton data set
-@data source: Billion Ton Script.py output data
 """
 
 import os

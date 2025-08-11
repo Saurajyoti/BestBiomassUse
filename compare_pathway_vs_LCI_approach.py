@@ -1,8 +1,17 @@
 # -*- coding: utf-8 -*-
 """
+Copyright © 2025, UChicago Argonne, LLC
+The full description is available in the LICENSE file at location:
+    https://github.com/Saurajyoti/BestBiomassUse/blob/master/LICENSE
+
+@Project: Best Use of Biomass
+@Title: Compare pathway-reported TEA, LCA, and MAC vs. itemized calculations
+@Authors: Saurajyoti Kar
+@Contact: skar@anl.gov
+@Affiliation: Argonne National Laboratory 
+
 Created on Wed Feb 22 16:49:37 2023
 
-@author: skar
 """
 
 # compare itemized MFSP, LCA, MAC vs. pathway reported TEA, LCA, and calculated MAC

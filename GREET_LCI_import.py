@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
 """
+Copyright © 2025, UChicago Argonne, LLC
+The full description is available in the LICENSE file at location:
+    https://github.com/Saurajyoti/BestBiomassUse/blob/master/LICENSE
+
+@Project: Best Use of Biomass
+@Title: Collect LCI data by year from GREET1 as per correspondence file.
+@Authors: Saurajyoti Kar
+@Contact: skar@anl.gov
+@Affiliation: Argonne National Laboratory 
+
 Created on Mon Jan  9 14:00:34 2023
-
-@author: skar
-
-Collect LCI data by year from GREET1 as per correspondence file.
 
 """
 

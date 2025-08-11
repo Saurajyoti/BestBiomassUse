@@ -1,8 +1,17 @@
 # -*- coding: utf-8 -*-
 """
+Copyright © 2025, UChicago Argonne, LLC
+The full description is available in the LICENSE file at location:
+    https://github.com/Saurajyoti/BestBiomassUse/blob/master/LICENSE
+
+@Project: Best Use of Biomass
+@Title: Define unit conversion class and unit conventions class
+@Authors: Saurajyoti Kar
+@Contact: skar@anl.gov
+@Affiliation: Argonne National Laboratory
+
 Created on Wed Dec  8 11:40:22 2021
 
-@author: skar
 """
 
 """ 

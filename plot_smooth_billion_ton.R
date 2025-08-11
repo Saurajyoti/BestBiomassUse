@@ -1,3 +1,16 @@
+"""
+Copyright © 2025, UChicago Argonne, LLC
+The full description is available in the LICENSE file at location:
+    https://github.com/Saurajyoti/BestBiomassUse/blob/master/LICENSE
+
+@Project: Best Use of Biomass
+@Title: Plot smoothed line plots of Billion-Ton projected feedstock availability
+@Authors: Saurajyoti Kar
+@Contact: skar@anl.gov
+@Affiliation: Argonne National Laboratory
+
+"""
+
 rm(list = ls())
 
 library(tidyverse)

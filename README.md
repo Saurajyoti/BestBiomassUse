@@ -1,3 +1,3 @@
-# Best Biomass Use
+# The Best Use of Biomass Project
 
-This project will act as the code and data development platform for Argonne's Best Use of Biomass Project. The Github repository is currently in Private mode and worked on by Project members at ANL and ORNL.
+This repository hosts the code and data development for Argonne's Best Use of Biomass Project. The work is lead by Systems Assessment Center at Energy Systems and Infrastructure Assessment Division of Argonne Natinoal Laboratory.

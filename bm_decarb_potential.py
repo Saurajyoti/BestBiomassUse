@@ -1,9 +1,17 @@
 # -*- coding: utf-8 -*-
 """
+Copyright © 2025, UChicago Argonne, LLC
+The full description is available in the LICENSE file at location:
+    https://github.com/Saurajyoti/BestBiomassUse/blob/master/LICENSE
+
+@Project: Best Use of Biomass
+@Title: Assess the overall decarbonization potential from biomass use
+@Authors: Saurajyoti Kar
+@Contact: skar@anl.gov
+@Affiliation: Argonne National Laboratory 
+
 Created on Tue Dec 14 11:14:21 2021
 
-@author: skar
-@description: This script is to assess the overall decarbonization potential from biomass use
 """
 
 """

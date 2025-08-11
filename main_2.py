@@ -1,8 +1,17 @@
 # -*- coding: utf-8 -*-
 """
+Copyright © 2025, UChicago Argonne, LLC
+The full description is available in the LICENSE file at location:
+    https://github.com/Saurajyoti/BestBiomassUse/blob/master/LICENSE
+
+@Project: Best Use of Biomass
+@Title: Main script to call data processing scripts, process data, perform calculations, and save output files
+@Authors: Saurajyoti Kar
+@Contact: skar@anl.gov
+@Affiliation: Argonne National Laboratory
+
 Created on Wed Jan  4 10:32:14 2023
 
-@author: Saurajyoti Kar, Argonne National Laboratory
 """
 
 '''

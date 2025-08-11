@@ -1,9 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Author: George G. Zaimes
-Affiliation: Argonne National Laboratory
-Description: Subsetting of BT Data and generation of biomass cost-supply curves
-Dependencies: This script uses aggregated national-level BT results obtained from the 'Billion Ton Study' Script
+Copyright © 2025, UChicago Argonne, LLC
+The full description is available in the LICENSE file at location:
+    https://github.com/Saurajyoti/BestBiomassUse/blob/master/LICENSE
+
+@Project: Best Use of Biomass
+@Title: Subsetting of BT Data and generation of biomass cost-supply curves
+@Authors: George G. Zaimes
+@Contact: gzaimes@anl.gov, skar@anl.gov
+@Affiliation: Argonne National Laboratory 
+@Dependencies: This script uses aggregated national-level BT results obtained from the 'Billion Ton Study' Script
+
+@Created on Mon Jun 10 09:00:00 2024
+
 """
 #%% Import Python Packages
 

@@ -1,9 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Author: George G. Zaimes, Saurajyoti Kar
-Affiliation: Argonne National Laboratory
-Description: Pre-processing and analysis of resource availability from the Billion Ton Study
-Data Source: https://bioenergykdf.net/sites/default/files/BillionTonDownloads/billionton_county_all.zip
+Copyright © 2025, UChicago Argonne, LLC
+The full description is available in the LICENSE file at location:
+    https://github.com/Saurajyoti/BestBiomassUse/blob/master/LICENSE
+
+@Project: Best Use of Biomass
+@Title: Pre-processing and analysis of resource availability from the Billion Ton Study
+@Authors: George G. Zaimes, Saurajyoti Kar
+@Contact: skar@anl.gov
+@Affiliation: Argonne National Laboratory 
+@Data: https://bioenergykdf.net/sites/default/files/BillionTonDownloads/billionton_county_all.zip
+
+@Created: March 8, 2023
+
 """
 #%%
 
